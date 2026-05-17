@@ -757,7 +757,9 @@
               "nation": 1,
               "speed": 1,
               "fluency": 1
-            }
+            },
+            "grammar_questions": [],
+            "grammar_tags": {}
           }
         },
         "2022": {
@@ -1548,9 +1550,1593 @@
         },
         "2021": {
           "全学統一N1": {
-            "total_words": 0,
-            "unique_words": 0,
-            "frequencies": {}
+            "total_words": 1416,
+            "unique_words": 662,
+            "frequencies": {
+              "word": 37,
+              "language": 30,
+              "different": 16,
+              "translation": 16,
+              "make": 15,
+              "one": 14,
+              "show": 13,
+              "mean": 12,
+              "translate": 12,
+              "how": 12,
+              "robot": 12,
+              "up": 11,
+              "page": 10,
+              "another": 10,
+              "people": 9,
+              "such": 9,
+              "right": 9,
+              "what": 9,
+              "like": 9,
+              "culture": 8,
+              "use": 8,
+              "english": 8,
+              "other": 8,
+              "work": 8,
+              "module": 8,
+              "peep": 8,
+              "translator": 7,
+              "speak": 7,
+              "often": 7,
+              "there": 7,
+              "because": 7,
+              "meaning": 7,
+              "idiom": 7,
+              "author": 7,
+              "sam": 7,
+              "snakebots": 7,
+              "develop": 6,
+              "each": 6,
+              "many": 6,
+              "also": 6,
+              "original": 6,
+              "more": 6,
+              "try": 6,
+              "new": 6,
+              "lara": 6,
+              "snakebot": 6,
+              "film": 6,
+              "machine": 6,
+              "two": 5,
+              "same": 5,
+              "example": 5,
+              "vocabulary": 5,
+              "problem": 5,
+              "difficult": 5,
+              "lack": 5,
+              "only": 5,
+              "sentence": 5,
+              "include": 5,
+              "look": 5,
+              "give": 5,
+              "thing": 5,
+              "go": 5,
+              "about": 5,
+              "want": 5,
+              "kind": 5,
+              "into": 4,
+              "society": 4,
+              "even": 4,
+              "way": 4,
+              "difference": 4,
+              "difficulty": 4,
+              "understand": 4,
+              "literal": 4,
+              "object": 4,
+              "country": 4,
+              "consider": 4,
+              "lose": 4,
+              "place": 4,
+              "order": 4,
+              "well": 4,
+              "poetry": 4,
+              "most": 4,
+              "much": 4,
+              "need": 4,
+              "own": 4,
+              "come": 4,
+              "violate": 4,
+              "just": 4,
+              "convenient": 4,
+              "furniture": 4,
+              "malaysia": 4,
+              "something": 4,
+              "space": 4,
+              "snake": 4,
+              "good": 3,
+              "between": 3,
+              "american": 3,
+              "both": 3,
+              "first": 3,
+              "equivalence": 3,
+              "therefore": 3,
+              "experience": 3,
+              "phrase": 3,
+              "since": 3,
+              "human": 3,
+              "instance": 3,
+              "however": 3,
+              "form": 3,
+              "involve": 3,
+              "best": 3,
+              "intent": 3,
+              "note": 3,
+              "read": 3,
+              "describe": 3,
+              "when": 3,
+              "break": 3,
+              "get": 3,
+              "pay": 3,
+              "over": 3,
+              "trip": 3,
+              "really": 3,
+              "open": 3,
+              "year": 3,
+              "out": 3,
+              "wheel": 3,
+              "easily": 3,
+              "move": 3,
+              "shape": 3,
+              "design": 3,
+              "necessarily": 2,
+              "define": 2,
+              "british": 2,
+              "communication": 2,
+              "though": 2,
+              "unique": 2,
+              "purple": 2,
+              "shade": 2,
+              "overtone": 2,
+              "correspond": 2,
+              "refer": 2,
+              "common": 2,
+              "particular": 2,
+              "idea": 2,
+              "universal": 2,
+              "disparate": 2,
+              "concept": 2,
+              "freedom": 2,
+              "unite": 2,
+              "state": 2,
+              "fair": 2,
+              "unit": 2,
+              "part": 2,
+              "become": 2,
+              "kick": 2,
+              "bucket": 2,
+              "person": 2,
+              "simply": 2,
+              "end": 2,
+              "unfamiliar": 2,
+              "grammar": 2,
+              "structure": 2,
+              "may": 2,
+              "determine": 2,
+              "whether": 2,
+              "noun": 2,
+              "verb": 2,
+              "book": 2,
+              "nature": 2,
+              "tend": 2,
+              "similar": 2,
+              "rhythm": 2,
+              "create": 2,
+              "limit": 2,
+              "keep": 2,
+              "interweave": 2,
+              "itself": 2,
+              "possible": 2,
+              "literature": 2,
+              "within": 2,
+              "explain": 2,
+              "foreign": 2,
+              "change": 2,
+              "others": 2,
+              "might": 2,
+              "larger": 2,
+              "among": 2,
+              "live": 2,
+              "before": 2,
+              "take": 2,
+              "please": 2,
+              "through": 2,
+              "across": 2,
+              "tomorrow": 2,
+              "station": 2,
+              "piece": 2,
+              "yeah": 2,
+              "will": 2,
+              "advice": 2,
+              "worry": 2,
+              "major": 2,
+              "faux": 2,
+              "pa": 2,
+              "embarrass": 2,
+              "myself": 2,
+              "mistake": 2,
+              "travel": 2,
+              "result": 2,
+              "offensive": 2,
+              "terrible": 2,
+              "possibly": 2,
+              "foreigner": 2,
+              "expect": 2,
+              "think": 2,
+              "remember": 2,
+              "skimpy": 2,
+              "last": 2,
+              "time": 2,
+              "where": 2,
+              "shop": 2,
+              "do": 2,
+              "useful": 2,
+              "mar": 2,
+              "expensive": 2,
+              "rock": 2,
+              "able": 2,
+              "carry": 2,
+              "tool": 2,
+              "small": 2,
+              "computer": 2,
+              "special": 2,
+              "plastic": 2,
+              "cost": 2,
+              "hundred": 2,
+              "dollar": 2,
+              "edition": 2,
+              "several": 2,
+              "theater": 2,
+              "technology": 2,
+              "city": 2,
+              "view": 2,
+              "edison": 2,
+              "inventor": 2,
+              "projector": 2,
+              "convert": 1,
+              "write": 1,
+              "allow": 1,
+              "communicate": 1,
+              "express": 1,
+              "cause": 1,
+              "confusion": 1,
+              "completely": 1,
+              "compound": 1,
+              "reflect": 1,
+              "cultural": 1,
+              "suit": 1,
+              "identity": 1,
+              "herein": 1,
+              "lie": 1,
+              "directly": 1,
+              "impossible": 1,
+              "general": 1,
+              "maroon": 1,
+              "lavender": 1,
+              "lilac": 1,
+              "burgundy": 1,
+              "mauve": 1,
+              "violet": 1,
+              "plum": 1,
+              "acquire": 1,
+              "nuance": 1,
+              "associate": 1,
+              "closest": 1,
+              "suffer": 1,
+              "subtlety": 1,
+              "precision": 1,
+              "sometimes": 1,
+              "closely": 1,
+              "relate": 1,
+              "conceptual": 1,
+              "abstract": 1,
+              "democracy": 1,
+              "see": 1,
+              "political": 1,
+              "trial": 1,
+              "freely": 1,
+              "social": 1,
+              "decent": 1,
+              "house": 1,
+              "health": 1,
+              "care": 1,
+              "present": 1,
+              "die": 1,
+              "dead": 1,
+              "literally": 1,
+              "reader": 1,
+              "version": 1,
+              "arise": 1,
+              "depend": 1,
+              "position": 1,
+              "due": 1,
+              "frequently": 1,
+              "material": 1,
+              "technical": 1,
+              "deal": 1,
+              "scientific": 1,
+              "subject": 1,
+              "easiest": 1,
+              "text": 1,
+              "science": 1,
+              "style": 1,
+              "consequently": 1,
+              "satisfactory": 1,
+              "perhaps": 1,
+              "achieve": 1,
+              "sound": 1,
+              "rhyme": 1,
+              "dependent": 1,
+              "choice": 1,
+              "imagery": 1,
+              "especially": 1,
+              "convey": 1,
+              "poem": 1,
+              "incapable": 1,
+              "maintain": 1,
+              "poetic": 1,
+              "rarely": 1,
+              "must": 1,
+              "individual": 1,
+              "broader": 1,
+              "context": 1,
+              "paragraph": 1,
+              "whole": 1,
+              "accurate": 1,
+              "creative": 1,
+              "combination": 1,
+              "skill": 1,
+              "sensitivity": 1,
+              "poor": 1,
+              "imitation": 1,
+              "characteristic": 1,
+              "rob": 1,
+              "jordens": 1,
+              "jeff": 1,
+              "zeter": 1,
+              "world": 1,
+              "now": 1,
+              "differently": 1,
+              "expand": 1,
+              "learn": 1,
+              "list": 1,
+              "color": 1,
+              "impression": 1,
+              "propose": 1,
+              "solution": 1,
+              "direct": 1,
+              "deeper": 1,
+              "simple": 1,
+              "amount": 1,
+              "simplest": 1,
+              "influence": 1,
+              "play": 1,
+              "important": 1,
+              "role": 1,
+              "fill": 1,
+              "blank": 1,
+              "hand": 1,
+              "accord": 1,
+              "emphasize": 1,
+              "require": 1,
+              "creativity": 1,
+              "suitable": 1,
+              "title": 1,
+              "passage": 1,
+              "origin": 1,
+              "recommend": 1,
+              "vaccination": 1,
+              "influenza": 1,
+              "down": 1,
+              "set": 1,
+              "along": 1,
+              "opinion": 1,
+              "considerable": 1,
+              "considerate": 1,
+              "considerately": 1,
+              "committee": 1,
+              "seven": 1,
+              "medical": 1,
+              "expert": 1,
+              "compose": 1,
+              "consist": 1,
+              "comprise": 1,
+              "government": 1,
+              "powerful": 1,
+              "western": 1,
+              "catch": 1,
+              "stay": 1,
+              "surprise": 1,
+              "news": 1,
+              "chance": 1,
+              "effect": 1,
+              "reason": 1,
+              "meal": 1,
+              "room": 1,
+              "charge": 1,
+              "cash": 1,
+              "spend": 1,
+              "discus": 1,
+              "market": 1,
+              "plan": 1,
+              "cup": 1,
+              "coffee": 1,
+              "beyond": 1,
+              "policy": 1,
+              "detain": 1,
+              "punish": 1,
+              "authority": 1,
+              "principle": 1,
+              "visit": 1,
+              "office": 1,
+              "tourist": 1,
+              "near": 1,
+              "purchase": 1,
+              "hey": 1,
+              "business": 1,
+              "next": 1,
+              "month": 1,
+              "great": 1,
+              "here": 1,
+              "wonder": 1,
+              "silly": 1,
+              "anyway": 1,
+              "story": 1,
+              "find": 1,
+              "situation": 1,
+              "maybe": 1,
+              "anything": 1,
+              "feel": 1,
+              "tip": 1,
+              "guideline": 1,
+              "sure": 1,
+              "hear": 1,
+              "expression": 1,
+              "eye": 1,
+              "attention": 1,
+              "follow": 1,
+              "lead": 1,
+              "copy": 1,
+              "certainly": 1,
+              "rude": 1,
+              "thoughtless": 1,
+              "listen": 1,
+              "know": 1,
+              "exactly": 1,
+              "long": 1,
+              "effort": 1,
+              "appreciate": 1,
+              "uncomfortable": 1,
+              "disapprove": 1,
+              "turn": 1,
+              "nose": 1,
+              "food": 1,
+              "without": 1,
+              "pretty": 1,
+              "easy": 1,
+              "seriously": 1,
+              "taboo": 1,
+              "careful": 1,
+              "wear": 1,
+              "clothe": 1,
+              "offer": 1,
+              "someone": 1,
+              "alcohol": 1,
+              "forward": 1,
+              "bos": 1,
+              "let": 1,
+              "overseas": 1,
+              "booklet": 1,
+              "acceptable": 1,
+              "jun": 1,
+              "liu": 1,
+              "strategy": 1,
+              "why": 1,
+              "arrange": 1,
+              "sightsee": 1,
+              "tour": 1,
+              "behave": 1,
+              "buy": 1,
+              "rome": 1,
+              "roman": 1,
+              "roll": 1,
+              "stone": 1,
+              "gather": 1,
+              "moss": 1,
+              "still": 1,
+              "water": 1,
+              "run": 1,
+              "deep": 1,
+              "mouth": 1,
+              "evil": 1,
+              "ever": 1,
+              "mind": 1,
+              "accept": 1,
+              "unacceptable": 1,
+              "notice": 1,
+              "although": 1,
+              "definitely": 1,
+              "explore": 1,
+              "usually": 1,
+              "box": 1,
+              "unreliable": 1,
+              "extremely": 1,
+              "cannot": 1,
+              "task": 1,
+              "scientist": 1,
+              "unusual": 1,
+              "name": 1,
+              "crack": 1,
+              "push": 1,
+              "below": 1,
+              "grind": 1,
+              "climb": 1,
+              "high": 1,
+              "tree": 1,
+              "ability": 1,
+              "account": 1,
+              "usefulness": 1,
+              "effective": 1,
+              "regular": 1,
+              "stick": 1,
+              "fall": 1,
+              "help": 1,
+              "repair": 1,
+              "international": 1,
+              "thirty": 1,
+              "basically": 1,
+              "aid": 1,
+              "movement": 1,
+              "large": 1,
+              "head": 1,
+              "together": 1,
+              "modular": 1,
+              "advantage": 1,
+              "fail": 1,
+              "add": 1,
+              "camera": 1,
+              "actually": 1,
+              "separate": 1,
+              "later": 1,
+              "reconnect": 1,
+              "back": 1,
+              "researcher": 1,
+              "electricity": 1,
+              "almost": 1,
+              "animal": 1,
+              "muscle": 1,
+              "strong": 1,
+              "hard": 1,
+              "overall": 1,
+              "thus": 1,
+              "less": 1,
+              "build": 1,
+              "recently": 1,
+              "send": 1,
+              "million": 1,
+              "whereas": 1,
+              "little": 1,
+              "few": 1,
+              "versatility": 1,
+              "affordability": 1,
+              "seem": 1,
+              "wave": 1,
+              "future": 1,
+              "least": 1,
+              "far": 1,
+              "concern": 1,
+              "casey": 1,
+              "malarcher": 1,
+              "andrea": 1,
+              "janzen": 1,
+              "challenge": 1,
+              "second": 1,
+              "cinema": 1,
+              "beginning": 1,
+              "century": 1,
+              "grow": 1,
+              "earlier": 1,
+              "entertainment": 1,
+              "call": 1,
+              "popular": 1,
+              "purpose": 1,
+              "thomas": 1,
+              "invent": 1,
+              "customer": 1,
+              "cent": 1,
+              "short": 1,
+              "during": 1,
+              "begin": 1,
+              "realize": 1,
+              "basic": 1,
+              "improve": 1,
+              "development": 1,
+              "believe": 1,
+              "money": 1,
+              "miss": 1,
+              "opportunity": 1,
+              "hall": 1,
+              "linda": 1,
+              "jeffries": 1,
+              "beatrice": 1,
+              "mikulecky": 1,
+              "power": 1,
+              "third": 1,
+              "while": 1,
+              "merit": 1,
+              "sense": 1,
+              "otherwise": 1,
+              "somalia": 1,
+              "land": 1,
+              "mostly": 1,
+              "desert": 1,
+              "compete": 1,
+              "precious": 1,
+              "devote": 1,
+              "address": 1,
+              "ourselves": 1,
+              "environmental": 1,
+              "issue": 1,
+              "fragile": 1,
+              "storage": 1,
+              "manage": 1,
+              "award": 1,
+              "transportation": 1,
+              "system": 1,
+              "benefit": 1,
+              "everyone": 1,
+              "passionate": 1,
+              "dynamic": 1,
+              "exhibit": 1,
+              "contradict": 1,
+              "company": 1,
+              "source": 1,
+              "energy": 1,
+              "initial": 1,
+              "defensive": 1,
+              "distribute": 1,
+              "obvious": 1,
+              "plant": 1,
+              "warm": 1,
+              "humid": 1,
+              "atmosphere": 1,
+              "endeavor": 1,
+              "obstacle": 1,
+              "interfere": 1,
+              "tradition": 1,
+              "volume": 1,
+              "crude": 1,
+              "oil": 1,
+              "import": 1,
+              "decrease": 1,
+              "outcome": 1,
+              "canal": 1,
+              "occur": 1
+            },
+            "idioms": {
+              "a piece of": {
+                "count": 1,
+                "quotes": [
+                  "a piece of furnitures"
+                ]
+              },
+              "a rolling stone gathers no moss": {
+                "count": 1,
+                "quotes": [
+                  "a rolling stone gathers no moss"
+                ]
+              },
+              "account for": {
+                "count": 1,
+                "quotes": [
+                  "account for the usefulness"
+                ]
+              },
+              "address oneself to": {
+                "count": 1,
+                "quotes": [
+                  "address ourselves to the environmental issues"
+                ]
+              },
+              "advice on": {
+                "count": 1,
+                "quotes": [
+                  "advice on ( 22 )"
+                ]
+              },
+              "allow A to do": {
+                "count": 1,
+                "quotes": [
+                  "allowing people who speak different languages to communicate"
+                ]
+              },
+              "all you have to do is": {
+                "count": 1,
+                "quotes": [
+                  "( 17 ) you have to do is live up to your own principles. / All"
+                ]
+              },
+              "among other things": {
+                "count": 1,
+                "quotes": [
+                  "among other things"
+                ]
+              },
+              "among those who": {
+                "count": 1,
+                "quotes": [
+                  "Among 32 who worked on peep shows / those"
+                ]
+              },
+              "apart from": {
+                "count": 1,
+                "quotes": [
+                  "apart from the rest"
+                ]
+              },
+              "arise from": {
+                "count": 1,
+                "quotes": [
+                  "arises from the different grammars"
+                ]
+              },
+              "as a result": {
+                "count": 1,
+                "quotes": [
+                  "As a result"
+                ]
+              },
+              "as a whole": {
+                "count": 1,
+                "quotes": [
+                  "the work as a whole"
+                ]
+              },
+              "as far as ... be concerned": {
+                "count": 1,
+                "quotes": [
+                  "as far as space robots are concerned"
+                ]
+              },
+              "as long as": {
+                "count": 1,
+                "quotes": [
+                  "as long as you make an effort"
+                ]
+              },
+              "as little as": {
+                "count": 1,
+                "quotes": [
+                  "cost as little as a few hundred dollars"
+                ]
+              },
+              "as well": {
+                "count": 1,
+                "quotes": [
+                  "work in space as well"
+                ]
+              },
+              "as well as": {
+                "count": 1,
+                "quotes": [
+                  "as well as cameras"
+                ]
+              },
+              "associate with": {
+                "count": 1,
+                "quotes": [
+                  "not associated with the closest corresponding word"
+                ]
+              },
+              "at a time": {
+                "count": 1,
+                "quotes": [
+                  "one person at a time"
+                ]
+              },
+              "at best": {
+                "count": 1,
+                "quotes": [
+                  "is at best a creative combination"
+                ]
+              },
+              "at the end of": {
+                "count": 1,
+                "quotes": [
+                  "at the end of the 19th century"
+                ]
+              },
+              "be able to": {
+                "count": 1,
+                "quotes": [
+                  "would be able to do these things"
+                ]
+              },
+              "be built like": {
+                "count": 1,
+                "quotes": [
+                  "is built like a chain"
+                ]
+              },
+              "be careful about": {
+                "count": 1,
+                "quotes": [
+                  "need to be really careful about"
+                ]
+              },
+              "be composed of": {
+                "count": 1,
+                "quotes": [
+                  "( 11 ) / composes of (選択肢より)"
+                ]
+              },
+              "be convenient for": {
+                "count": 1,
+                "quotes": [
+                  "if it is convenient for you"
+                ]
+              },
+              "be designed like": {
+                "count": 1,
+                "quotes": [
+                  "designed like a snake"
+                ]
+              },
+              "be hard to do": {
+                "count": 1,
+                "quotes": [
+                  "hard to break"
+                ]
+              },
+              "be in use": {
+                "count": 1,
+                "quotes": [
+                  "were in use in theaters"
+                ]
+              },
+              "be involved in": {
+                "count": 2,
+                "quotes": [
+                  "languages involved",
+                  "did not become involved in this development"
+                ]
+              },
+              "be limited to": {
+                "count": 1,
+                "quotes": [
+                  "is not limited to, rhymes"
+                ]
+              },
+              "be made of": {
+                "count": 2,
+                "quotes": [
+                  "made of about thirty parts",
+                  "made of a special kind of plastic"
+                ]
+              },
+              "be made up of": {
+                "count": 2,
+                "quotes": [
+                  "idioms in one language are made up of simple words",
+                  "( 11 ) / makes up of (選択肢より)"
+                ]
+              },
+              "be surprised at": {
+                "count": 1,
+                "quotes": [
+                  "be surprised at the news"
+                ]
+              },
+              "be uncomfortable with": {
+                "count": 1,
+                "quotes": [
+                  "you're uncomfortable with"
+                ]
+              },
+              "be useful for": {
+                "count": 1,
+                "quotes": [
+                  "are useful for exploring and working"
+                ]
+              },
+              "be willing to": {
+                "count": 1,
+                "quotes": [
+                  "if you'd be willing to give me some advice"
+                ]
+              },
+              "be worried about": {
+                "count": 1,
+                "quotes": [
+                  "I'm worried about making a major faux pas"
+                ]
+              },
+              "because of": {
+                "count": 2,
+                "quotes": [
+                  "because of the different and unique characteristics",
+                  "Because of these problems"
+                ]
+              },
+              "break down": {
+                "count": 1,
+                "quotes": [
+                  "( 9 ) / breaks down (選択肢より)"
+                ]
+              },
+              "by nature": {
+                "count": 1,
+                "quotes": [
+                  "by their very nature"
+                ]
+              },
+              "catch up with": {
+                "count": 1,
+                "quotes": [
+                  "( 12 ) / catch up with (選択肢より)"
+                ]
+              },
+              "charge to": {
+                "count": 1,
+                "quotes": [
+                  "Could you ( 14 ) the meal to my room / charge (選択肢より)"
+                ]
+              },
+              "climb up": {
+                "count": 1,
+                "quotes": [
+                  "climb up different kinds of objects"
+                ]
+              },
+              "come across as": {
+                "count": 1,
+                "quotes": [
+                  "come across as rude or thoughtless"
+                ]
+              },
+              "come up with": {
+                "count": 1,
+                "quotes": [
+                  "( 12 ) / come up with (選択肢より)"
+                ]
+              },
+              "combination of": {
+                "count": 1,
+                "quotes": [
+                  "combination of the author's original work and the translator's skill"
+                ]
+              },
+              "common to": {
+                "count": 1,
+                "quotes": [
+                  "not common to both cultures"
+                ]
+              },
+              "consist of": {
+                "count": 1,
+                "quotes": [
+                  "( 11 ) / consists of (選択肢より)"
+                ]
+              },
+              "considerate to": {
+                "count": 1,
+                "quotes": [
+                  "be ( 10 ) to people / considerate (選択肢より)"
+                ]
+              },
+              "convert from A into B": {
+                "count": 1,
+                "quotes": [
+                  "convert written or spoken words from one language into another"
+                ]
+              },
+              "deal with": {
+                "count": 1,
+                "quotes": [
+                  "deals with scientific subjects"
+                ]
+              },
+              "depend on": {
+                "count": 2,
+                "quotes": [
+                  "depend on its position",
+                  "dependent on word choice"
+                ]
+              },
+              "difference between": {
+                "count": 1,
+                "quotes": [
+                  "the difference between American and British English"
+                ]
+              },
+              "different from": {
+                "count": 3,
+                "quotes": [
+                  "different from the literal meaning",
+                  "different from that of the other",
+                  "different from what each word means"
+                ]
+              },
+              "disapprove of": {
+                "count": 1,
+                "quotes": [
+                  "you disapprove of their culture"
+                ]
+              },
+              "due to": {
+                "count": 1,
+                "quotes": [
+                  "due to word order in English"
+                ]
+              },
+              "end up": {
+                "count": 1,
+                "quotes": [
+                  "would not end up dead"
+                ]
+              },
+              "even if": {
+                "count": 1,
+                "quotes": [
+                  "even if they are willing to do that"
+                ]
+              },
+              "even though": {
+                "count": 1,
+                "quotes": [
+                  "even though both societies use English"
+                ]
+              },
+              "example of": {
+                "count": 1,
+                "quotes": [
+                  "A good example of this is"
+                ]
+              },
+              "fall over": {
+                "count": 1,
+                "quotes": [
+                  "fall over"
+                ]
+              },
+              "find oneself in": {
+                "count": 1,
+                "quotes": [
+                  "finding myself in an unfamiliar situation"
+                ]
+              },
+              "follow someone's lead": {
+                "count": 1,
+                "quotes": [
+                  "follow their lead"
+                ]
+              },
+              "for example": {
+                "count": 2,
+                "quotes": [
+                  "for example, help repair",
+                  "For example, a robot recently sent"
+                ]
+              },
+              "for instance": {
+                "count": 1,
+                "quotes": [
+                  "For instance"
+                ]
+              },
+              "for the purpose": {
+                "count": 1,
+                "quotes": [
+                  "for that purpose"
+                ]
+              },
+              "from one another": {
+                "count": 1,
+                "quotes": [
+                  "different from one another"
+                ]
+              },
+              "from one to another": {
+                "count": 1,
+                "quotes": [
+                  "from one machine to another"
+                ]
+              },
+              "get along": {
+                "count": 1,
+                "quotes": [
+                  "( 9 ) / gets along (選択肢より)"
+                ]
+              },
+              "get into": {
+                "count": 1,
+                "quotes": [
+                  "get into very small spaces"
+                ]
+              },
+              "get stuck": {
+                "count": 1,
+                "quotes": [
+                  "get stuck"
+                ]
+              },
+              "give a name": {
+                "count": 1,
+                "quotes": [
+                  "have been given the name"
+                ]
+              },
+              "go on a trip": {
+                "count": 1,
+                "quotes": [
+                  "go on a business trip"
+                ]
+              },
+              "go well": {
+                "count": 1,
+                "quotes": [
+                  "I want it to go well"
+                ]
+              },
+              "grow out of": {
+                "count": 1,
+                "quotes": [
+                  "It grew out of several earlier forms"
+                ]
+              },
+              "have reason to do": {
+                "count": 1,
+                "quotes": [
+                  "have good ( 13 ) to be surprised / reason (選択肢より)"
+                ]
+              },
+              "help (to) do": {
+                "count": 1,
+                "quotes": [
+                  "help repair the International Space Station"
+                ]
+              },
+              "herein lies": {
+                "count": 1,
+                "quotes": [
+                  "Herein lies the first problem"
+                ]
+              },
+              "how to do": {
+                "count": 1,
+                "quotes": [
+                  "how to behave there"
+                ]
+              },
+              "in order to": {
+                "count": 1,
+                "quotes": [
+                  "in order to make the most accurate translation"
+                ]
+              },
+              "in other words": {
+                "count": 1,
+                "quotes": [
+                  "in other words"
+                ]
+              },
+              "in particular": {
+                "count": 1,
+                "quotes": [
+                  "In particular, [robots have been sent]"
+                ]
+              },
+              "in itself": {
+                "count": 1,
+                "quotes": [
+                  "a robot in itself"
+                ]
+              },
+              "in that": {
+                "count": 2,
+                "quotes": [
+                  "in that abstract ideas do not necessarily have universal meanings",
+                  "in that they all have a small computer"
+                ]
+              },
+              "in the same way": {
+                "count": 1,
+                "quotes": [
+                  "in the same way"
+                ]
+              },
+              "incapable of": {
+                "count": 1,
+                "quotes": [
+                  "is often incapable of maintaining"
+                ]
+              },
+              "including": {
+                "count": 1,
+                "quotes": [
+                  "31 theater / including"
+                ]
+              },
+              "intent of": {
+                "count": 1,
+                "quotes": [
+                  "intent of the author"
+                ]
+              },
+              "interweave into": {
+                "count": 1,
+                "quotes": [
+                  "is especially interwoven* into language itself"
+                ]
+              },
+              "keep one's eyes open": {
+                "count": 1,
+                "quotes": [
+                  "keep your eyes open"
+                ]
+              },
+              "kind of": {
+                "count": 2,
+                "quotes": [
+                  "a new and unusual kind of robot",
+                  "That kind of thing"
+                ]
+              },
+              "lack of": {
+                "count": 5,
+                "quotes": [
+                  "There is a lack of vocabulary equivalence",
+                  "a lack of subtlety or precision",
+                  "a lack of conceptual equivalence",
+                  "show a lack of vocabulary equivalence",
+                  "author's lack of creativity"
+                ]
+              },
+              "let A do": {
+                "count": 2,
+                "quotes": [
+                  "lets me travel overseas more",
+                  "lets it get into very small spaces"
+                ]
+              },
+              "live up to": {
+                "count": 1,
+                "quotes": [
+                  "live up to your own principles"
+                ]
+              },
+              "look at": {
+                "count": 1,
+                "quotes": [
+                  "look at the individual words"
+                ]
+              },
+              "look forward to": {
+                "count": 1,
+                "quotes": [
+                  "I am looking forward to the trip"
+                ]
+              },
+              "look like": {
+                "count": 1,
+                "quotes": [
+                  "have usually looked like a box"
+                ]
+              },
+              "make a living": {
+                "count": 1,
+                "quotes": [
+                  "How Do Translators Make a Living?"
+                ]
+              },
+              "make a mistake": {
+                "count": 2,
+                "quotes": [
+                  "making a major faux pas*",
+                  "making a mistake"
+                ]
+              },
+              "make an effort": {
+                "count": 1,
+                "quotes": [
+                  "make an effort"
+                ]
+              },
+              "make money with": {
+                "count": 1,
+                "quotes": [
+                  "make money with his peep show machines"
+                ]
+              },
+              "make up for": {
+                "count": 1,
+                "quotes": [
+                  "( 12 ) / make up for (選択肢より)"
+                ]
+              },
+              "meaning for": {
+                "count": 1,
+                "quotes": [
+                  "meanings for concepts"
+                ]
+              },
+              "meaning of": {
+                "count": 2,
+                "quotes": [
+                  "meaning of each of its parts",
+                  "the literal meaning of a poem"
+                ]
+              },
+              "more often": {
+                "count": 1,
+                "quotes": [
+                  "More often, it is a poor imitation"
+                ]
+              },
+              "move like": {
+                "count": 1,
+                "quotes": [
+                  "move like snakes"
+                ]
+              },
+              "on one's own": {
+                "count": 1,
+                "quotes": [
+                  "move on their own"
+                ]
+              },
+              "on the other hand": {
+                "count": 1,
+                "quotes": [
+                  "on the other hand"
+                ]
+              },
+              "one thing and another": {
+                "count": 1,
+                "quotes": [
+                  "one thing and another"
+                ]
+              },
+              "over a cup of coffee": {
+                "count": 1,
+                "quotes": [
+                  "( 15 ) a cup of coffee. / over (選択肢より)"
+                ]
+              },
+              "pay attention to": {
+                "count": 1,
+                "quotes": [
+                  "pay attention to what people do"
+                ]
+              },
+              "play a role in": {
+                "count": 1,
+                "quotes": [
+                  "plays an important role in determining"
+                ]
+              },
+              "present a difficulty": {
+                "count": 1,
+                "quotes": [
+                  "presents another difficulty"
+                ]
+              },
+              "problem of": {
+                "count": 1,
+                "quotes": [
+                  "problem of translation"
+                ]
+              },
+              "push one's way": {
+                "count": 1,
+                "quotes": [
+                  "push its way below the ground"
+                ]
+              },
+              "reconnect into": {
+                "count": 1,
+                "quotes": [
+                  "reconnect back into a larger robot"
+                ]
+              },
+              "refer to": {
+                "count": 2,
+                "quotes": [
+                  "they refer to objects or experiences",
+                  "to translate words that refer to objects"
+                ]
+              },
+              "related to": {
+                "count": 1,
+                "quotes": [
+                  "Closely related to this is"
+                ]
+              },
+              "result of": {
+                "count": 1,
+                "quotes": [
+                  "the result of finding myself"
+                ]
+              },
+              "right to": {
+                "count": 3,
+                "quotes": [
+                  "the right to a fair trial",
+                  "the right to speak freely",
+                  "the right to have decent housing"
+                ]
+              },
+              "sensitivity to": {
+                "count": 1,
+                "quotes": [
+                  "sensitivity to the two languages"
+                ]
+              },
+              "set in": {
+                "count": 1,
+                "quotes": [
+                  "( 9 ) / sets in (選択肢より)"
+                ]
+              },
+              "skill in": {
+                "count": 1,
+                "quotes": [
+                  "skill in (...) the two languages"
+                ]
+              },
+              "so-called": {
+                "count": 1,
+                "quotes": [
+                  "so-called \"peep shows.\""
+                ]
+              },
+              "so much of": {
+                "count": 1,
+                "quotes": [
+                  "So much of the rhythm"
+                ]
+              },
+              "source of": {
+                "count": 1,
+                "quotes": [
+                  "source of energy"
+                ]
+              },
+              "speak to": {
+                "count": 1,
+                "quotes": [
+                  "was ( 19 ) a foreign tourist / spoken to by"
+                ]
+              },
+              "stay up": {
+                "count": 1,
+                "quotes": [
+                  "( 12 ) / stay up for (選択肢より)"
+                ]
+              },
+              "still waters run deep": {
+                "count": 1,
+                "quotes": [
+                  "still waters run deep"
+                ]
+              },
+              "such as": {
+                "count": 3,
+                "quotes": [
+                  "such as maroon, lavender",
+                  "such as human rights, freedom, and democracy",
+                  "such as the right to a fair trial"
+                ]
+              },
+              "suffer from": {
+                "count": 1,
+                "quotes": [
+                  "suffer from a lack of subtlety"
+                ]
+              },
+              "take up": {
+                "count": 1,
+                "quotes": [
+                  "( 9 ) / takes up (選択肢より)"
+                ]
+              },
+              "tend to": {
+                "count": 2,
+                "quotes": [
+                  "tends to use similar styles",
+                  "tends to be decreasing"
+                ]
+              },
+              "that of": {
+                "count": 1,
+                "quotes": [
+                  "simpler than that of common robots"
+                ]
+              },
+              "there is no need to do": {
+                "count": 1,
+                "quotes": [
+                  "There's no need to be embarrassed"
+                ]
+              },
+              "translate from A into B": {
+                "count": 1,
+                "quotes": [
+                  "translate a word from one language into another language"
+                ]
+              },
+              "try not to": {
+                "count": 1,
+                "quotes": [
+                  "try not to show it"
+                ]
+              },
+              "turn one's nose up at": {
+                "count": 1,
+                "quotes": [
+                  "don't turn your nose up at food"
+                ]
+              },
+              "unfamiliar with": {
+                "count": 1,
+                "quotes": [
+                  "unfamiliar with the idiom"
+                ]
+              },
+              "volume of": {
+                "count": 1,
+                "quotes": [
+                  "The volume of crude oil import"
+                ]
+              },
+              "what if": {
+                "count": 1,
+                "quotes": [
+                  "what if I do something really unacceptable"
+                ]
+              },
+              "when in Rome, do as the Romans do": {
+                "count": 1,
+                "quotes": [
+                  "when in Rome, do as the Romans do"
+                ]
+              },
+              "without doing": {
+                "count": 1,
+                "quotes": [
+                  "without trying it"
+                ]
+              },
+              "word for word": {
+                "count": 2,
+                "quotes": [
+                  "word-by-word, translation impossible",
+                  "translated word for word"
+                ]
+              },
+              "work apart from": {
+                "count": 1,
+                "quotes": [
+                  "work apart from the rest"
+                ]
+              },
+              "work on": {
+                "count": 2,
+                "quotes": [
+                  "who worked on peep shows",
+                  "work on developing film projectors"
+                ]
+              },
+              "work together": {
+                "count": 1,
+                "quotes": [
+                  "work together"
+                ]
+              }
+            }
           }
         },
         "2020": {
