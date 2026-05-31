@@ -13151,7 +13151,8 @@
         {
           "base_form": "account for",
           "count": 1,
-          "practice_count": 1
+          "practice_count": 2,
+          "correct_count": 1
         },
         {
           "base_form": "address oneself to",
@@ -13162,7 +13163,8 @@
         {
           "base_form": "advice on",
           "count": 1,
-          "practice_count": 1
+          "practice_count": 2,
+          "correct_count": 1
         },
         {
           "base_form": "allow A to do",
@@ -13187,7 +13189,7 @@
         {
           "base_form": "apart from",
           "count": 1,
-          "practice_count": 1
+          "practice_count": 2
         },
         {
           "base_form": "arise from",
@@ -13197,12 +13199,13 @@
         {
           "base_form": "as a result",
           "count": 1,
-          "practice_count": 1
+          "practice_count": 2
         },
         {
           "base_form": "as a whole",
           "count": 1,
-          "practice_count": 1
+          "practice_count": 3,
+          "correct_count": 1
         },
         {
           "base_form": "as far as ... be concerned",
@@ -13212,7 +13215,7 @@
         {
           "base_form": "as long as",
           "count": 1,
-          "practice_count": 1
+          "practice_count": 2
         },
         {
           "base_form": "as little as",
@@ -13232,7 +13235,8 @@
         {
           "base_form": "associate with",
           "count": 1,
-          "practice_count": 0
+          "practice_count": 1,
+          "correct_count": 1
         },
         {
           "base_form": "at a time",
@@ -13242,7 +13246,7 @@
         {
           "base_form": "at best",
           "count": 1,
-          "practice_count": 0
+          "practice_count": 1
         },
         {
           "base_form": "at the end of",
@@ -13257,7 +13261,8 @@
         {
           "base_form": "be built like",
           "count": 1,
-          "practice_count": 0
+          "practice_count": 1,
+          "correct_count": 1
         },
         {
           "base_form": "be careful about",
@@ -13272,7 +13277,8 @@
         {
           "base_form": "be convenient for",
           "count": 1,
-          "practice_count": 0
+          "practice_count": 1,
+          "correct_count": 1
         },
         {
           "base_form": "be designed like",
@@ -13292,7 +13298,8 @@
         {
           "base_form": "be involved in",
           "count": 2,
-          "practice_count": 0
+          "practice_count": 1,
+          "correct_count": 1
         },
         {
           "base_form": "be limited to",
@@ -13302,7 +13309,7 @@
         {
           "base_form": "be made of",
           "count": 2,
-          "practice_count": 0
+          "practice_count": 1
         },
         {
           "base_form": "be made up of",
@@ -13337,12 +13344,14 @@
         {
           "base_form": "because of",
           "count": 2,
-          "practice_count": 0
+          "practice_count": 1,
+          "correct_count": 1
         },
         {
           "base_form": "break down",
           "count": 1,
-          "practice_count": 0
+          "practice_count": 1,
+          "correct_count": 1
         },
         {
           "base_form": "by nature",
@@ -13353,7 +13362,8 @@
         {
           "base_form": "catch up with",
           "count": 1,
-          "practice_count": 0
+          "practice_count": 1,
+          "correct_count": 1
         },
         {
           "base_form": "charge to",
@@ -13398,7 +13408,7 @@
         {
           "base_form": "convert from A into B",
           "count": 1,
-          "practice_count": 0
+          "practice_count": 1
         },
         {
           "base_form": "deal with",
@@ -13433,7 +13443,8 @@
         {
           "base_form": "end up",
           "count": 1,
-          "practice_count": 0
+          "practice_count": 1,
+          "correct_count": 1
         },
         {
           "base_form": "even if",
@@ -13453,12 +13464,13 @@
         {
           "base_form": "fall over",
           "count": 1,
-          "practice_count": 0
+          "practice_count": 2,
+          "correct_count": 2
         },
         {
           "base_form": "find oneself in",
           "count": 1,
-          "practice_count": 0
+          "practice_count": 1
         },
         {
           "base_form": "follow someone's lead",
@@ -13508,7 +13520,8 @@
         {
           "base_form": "give a name",
           "count": 1,
-          "practice_count": 0
+          "practice_count": 2,
+          "correct_count": 2
         },
         {
           "base_form": "go on a trip",
@@ -13518,7 +13531,8 @@
         {
           "base_form": "go well",
           "count": 1,
-          "practice_count": 0
+          "practice_count": 1,
+          "correct_count": 1
         },
         {
           "base_form": "grow out of",
@@ -13548,7 +13562,8 @@
         {
           "base_form": "in order to",
           "count": 1,
-          "practice_count": 0
+          "practice_count": 1,
+          "correct_count": 1
         },
         {
           "base_form": "in other words",
@@ -13589,22 +13604,24 @@
         {
           "base_form": "intent of",
           "count": 1,
-          "practice_count": 0
+          "practice_count": 2,
+          "correct_count": 1
         },
         {
           "base_form": "interweave into",
           "count": 1,
-          "practice_count": 0
+          "practice_count": 2
         },
         {
           "base_form": "keep one's eyes open",
           "count": 1,
-          "practice_count": 0
+          "practice_count": 1,
+          "correct_count": 1
         },
         {
           "base_form": "kind of",
           "count": 2,
-          "practice_count": 1
+          "practice_count": 2
         },
         {
           "base_form": "lack of",
@@ -13640,12 +13657,13 @@
         {
           "base_form": "make a living",
           "count": 1,
-          "practice_count": 0
+          "practice_count": 1
         },
         {
           "base_form": "make a mistake",
           "count": 2,
-          "practice_count": 0
+          "practice_count": 2,
+          "correct_count": 1
         },
         {
           "base_form": "make an effort",
@@ -13670,7 +13688,8 @@
         {
           "base_form": "meaning of",
           "count": 2,
-          "practice_count": 0
+          "practice_count": 1,
+          "correct_count": 1
         },
         {
           "base_form": "more often",
@@ -13705,7 +13724,7 @@
         {
           "base_form": "pay attention to",
           "count": 1,
-          "practice_count": 0
+          "practice_count": 1
         },
         {
           "base_form": "play a role in",
@@ -13735,12 +13754,14 @@
         {
           "base_form": "refer to",
           "count": 2,
-          "practice_count": 0
+          "practice_count": 2,
+          "correct_count": 1
         },
         {
           "base_form": "related to",
           "count": 1,
-          "practice_count": 0
+          "practice_count": 1,
+          "correct_count": 1
         },
         {
           "base_form": "result of",
@@ -13790,7 +13811,7 @@
         {
           "base_form": "stay up",
           "count": 1,
-          "practice_count": 0
+          "practice_count": 1
         },
         {
           "base_form": "still waters run deep",
@@ -13810,7 +13831,8 @@
         {
           "base_form": "take up",
           "count": 1,
-          "practice_count": 0
+          "practice_count": 2,
+          "correct_count": 2
         },
         {
           "base_form": "tend to",
@@ -13846,7 +13868,8 @@
         {
           "base_form": "unfamiliar with",
           "count": 1,
-          "practice_count": 0
+          "practice_count": 1,
+          "correct_count": 1
         },
         {
           "base_form": "volume of",
@@ -13861,7 +13884,7 @@
         {
           "base_form": "when in Rome, do as the Romans do",
           "count": 1,
-          "practice_count": 0
+          "practice_count": 1
         },
         {
           "base_form": "without doing",
@@ -13871,7 +13894,8 @@
         {
           "base_form": "word for word",
           "count": 2,
-          "practice_count": 0
+          "practice_count": 1,
+          "correct_count": 1
         },
         {
           "base_form": "work apart from",
@@ -13881,7 +13905,7 @@
         {
           "base_form": "work on",
           "count": 2,
-          "practice_count": 0
+          "practice_count": 1
         },
         {
           "base_form": "work together",
@@ -14204,5 +14228,185 @@
         }
       ]
     }
-  ]
+  ],
+  "vocab_stats": {
+    "company": {
+      "stability": 0.5,
+      "last_review": 20603.79383727458
+    },
+    "medicine": {
+      "stability": 1.75,
+      "last_review": 20603.7939981316
+    },
+    "plant": {
+      "stability": 1.75,
+      "last_review": 20603.794050275716
+    },
+    "carbon": {
+      "stability": 1.75,
+      "last_review": 20603.79410850648
+    },
+    "lab": {
+      "stability": 1.75,
+      "last_review": 20603.794145161555
+    },
+    "fashion": {
+      "stability": 1.75,
+      "last_review": 20603.794326466264
+    },
+    "algae": {
+      "stability": 1.75,
+      "last_review": 20603.805757343405
+    },
+    "herbal": {
+      "stability": 1.75,
+      "last_review": 20603.805804423675
+    },
+    "climate": {
+      "stability": 1.75,
+      "last_review": 20603.8058467466
+    }
+  },
+  "grammar_stats": {
+    "You can learn a lot about a person's character by (      ) they treat service staff.": {
+      "correct": 1,
+      "incorrect": 0
+    },
+    "If you don't book your flight soon, ( ①be ②are ③sold ④they'll ⑤chances ) out before the holidays.": {
+      "correct": 0,
+      "incorrect": 1
+    }
+  },
+  "exam_records": [
+    {
+      "date": "2026-05-31",
+      "uni": "日本大学",
+      "fac": "文理\\哲",
+      "method": "全学統一N1",
+      "year": "2026",
+      "exam_name": "2026年 日本大学 文理\\哲 全学統一N1",
+      "target_score": 70,
+      "score_in_time": 50,
+      "score_unlimited": 65,
+      "time_limit": 60,
+      "time_taken": 85
+    },
+    {
+      "date": "2026-05-31",
+      "uni": "日本大学",
+      "fac": "文理\\哲",
+      "method": "全学統一N1",
+      "year": "2025",
+      "exam_name": "2025年 日本大学 文理\\哲 全学統一N1",
+      "target_score": 70,
+      "score_in_time": 50,
+      "score_unlimited": 65,
+      "time_limit": 60,
+      "time_taken": 85
+    }
+  ],
+  "saved_review_session": {
+    "name": "25年日本大学文理学部",
+    "text": "以下に、ご指定のPDFファイルから抽出したテキストデータを、問題の構造がわかるように整形したものです。\n\n***\n\n# 2025-N1 英語 試験問題\n\n## I\n\n次の英文(1)~(6)の空所 [ 1 ] ~ [ 6 ] を埋めるのに最も適切なものを、それぞれ下の選択肢①~④から1つずつ選びなさい。\n\n**(1)** If you [ 1 ] across anything suspicious, please report it to the station attendant.\n① would come\n② should come\n③ were coming\n④ had come\n\n**(2)** Our family made a decision [ 2 ] a dog from the shelter.\n① to adopt\n② adopting\n③ from adopting\n④ with adopted\n\n**(3)** The staff requested that everyone in the audience [ 3 ] off their cell phones during the concert.\n① turn\n② turned\n③ would turn\n④ have turned\n\n**(4)** How many [ 4 ] are we allowed to bring on board on international flights?\n① luggage\n② luggages\n③ piece of luggages\n④ pieces of luggage\n\n**(5)** I chose [ 5 ] of the two coats because it's more comfortable to wear.\n① lightest\n② lighter\n③ the lighter\n④ the lightest\n\n**(6)** I can tell he is staying in Japan for the first time by [ 6 ] he behaves.\n① the beginning\n② the way\n③ what\n④ that\n\n## II\n\n次の英文(1)~(6)の空所 [ 7 ] ~ [ 12 ] を埋めるのに最も適切なものを、それぞれ下の選択肢①~④から1つずつ選びなさい。\n\n**(1)** Litter [ 7 ] the ocean scenery, and it negatively affects sea life.\n① spoils\n② misses\n③ suffers\n④ loses\n\n**(2)** As a member, you are welcome to use the club facilities at no extra [ 8 ].\n① tax\n② price\n③ fare\n④ charge\n\n**(3)** It will take a [ 9 ] six hours to get to Tokyo by car.\n① lot\n② far\n③ much\n④ good\n\n**(4)** The steak I had was so [ 10 ] that I couldn't chew it.\n① tough\n② hard\n③ strong\n④ tight\n\n**(5)** We could see little [ 11 ] for negotiation in the meeting.\n① space\n② home\n③ place\n④ room\n\n**(6)** My brother has good [ 12 ] in fashion, so I often rely on him to help me choose my outfits.\n① mood\n② style\n③ taste\n④ preference\n\n## III\n\n次の英文(1)~(6)の空所 [ 13 ] ~ [ 18 ] を埋めるのに最も適切なものを、それぞれ下の選択肢①~④から1つずつ選びなさい。\n\n**(1)** Jenny is driving her mother's car [ 13 ] until she gets her own.\n① at that time\n② in the long run\n③ for the time being\n④ in no time\n\n**(2)** Once you set the password on your account page, you can change it [ 14 ].\n① in advance\n② at will\n③ by degree\n④ in sight\n\n**(3)** Even though Michael has never been to Japan, he is [ 15 ] the language and culture.\n① in honor of\n② at home in\n③ in the light of\n④ at the mercy of\n\n**(4)** Can you [ 16 ] for a second? I need to find a pen to write down your address.\n① hold on\n② hang up\n③ ring off\n④ talk over\n\n**(5)** Our boss [ 17 ] punctuality and expects us to be on time for meetings.\n① gives rise to\n② catches sight of\n③ makes much of\n④ keeps pace with\n\n**(6)** The prime minister doesn't [ 18 ] the possibility of a tax increase within the next five years.\n① result in\n② come about\n③ set up\n④ rule out\n\n## IV\n\n次の英文を読み、空所 [ 19 ] ~ [ 23 ] を埋めるのに文脈上最も適切なものを、それぞれ下の選択肢①~④から1つずつ選びなさい。\n\nLong ago, people lived as hunters and gatherers. Over time, people learned how to grow plants and raise domestic animals. Once this happened, there was a transition to agriculture in many societies. However, even today, there are groups who [ 19 ] farming and continue to hunt animals and gather their own food.\n\nThe Hadza people are a group of hunter-gatherers who live in an isolated part of northern Tanzania. They have lived in the Great Rift Valley for a period of 10,000 years. The Hadza communicate in their own language, called Hadzane.\n\nThe Hadza are not part of the modern economic system of Tanzania. When they are hungry, they can hunt or gather what they need [ 20 ]. The Hadza can make a little money by displaying their hunting skills for tourists. It is an interesting [ 21 ] that although the Hadza have very little, they share a lot. In fact, they share everything they have.\n\nIn the Great Rift Valley, modern farming has spread in recent years, and this development has had [ 22 ] consequences for the Hadza. Their homeland is now only 25 percent of the size it was in the 1950s. Hunting is now more difficult for them as there are fewer animals than before. The Hadza people anticipate that their way of life will [ 23 ] in the near future.\n\n**[ 19 ]**\n① reject\n② promote\n③ possess\n④ conduct\n\n**[ 20 ]**\n① in vain\n② for free\n③ by nature\n④ on duty\n\n**[ 21 ]**\n① contradiction\n② addiction\n③ discrimination\n④ reputation\n\n**[ 22 ]**\n① ideal\n② little\n③ serious\n④ migrant\n\n**[ 23 ]**\n① develop\n② arise\n③ expand\n④ disappear\n\n## V\n\n次の英文を読み、[ 24 ] ~ [ 28 ] の各文を完成させるのに最も適切なものを、それぞれ下の選択肢①~④から1つずつ選びなさい。*の付いた語には [Notes]があります。\n\nThe fashion industry is being forced to evaluate its role in climate change. With evidence pointing towards an impending environmental crisis if carbon dioxide (CO₂) emissions are not curbed, clothing companies are striving to make their products more sustainable. Yet, even so, the amount of waste that comes from global textile production is staggering, with some studies estimating that the industry produces over 1.2 billion tons of carbon dioxide a year. That's more than the annual airline and maritime* shipping emissions combined.\n\nConsidering this predicament, a new term has been proposed to replace the word sustainability: \"climate positivity.\" With sustainability, the aim is to lower the amount of carbon emissions in the manufacturing process, whereas, with climate positivity, the aim is to go beyond reducing the carbon footprint to actually create a benefit to the environment by eliminating carbon dioxide from the atmosphere. The term “climate positivity\" was first introduced by the non-profit organization Slow Factory Foundation because of a perceived lack of clarity coming from many fashion companies about how sustainable their products are. According to the director of the Slow Factory Foundation, \"'Sustainable fashion' is becoming a buzzword, but it doesn't mean anything. Brands are claiming sustainability left and right. And, unfortunately, it's getting trapped at the surface in the marketing department; it's not trickling down deep, deeper into the roots of the problem.\"\n\nSo, what kinds of processes could be considered climate positive? In fact, there are some very interesting developments being made in textile manufacturing that could revolutionize the way clothing is designed. For example, Charlotte McCurdy, a fashion designer from New York, recently designed a raincoat made from algae*. Algae can draw carbon out of the atmosphere, so this raincoat actually cleans the environment as it is worn. Algae is being used by other designers, as well. For instance, Post Carbon Lab, a start-up based in London, has developed a coating of algae that can be applied to fabric. Through photosynthesis*, this coating absorbs carbon dioxide from the atmosphere and emits oxygen. According to the company, one large T-shirt with this coating generates as much oxygen as a six-year-old oak tree. Eventually, it is speculated that this coating could be used on shoes, jackets, backpacks, curtains, and other products. Of course, algae-based clothing needs special care. The clothing is damaged by washing machines, so it needs to be handwashed. Also, algae need light and carbon dioxide to survive, so the clothing should be put in a sunny place.\n\nAnother advancement that could be considered climate positive is the development of leather substitutes. Examples are Pinatex, made from pineapple leaves, Mycotex, made from mushrooms, and Desserto, made from cactus. The leather industry puts a huge strain on the environment, so using plant products, instead, helps create a cleaner atmosphere.\n\nWith such innovations, the fashion industry has the potential to go from being part of the environmental problem to being part of the solution. While the clock is ticking in regard to how much time we have to avert climate change, solutions are being developed that give us reasons to be hopeful.\n\n**[Notes]**\n*   maritime 「海運の」\n*   algae「藻類」\n*   photosynthesis「光合成」\n\n**24.** One problem the author addresses in the beginning is that\n① the fashion industry is usually not blamed for climate change.\n② some clothing companies produce more carbon dioxide than others.\n③ textile production is responsible for a great deal of carbon dioxide emissions.\n④ most clothing companies ship their products by air or sea.\n\n**25.** The aim of climate positivity is to\n① prevent climate change.\n② remove carbon dioxide from the air in order to benefit the environment.\n③ decrease the amount of carbon emissions.\n④ promote sustainability in the manufacturing process.\n\n**26.** The Slow Factory Foundation was\n① aware that many fashion companies wanted to make their products more sustainable.\n② asked to come up with a new term to promote sustainability in the fashion industry.\n③ suspicious about the level of sustainability claimed by many fashion companies.\n④ established by some fashion companies to promote their products under one brand.\n\n**27.** One thing to be careful about regarding algae-based clothing is that\n① algae can only be used for particular types of clothing such as raincoats.\n② it takes time for algae to absorb carbon dioxide and emit oxygen.\n③ it needs to be washed more often than other types of clothing.\n④ light and carbon dioxide are required for algae to stay alive.\n\n**28.** The author mentions leather substitutes to\n① introduce a new way for the fashion industry to save animals and plants in the wild.\n② give an example of one of the efforts to develop environmentally friendly products.\n③ show how everyday foods can be turned into products that last a long time.\n④ emphasize how much harm the fashion industry is causing to the environment.\n\n## VI\n\n次の会話文を読み、[ 29 ] ~ [ 33 ] の各文を完成させるのに最も適切なものを、それぞれ下の選択肢①~④から1つずつ選びなさい。*の付いた語句には [Notes] があります。\n\n**May:** I can't believe that a pharmaceutical* company is going to fund our new science lab.\n**Danny:** Oh, really, they are? That's really great news; we need a new lab.\n**May:** I'm surprised to hear you say that. I think that it's terrible news.\n**Danny:** Why's that? What's important is that we have a good, modern lab with facilities such as IT. The current one is a dinosaur.\n**May:** That may be true, but do you want to look at a company logo every time you walk into the lab?\n**Danny:** Frankly, I don't care. What I want to see is a well-equipped lab, whatever the logo.\n**May:** Give me a break. The fact of the matter is that \"gifts\" like these don't come without strings attached. We know why soda companies sponsor school teams. They do it on the condition that they have the exclusive right to put vending machines in the schools. It increases their sales even though soda doesn't exactly lend itself to healthy living.\n**Danny:** You have a point. But big corporations are not all bad. Some software companies are working with libraries to provide technology and training.\n**May:** Don't get me wrong. I'm not saying they're all bad. But you have to wonder why a company would give all that money for a lab if there wasn't some payback for them. I wouldn't be surprised if a lot of the research we carry out will now be for their benefit. What if we found out things they don't agree with — would they be published?\n**Danny:** Don't be so paranoid. They would have to allow us to be independent.\n**May:** I hate to say this, but I think you're being naive.\n**Danny:** Well, I might be naive, but at least I'll be working in a state-of-the-art lab.\n\n**[Notes]**\n*   pharmaceutical 「製薬の」\n\n**29.** May tells Danny that\n① she has been offered a job at a pharmaceutical company.\n② their science lab will be financially supported by a company.\n③ a new lab is under construction at the facility that they work at.\n④ their science lab will focus on studying dinosaurs from now on.\n\n**30.** May talks about soda companies sponsoring school teams to\n① point out the benefits of working together with commercial companies.\n② argue that many commercial companies only do things that benefit themselves.\n③ claim that schools should be blamed for promoting an unhealthy lifestyle.\n④ explain how vending machines were first introduced to schools.\n\n**31.** Danny and May agree that\n① some companies provide services and support to others without bad intentions.\n② big corporations need to work with researchers in different industries.\n③ software companies are beneficial to society as they provide technology.\n④ using new software is the key to staying up to date with the latest technology.\n\n**32.** Danny thinks that\n① May has a point in saying their lab needs money.\n② May is wrong about their lab being independent.\n③ May will find things that will be for the benefit of others.\n④ May is failing to see the bright side of the news.\n\n**33.** In this conversation, Danny and May\n① figure out a solution to the problem presented in the beginning.\n② come up with different ways to get support for their lab.\n③ express different views on the topic being discussed.\n④ come to an agreement about what they should do in the current situation.\n\n## VII\n\n次の [ 34 ] ~ [ 39 ] の英訳文を完成させるように、( )内の①~⑦を並べかえ,その7つの中で4番目にくる語句の番号を選びなさい。\n\n**34.** ジェシカはどんな状況にいても、いつも自信に満ちているように見える。\nJessica always looks ( ) in.\n(① what ② is ③ no ④ situation ⑤ matter ⑥ confident ⑦ she)\n\n**35.** 兄が私にそんなに怒ったのはなぜだったんだろうか。\nWhat ( ) at me?\n(① my brother ② mad ③ made ④ it ⑤ that ⑥ was ⑦ so)\n\n**36.** エジプトの人口は、ブラジルの約半分です。\nThe population of Egypt ( ) of Brazil.\n(① size ② is ③ about ④ that ⑤ the ⑥ of ⑦ half)\n\n**37.** 初めて日本に来たとき, イギリスと大きく違うところが二つあることに気がついた。\nWhen I first came to Japan, I ( ) the UK.\n(① different ② two ③ from ④ that ⑤ were ⑥ things ⑦ very ⑧ noticed)  \n*(Note: The instruction says 7 words, but the OCR'd text contains 8. Assuming 'from' is outside the parentheses, or 'noticed' is the main verb outside the parentheses based on context.)*\n\n**38.** 念のため、余裕をもって飛行機を予約してください。\nJust in case, don't ( ) your flight.\n(① to ② last ③ until ④ the ⑤ book ⑥ wait ⑦ minute)\n\n**39.** 報道によると、昨夜、二人の強盗が銀行から300万ドル以上を強奪したらしい。\nIt is reported ( ) last night.\n(① robbed ② that ③ of ④ two burglars ⑤ over ⑥ the bank ⑦ three million dollars)\n\n## VIII\n\n次の [ 40 ] ~ [ 45 ] の英文を完成させるように、[ ]内の①~⑤を並べかえ,その5つの中で3番目にくる語句の番号を選びなさい。*の付いた語句には [Notes] があります。\n\nBefore modern science, people [ 40 ] cure all kinds of diseases but also to stay healthy and avoid becoming sick.\n[ ① only ② used ③ not ④ to ⑤ plants ]\nIn the United States, native people used more than 3,000 different plants as medicine. Today, people throughout the world still use plants to improve their health. In fact, many of our modern medicines [ 41 ] plants.\n[ ① that ② come ③ include ④ from ⑤ some things ]\n\nSome of the most popular plants used for health are called herbs. Medicines made with herbs use whole plants or parts of plants, such as the flowers, seeds, roots, leaves, and fruits, to prevent or treat illnesses. Herbal medicines can be eaten in food, drunk as a tea, or applied directly to the skin. In many nations, governments do not recognize herbal medicines. Doctors cannot give them to sick persons. But still, most people in the world — perhaps as many as [ 42 ] — have tried herbal medicine at least once.\n[ ① eight ② ten ③ out ④ every ⑤ of ]\nThere are special stores that sell herbal medicines. In addition, some kinds of herbs are sold in supermarkets and can be used for cooking.\n\nGinseng* is one of the most common herbal medicine plants. It is said to reduce blood pressure [ 43 ].\n[ ① the body ② disease ③ and ④ fight ⑤ help ]\nAnother plant frequently used for its healthy benefits is garlic. Garlic, which is often used in cooking, helps prevent heart disease and colds. Another common cooking plant, ginger, helps cure upset stomachs. Some flowers are thought to be strong herbal medicines. One kind of flower (Echinacea*) may help people who have serious diseases, while another (St. John's wort*) has been shown to help people who are feeling [ 44 ].\n[ ① trouble ② having ③ sleeping ④ or ⑤ sad ]\n\nScientists use many of the natural substances from plants to make different types of modern medicine. But true herbal medicine generally uses the whole plant, not just one part of the plant. Also, herbal medicine will mix several different herbs together in the same medicine. Another difference between herbal medicine and modern medicine is that herbal medicines are made to help a person's whole body — not just to cure a problem in one part of the body.\n\nToday, more and more people are recognizing the value of herbal medicines, and some doctors are even starting to recommend them. But even for those who prefer taking only modern medicine, chances [ 45 ] that medicine comes from plants.\n[ ① that ② least part ③ at ④ of ⑤ are ]\n\n**[Notes]**\n*   ginseng 「チョウセンニンジン」\n*   Echinacea 「ムラサキバレンギク」\n*   St. John's wort 「セイヨウオトギリソウ」",
+    "chat": [
+      {
+        "role": "assistant",
+        "content": "準備完了！さっそく一問ずつ復習していこう。わからないところや、勘違いしていた選択肢について何でも聞いてね。右側のチェックリストは君の自由に使っていいよ！"
+      }
+    ],
+    "questions": [
+      "I (1)",
+      "I (2)",
+      "I (3)",
+      "I (4)",
+      "I (5)",
+      "I (6)",
+      "II (1)",
+      "II (2)",
+      "II (3)",
+      "II (4)",
+      "II (5)",
+      "II (6)",
+      "III (1)",
+      "III (2)",
+      "III (3)",
+      "III (4)",
+      "III (5)",
+      "III (6)",
+      "IV [ 19 ]",
+      "IV [ 20 ]",
+      "IV [ 21 ]",
+      "IV [ 22 ]",
+      "IV [ 23 ]",
+      "V 24",
+      "V 25",
+      "V 26",
+      "V 27",
+      "V 28",
+      "VI 29",
+      "VI 30",
+      "VI 31",
+      "VI 32",
+      "VI 33",
+      "VII 34",
+      "VII 35",
+      "VII 36",
+      "VII 37",
+      "VII 38",
+      "VII 39",
+      "VIII [ 40 ]",
+      "VIII [ 41 ]",
+      "VIII [ 42 ]",
+      "VIII [ 43 ]",
+      "VIII [ 44 ]",
+      "VIII [ 45 ]"
+    ],
+    "checklist": {
+      "I (1)": "🟢 実力で正解",
+      "I (2)": "🟢 実力で正解",
+      "I (3)": "🟡 まぐれ・他選択肢の勘違いあり",
+      "I (4)": "🔴 不正解（知識・精読不足）",
+      "I (5)": "🟢 実力で正解",
+      "I (6)": "🔴 不正解（知識・精読不足）",
+      "II (1)": "🟢 実力で正解",
+      "II (2)": "🟢 実力で正解",
+      "II (3)": "未チェック",
+      "II (4)": "未チェック",
+      "II (5)": "未チェック",
+      "II (6)": "未チェック",
+      "III (1)": "未チェック",
+      "III (2)": "未チェック",
+      "III (3)": "未チェック",
+      "III (4)": "未チェック",
+      "III (5)": "未チェック",
+      "III (6)": "未チェック",
+      "IV [ 19 ]": "未チェック",
+      "IV [ 20 ]": "未チェック",
+      "IV [ 21 ]": "未チェック",
+      "IV [ 22 ]": "未チェック",
+      "IV [ 23 ]": "未チェック",
+      "V 24": "未チェック",
+      "V 25": "未チェック",
+      "V 26": "未チェック",
+      "V 27": "未チェック",
+      "V 28": "未チェック",
+      "VI 29": "未チェック",
+      "VI 30": "未チェック",
+      "VI 31": "未チェック",
+      "VI 32": "未チェック",
+      "VI 33": "未チェック",
+      "VII 34": "未チェック",
+      "VII 35": "未チェック",
+      "VII 36": "未チェック",
+      "VII 37": "未チェック",
+      "VII 38": "未チェック",
+      "VII 39": "未チェック",
+      "VIII [ 40 ]": "未チェック",
+      "VIII [ 41 ]": "未チェック",
+      "VIII [ 42 ]": "未チェック",
+      "VIII [ 43 ]": "未チェック",
+      "VIII [ 44 ]": "未チェック",
+      "VIII [ 45 ]": "未チェック"
+    }
+  }
 }

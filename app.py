@@ -80,7 +80,7 @@ if st.sidebar.button("⏹️ リセット"):
     st.session_state.clear()
     st.rerun()
 
-mode = st.sidebar.radio("モード", ["💬 対話で分析", "☕ 学習の作戦会議", "🏠 マイ教訓ノート", "📖 志望校別単語帳", "🔗 志望校別熟語帳"])
+mode = st.sidebar.radio("モード", ["💬 対話で分析", "☕ 学習の作戦会議", "🏠 マイ教訓ノート", "📖 志望校別単語帳", "🔗 志望校別熟語帳", "📝 志望校別文法・語法ノート", "🏆 過去問演習・合格分析"])
 
 if "messages" not in st.session_state: st.session_state.messages = []
 if "auto_insight" not in st.session_state: st.session_state.auto_insight = ""
@@ -109,6 +109,23 @@ def call_ai(prompt, sys_msg, use_pdf=False, is_json=False, model_name="gemini-2.
     else:
         res = model.generate_content(prompt)
         return res.text
+
+# --- 共通UIコンポーネント（階層型過去問選択） ---
+def render_exam_selector(options_dict, key_prefix):
+    """階層型で過去問を選択するUI。選ばれたラベルのリストを返す"""
+    if not options_dict: return []
+    unis = sorted(list(set([v["u"] for v in options_dict.values()])))
+    sel_u = st.selectbox("1️⃣ 大学を選択", ["-- 選択 --"] + unis, key=f"{key_prefix}_u")
+    if sel_u == "-- 選択 --": return []
+    facs = sorted(list(set([v["f"] for v in options_dict.values() if v["u"] == sel_u])))
+    sel_f = st.selectbox("2️⃣ 学部を選択", ["-- 選択 --"] + facs, key=f"{key_prefix}_f")
+    if sel_f == "-- 選択 --": return []
+    methods = sorted(list(set([v["m"] for v in options_dict.values() if v["u"] == sel_u and v["f"] == sel_f])))
+    sel_m = st.selectbox("3️⃣ 方式を選択", ["-- 選択 --"] + methods, key=f"{key_prefix}_m")
+    if sel_m == "-- 選択 --": return []
+    years = sorted(list(set([v["y"] for v in options_dict.values() if v["u"] == sel_u and v["f"] == sel_f and v["m"] == sel_m])), reverse=True)
+    sel_y_list = st.multiselect("4️⃣ 年度を選択（複数選択可）", years, default=years, key=f"{key_prefix}_y")
+    return [lbl for lbl, d in options_dict.items() if d["u"] == sel_u and d["f"] == sel_f and d["m"] == sel_m and d["y"] in sel_y_list]
 
 # --- 4. メイン画面 ---
 st.title(mode)
@@ -251,22 +268,28 @@ elif mode == "🏠 マイ教訓ノート":
 # ==========================================
 # ★真の完全版 モードD: 志望校別単語帳（本棚 ＋ 任意AIフィルター ＋ シミュレーター）
 # ==========================================
+# ==========================================
+# ★真の完全版 モードD: 志望校別単語帳（本棚 ＋ 任意AIフィルター ＋ シミュレーター）
+# ==========================================
 elif mode == "📖 志望校別単語帳":
     st.markdown("あなた専用の単語帳を作成し、本棚で管理します。")
     
-    if not exam_db:
-        st.warning("過去問データベースが空です。まずは db_manager.py を起動して過去問を登録してください。")
-    else:
-        db_options = {}
+    db_options = {}
+    if exam_db:
         for cat, unis in exam_db.items():
             for uni, facs in unis.items():
                 for fac, years in facs.items():
                     for year, methods in years.items():
-                        for method in methods.keys():
-                            label = f"[{cat}] {uni} {fac} ({year}年 {method})"
-                            db_options[label] = {"c": cat, "u": uni, "f": fac, "y": year, "m": method}
+                        for method, data in methods.items():
+                            if data.get("frequencies"): # 🛡️ 単語データが空のものを除外！
+                                label = f"[{cat}] {uni} {fac} ({year}年 {method})"
+                                db_options[label] = {"c": cat, "u": uni, "f": fac, "y": year, "m": method}
+                                
+    if not db_options:
+        st.warning("単語データが登録された過去問がありません。まずは db_manager.py で過去問を登録してください。")
+    else:
                             
-        tab_shelf, tab_create, tab_sim = st.tabs(["📚 あなたの本棚", "✨ 新しい単語帳を作る", "📊 カバー率・難化シミュレーター"])
+        tab_shelf, tab_output, tab_create, tab_sim = st.tabs(["📚 あなたの本棚", "📤 アウトプット学習", "✨ 新しい単語帳を作る", "📊 カバー率・難化シミュレーター"])
         
         # ------------------------------------------
         # タブ1: 本棚 (保存された単語帳の管理)
@@ -301,7 +324,7 @@ elif mode == "📖 志望校別単語帳":
 
                         st.markdown("---")
                         st.markdown("#### 📈 過去問データを追加して単語帳を強化 (マージ)")
-                        add_labels = st.multiselect("追加したい過去問を選んでください", list(db_options.keys()), key=f"merge_vocab_{book_idx}")
+                        add_labels = render_exam_selector(db_options, f"merge_vocab_{book_idx}")
                         if st.button("✨ 選択したデータを追加 (マージ)", type="primary", key=f"btn_merge_vocab_{book_idx}") and add_labels:
                             with st.spinner("単語データを結合し、頻度を再計算しています..."):
                                 current_counts = Counter(current_book.get("counts", {}))
@@ -377,6 +400,12 @@ elif mode == "📖 志望校別単語帳":
                             save_data(my_data); st.rerun()
                                 
                     st.markdown("---")
+                    
+                    # 🛡️ 安全装置：データにキーが無ければ空リストをセットしてクラッシュを防ぐ
+                    if "enriched_vocab" not in current_book:
+                        current_book["enriched_vocab"] = []
+                    if "skipped_vocab" not in current_book:
+                        current_book["skipped_vocab"] = []
                     
                     # 未生成（差分）の単語をリストアップ
                     enriched_words = [e["word"] for e in current_book["enriched_vocab"]]
@@ -527,33 +556,6 @@ elif mode == "📖 志望校別単語帳":
                                 save_data(my_data); st.success("保存しました！")
                             
                             st.divider()
-                            st.markdown("#### 🎯 実践！穴埋め4択クイズ (Flash-Lite搭載)")
-                            if st.button("✨ この単語でクイズを生成", key=f"quiz_btn_{i}"):
-                                with st.spinner("生成中..."):
-                                    sys_quiz = "英語の予備校講師として、指定された単語の4択穴埋め問題を作成せよ。JSON出力: {\"question\": \"...\", \"options\": [\"...\"], \"answer\": \"...\", \"translation\": \"...\"}"
-                                    try:
-                                        res_quiz = call_ai(f"単語: {word}", sys_quiz, is_json=True, model_name="gemini-3.1-flash-lite")
-                                        st.session_state[f"active_quiz_{i}"] = json.loads(res_quiz)
-                                        st.session_state[f"quiz_answered_{i}"] = False
-                                    except: st.error("失敗しました。")
-                            
-                            if f"active_quiz_{i}" in st.session_state:
-                                quiz_data = st.session_state[f"active_quiz_{i}"]
-                                with st.container(border=True):
-                                    st.markdown(f"**Q.** {quiz_data['question']}")
-                                    user_choice = st.radio("選択:", quiz_data["options"], key=f"choice_{i}", disabled=st.session_state.get(f"quiz_answered_{i}", False))
-                                    if not st.session_state.get(f"quiz_answered_{i}", False):
-                                        if st.button("📝 解答する", key=f"ans_btn_{i}"):
-                                            st.session_state[f"quiz_answered_{i}"] = True; st.rerun()
-                                    if st.session_state.get(f"quiz_answered_{i}", False):
-                                        st.markdown("---")
-                                        if user_choice == quiz_data["answer"]: st.success(f"🎉 正解！ ({quiz_data['answer']})")
-                                        else: st.error(f"❌ 惜しい！ 正解は **{quiz_data['answer']}**")
-                                        st.markdown(f"**💡 和訳:** {quiz_data['translation']}")
-                                        if st.button("🔄 もう一度", key=f"retry_btn_{i}"):
-                                            del st.session_state[f"active_quiz_{i}"]
-                                            del st.session_state[f"quiz_answered_{i}"]; st.rerun()
-
                             st.markdown("#### 📖 例文アシスト")
                             if saved_ex := item.get("saved_examples", []):
                                 st.markdown("**【保存済みの例文】**")
@@ -610,11 +612,180 @@ elif mode == "📖 志望校別単語帳":
                                                     st.success("復活しました！"); st.rerun()
                                             except: st.error("失敗しました。")
 
+
+# ------------------------------------------
+        # タブX: アウトプット学習 (DUQ & ランダム)
+        # ------------------------------------------
+        with tab_output:
+            import time
+            import math
+            
+            st.markdown("### 📤 単語アウトプット学習")
+            st.caption("AI生成済みの単語データを使って、記憶の定着度をテストします。")
+
+            books = my_data.get("vocab_books", [])
+            if not books:
+                st.info("単語帳がありません。")
+            else:
+                book_titles = [b["title"] for b in books]
+                selected_title_out = st.selectbox("📖 テストする単語帳を選択", ["-- 選択してください --"] + book_titles, key="out_vocab_sel")
+
+                if selected_title_out != "-- 選択してください --":
+                    book_idx = book_titles.index(selected_title_out)
+                    current_book = books[book_idx]
+
+                    enriched_dict = {item["word"]: item for item in current_book.get("enriched_vocab", [])}
+                    valid_words = [w for w in current_book["main_vocab"] if w in enriched_dict]
+
+                    if len(valid_words) < 4:
+                        st.warning("クイズを行うには、最低4つの単語をAIで生成（解説を追加）してください。本棚タブから生成できます。")
+                    else:
+                        st.markdown("#### 🎮 出題形式とモード選択")
+                        
+                        # 💡 追加：学習フェーズに合わせて出題形式を選べるトグル
+                        quiz_format = st.radio("出題形式を選んでください:", ["🔘 4択クイズ (ヒントあり・初期学習向け)", "🃏 フラッシュカード (自力で思い出す・総仕上げ向け)"], horizontal=True)
+
+                        col_m1, col_m2 = st.columns(2)
+                        with col_m1:
+                            mode_random = st.button("🎲 リラックス・ランダム\n(プレッシャーなしで気軽に)", use_container_width=True)
+                        with col_m2:
+                            mode_duq = st.button("🧠 DUQ 記憶定着モード\n(忘却曲線をハックして最適化・プレッシャーが嫌いな人は非推奨)", use_container_width=True, type="primary")
+
+                        if mode_random or mode_duq:
+                            st.session_state.vocab_quiz_mode = "DUQ" if mode_duq else "Random"
+                            st.session_state.vocab_quiz_format = "4択" if "4択" in quiz_format else "フラッシュ"
+                            st.session_state.vocab_quiz_idx = 0
+                            st.session_state.vocab_quiz_status = {}
+
+                            # 🎯 出題単語の選定アルゴリズム
+                            if mode_random:
+                                st.session_state.vocab_quiz_qs = random.sample(valid_words, min(20, len(valid_words)))
+                            else:
+                                if "vocab_stats" not in my_data: my_data["vocab_stats"] = {}
+                                now = time.time() / 86400
+                                scores = []
+                                for w in valid_words:
+                                    stats = my_data["vocab_stats"].get(w, {"stability": 0.5, "last_review": 0})
+                                    S = stats["stability"]
+                                    t = now - stats["last_review"] if stats["last_review"] > 0 else 1000
+                                    R = math.exp(-t / S)
+                                    U = 1.0 - R
+                                    scores.append((w, U))
+
+                                scores.sort(key=lambda x: x[1], reverse=True)
+                                st.session_state.vocab_quiz_qs = [w for w, u in scores[:20]]
+
+                            questions = []
+                            for w in st.session_state.vocab_quiz_qs:
+                                correct_meaning = enriched_dict[w].get("meanings", "意味不明")
+                                pool = [enriched_dict[dw].get("meanings", "意味不明") for dw in valid_words if dw != w]
+                                dummies = random.sample(pool, min(3, len(pool)))
+                                options = dummies + [correct_meaning]
+                                random.shuffle(options)
+                                options.append("🤔 わからない")
+                                questions.append({"word": w, "options": options, "answer": correct_meaning})
+
+                            st.session_state.vocab_quiz_data = questions
+                            st.rerun()
+
+                        # --- クイズ実行画面 ---
+                        if "vocab_quiz_data" in st.session_state:
+                            st.markdown("---")
+                            qs = st.session_state.vocab_quiz_data
+                            idx = st.session_state.vocab_quiz_idx
+                            mode_name = st.session_state.vocab_quiz_mode
+                            q_format = st.session_state.vocab_quiz_format
+
+                            if idx < len(qs):
+                                q = qs[idx]
+                                word = q["word"]
+                                st.markdown(f"#### 📝 Question {idx + 1} / {len(qs)} <span style='font-size:0.5em; color:gray;'>({mode_name} / {q_format})</span>", unsafe_allow_html=True)
+
+                                with st.container(border=True):
+                                    st.markdown(f"<div style='text-align: center; font-size: 3em; font-weight: bold; color: #1f77b4; margin-bottom: 20px;'>{word}</div>", unsafe_allow_html=True)
+
+                                    is_answered = str(idx) in st.session_state.vocab_quiz_status
+
+                                    # 💡 出題形式による分岐
+                                    if q_format == "4択":
+                                        user_ans = st.radio("最も適切な意味を選んでください:", q["options"], key=f"vq_{idx}", disabled=is_answered)
+                                        st.markdown("<br>", unsafe_allow_html=True)
+
+                                        if not is_answered:
+                                            if st.button("📝 解答する", key=f"v_ans_{idx}", type="primary", use_container_width=True):
+                                                is_correct = (user_ans == q["answer"])
+                                                st.session_state.vocab_quiz_status[str(idx)] = {"user_ans": user_ans, "is_correct": is_correct}
+                                                st.rerun()
+                                    else:
+                                        # フラッシュカードモード
+                                        if not is_answered:
+                                            st.info("頭の中で「意味」と「使われ方」を思い出してみてください。")
+                                            if st.button("👀 答えと解説を見る", key=f"v_ans_{idx}", type="primary", use_container_width=True):
+                                                # フラッシュカードは正誤判定なし（自己評価に委ねる）
+                                                st.session_state.vocab_quiz_status[str(idx)] = {"user_ans": "確認済み", "is_correct": True}
+                                                st.rerun()
+
+                                    if is_answered:
+                                        status = st.session_state.vocab_quiz_status[str(idx)]
+                                        st.markdown("---")
+                                        
+                                        if q_format == "4択":
+                                            if status["user_ans"] == "🤔 わからない":
+                                                st.warning(f"💡 正解は **{q['answer']}** でした。")
+                                            elif status["is_correct"]:
+                                                st.success(f"⭕ **正解！**")
+                                            else:
+                                                st.error(f"❌ **不正解** : あなたの解答「{status['user_ans']}」 ➔ 正解「{q['answer']}」")
+                                        else:
+                                            st.success(f"💡 正解は **{q['answer']}** です。")
+
+                                        item = enriched_dict[word]
+                                        st.info(f"**🔄 変化形:** {item.get('forms', '-')}\n\n**🎯 使い方:**\n" + "\n".join([f"- {c}" for c in item.get('chunks', [])]))
+
+                                        
+                                        
+                                        if mode_name == "DUQ":
+                                            st.markdown("#### 🧠 今の感覚に一番近いものは？（記憶の定着度を更新します）")
+                                            st.caption("※消去法で当てたなど、自信がない場合は潔く「🔴 わからない・まぐれ」か「🟠 曖昧」を選んでください。")
+                                            col_eval1, col_eval2, col_eval3, col_eval4 = st.columns(4)
+
+                                            def update_stats(w, multiplier):
+                                                if "vocab_stats" not in my_data: my_data["vocab_stats"] = {}
+                                                if w not in my_data["vocab_stats"]: my_data["vocab_stats"][w] = {"stability": 0.5, "last_review": 0}
+                                                
+                                                S = my_data["vocab_stats"][w]["stability"]
+                                                new_S = 0.5 if multiplier == 0 else S * multiplier
+
+                                                my_data["vocab_stats"][w]["stability"] = min(new_S, 365.0) 
+                                                my_data["vocab_stats"][w]["last_review"] = time.time() / 86400
+                                                save_data(my_data)
+                                                st.session_state.vocab_quiz_idx += 1
+                                                st.rerun()
+
+                                            if col_eval1.button("🔴 わからない・まぐれ\n(やり直し)", use_container_width=True): update_stats(word, 0)
+                                            if col_eval2.button("🟠 曖昧\n(少し迷った)", use_container_width=True): update_stats(word, 1.2)
+                                            if col_eval3.button("🟢 正解\n(思い出した)", use_container_width=True): update_stats(word, 2.5)
+                                            if col_eval4.button("🔵 余裕\n(使い方まで即答)", use_container_width=True): update_stats(word, 3.5)
+                                        else:
+                                            # ランダムモードの場合は単純な「次へ」ボタンのみ表示
+                                            st.markdown("<br>", unsafe_allow_html=True)
+                                            if st.button("次の単語へ ▶", use_container_width=True, type="primary"):
+                                                st.session_state.vocab_quiz_idx += 1
+                                                st.rerun()
+
+                            else:
+                                st.success(f"### 🎉 1セット完了！お疲れ様でした。")
+                                if mode_name == "DUQ":
+                                    st.caption("裏側であなたの忘却曲線を更新し、次回の出題優先度を調整しました。")
+                                if st.button("🔄 終了する", use_container_width=True):
+                                    for k in ["vocab_quiz_data", "vocab_quiz_idx", "vocab_quiz_status", "vocab_quiz_mode", "vocab_quiz_format", "vocab_quiz_qs"]:
+                                        if k in st.session_state: del st.session_state[k]
+                                    st.rerun()
         # ------------------------------------------
         # タブ2: 新しい単語帳を作る
         # ------------------------------------------
         with tab_create:
-            selected_labels = st.multiselect("📚 組み合わせたい過去問を選んでください", list(db_options.keys()))
+            selected_labels = render_exam_selector(db_options, "create_vocab")
             use_ai_filter = st.checkbox("🤖 【テスト機能】AIで明らかな「人名」だけを除外する", value=False)
             
             if st.button("✨ 選択した過去問から単語帳を生成") and selected_labels:
@@ -652,8 +823,13 @@ elif mode == "📖 志望校別単語帳":
                     if st.form_submit_button("本棚に保存する") and new_title:
                         if "vocab_books" not in my_data: my_data["vocab_books"] = []
                         new_book = {
-                            "title": new_title, "main_vocab": st.session_state.main_vocab, "excluded_vocab": st.session_state.excluded_vocab,
-                            "counts": dict(st.session_state.combined_counter), "origins": dict(st.session_state.word_origins)
+                            "title": new_title, 
+                            "main_vocab": st.session_state.main_vocab, 
+                            "excluded_vocab": st.session_state.excluded_vocab,
+                            "counts": dict(st.session_state.combined_counter), 
+                            "origins": dict(st.session_state.word_origins),
+                            "enriched_vocab": [],  # ← 最初から空箱を持たせる
+                            "skipped_vocab": []    # ← 最初から空箱を持たせる
                         }
                         my_data["vocab_books"].append(new_book)
                         save_data(my_data)
@@ -688,9 +864,10 @@ elif mode == "📖 志望校別単語帳":
                         for uni, facs in unis.items():
                             for fac, years in facs.items():
                                 for year, methods in years.items():
-                                    for method in methods.keys():
-                                        label = f"[{cat}] {uni} {fac} ({year}年 {method})"
-                                        target_options[label] = {"c": cat, "u": uni, "f": fac, "y": year, "m": method}
+                                    for method, data in methods.items():
+                                        if data.get("idioms"): # 🛡️ 空データ除外
+                                            label = f"[{cat}] {uni} {fac} ({year}年 {method})"
+                                            target_options[label] = {"c": cat, "u": uni, "f": fac, "y": year, "m": method}
                     
                     selected_target = st.selectbox("テストする未知の過去問を選択", ["-- 選択 --"] + list(target_options.keys()))
                 
@@ -833,9 +1010,10 @@ elif mode == "🔗 志望校別熟語帳":
             for uni, facs in unis.items():
                 for fac, years in facs.items():
                     for year, methods in years.items():
-                        for method in methods.keys():
-                            label = f"[{cat}] {uni} {fac} ({year}年 {method})"
-                            db_options[label] = {"c": cat, "u": uni, "f": fac, "y": year, "m": method}
+                        for method, data in methods.items():
+                            if data.get("idioms"): # 🛡️ 熟語データが空のものを除外！
+                                label = f"[{cat}] {uni} {fac} ({year}年 {method})"
+                                db_options[label] = {"c": cat, "u": uni, "f": fac, "y": year, "m": method}
                             
     book_titles = [b["title"] for b in my_data.get("idiom_books", [])]
     
@@ -847,7 +1025,7 @@ elif mode == "🔗 志望校別熟語帳":
         if not exam_db:
             st.warning("過去問データベースが空です。")
         else:
-            selected_labels = st.multiselect("📚 組み合わせたい過去問を選んでください", list(db_options.keys()), key="idiom_multi")
+            selected_labels = render_exam_selector(db_options, "create_idiom")
             new_title = st.text_input("💾 この熟語帳に名前をつける (例: 学習院マスター熟語)")
             
             if st.button("✨ 熟語帳を生成して本棚に保存", type="primary") and selected_labels and new_title:
@@ -903,7 +1081,7 @@ elif mode == "🔗 志望校別熟語帳":
                             
                     st.markdown("---")
                     st.markdown("#### 📈 過去問データを追加して熟語帳を強化 (マージ)")
-                    add_labels = st.multiselect("追加したい過去問を選んでください", list(db_options.keys()), key=f"merge_idiom_{book_idx}")
+                    add_labels = render_exam_selector(db_options, f"merge_idiom_{book_idx}")
                     if st.button("✨ 選択したデータを追加 (マージ)", type="primary", key=f"btn_merge_idiom_{book_idx}") and add_labels:
                         with st.spinner("熟語データを結合し、頻度を再計算しています..."):
                             current_idiom_dict = {i["base_form"]: i for i in current_idiom_book["idioms"]}
@@ -1180,7 +1358,7 @@ elif mode == "🔗 志望校別熟語帳":
                             st.session_state[chat_key].append({"role": "user", "content": user_q}); st.rerun()
 
     # ------------------------------------------
-    # タブ2: インプット用長文
+    # タブ2: インプット用長文（2カラムUI ＆ 漏れ防止プロンプト版）
     # ------------------------------------------
     with tab_input:
         if not my_data["idiom_books"]:
@@ -1193,42 +1371,65 @@ elif mode == "🔗 志望校別熟語帳":
                 book_idx = book_titles.index(selected_title_input)
                 current_idiom_book = my_data["idiom_books"][book_idx]
                 
-                if st.button("📖 新しいインプット長文を生成する（約20〜30秒）"):
+                if st.button("📖 新しいインプット長文を生成する（約10〜20秒）", type="primary"):
                     with st.spinner("熟語を散りばめた長文と詳細な解説を作成中..."):
                         sorted_idioms = sorted(current_idiom_book["idioms"], key=lambda x: x.get("practice_count", 0))
                         target_idioms = [item["base_form"] for item in sorted_idioms[:15]]
+                        
+                        # ⚠️ プロンプトを強化：解説の漏れを防ぐ
                         sys_input = """
-                        あなたはプロ英語講師です。指定された英熟語が全て含まれる300語程度の長文を作成してください。
-                        【絶対ルール】指定熟語以外の単語は、極めて簡単な中学レベル（CEFR A1〜A2）のみを使用すること。「fortress」等の難単語は禁止。
+                        あなたはプロ英語講師です。指定された英熟語が【全て】含まれる150〜200語程度の短い長文を作成してください。
+                        【絶対ルール】
+                        1. 指定熟語以外の単語は、極めて簡単な中学レベル（CEFR A1〜A2）のみを使用すること。「fortress」等の難単語は禁止。
+                        2. 本文中の指定熟語は必ず **太字(Markdown)** で表記すること。
+                        3. 「explanations（解説）」の配列には、今回指定された【すべての熟語】を、長文に登場する順番で【1つも漏らさず】記載すること。
+                        
                         【出力JSON】
                         {
                           "passage": "This is a story... We must **deal with** the problem...",
                           "full_translation": "長文の和訳...",
-                          "explanations": [{"idiom": "deal with", "sentence_used": "...", "explanation": "..."}]
+                          "explanations": [
+                            {"idiom": "deal with", "sentence_used": "We must deal with the problem...", "explanation": "この文脈では「〜に対処する」という意味で使われています。..."}
+                          ]
                         }
                         """
                         try:
-                            res_input = call_ai(f"対象熟語:\n{', '.join(target_idioms)}", sys_input, is_json=True, model_name="gemini-2.5-pro")
+                            # 🚀 モデルを最新の 3.5-flash に固定して高速・高精度化
+                            res_input = call_ai(f"対象熟語（必ずすべて解説すること）:\n{', '.join(target_idioms)}", sys_input, is_json=True, model_name="gemini-3.5-flash")
                             st.session_state.current_input_data = json.loads(res_input)
-                        except Exception as e: st.error(f"生成失敗: {e}")
+                        except Exception as e: 
+                            st.error(f"生成失敗: {e}")
 
                 if "current_input_data" in st.session_state:
                     data = st.session_state.current_input_data
                     st.markdown("---")
-                    st.markdown("#### 📖 Reading Passage (Input)")
-                    with st.container(border=True):
-                        colored_passage = re.sub(r'\*\*(.*?)\*\*', r"<span style='color:#1f77b4; font-weight:bold; font-size:1.05em;'>\1</span>", data['passage'])
-                        st.markdown(f"<div style='line-height: 1.8; font-size: 1.1em;'>{colored_passage}</div>", unsafe_allow_html=True)
-                    st.markdown("#### 👁️ 全訳")
-                    st.info(data["full_translation"])
-                    st.markdown("#### 💡 熟語の文脈解説")
-                    for item in data.get("explanations", []):
-                        with st.expander(f"📌 {item['idiom']}", expanded=False):
-                            st.markdown(f"**使われ方:** {item['sentence_used']}")
-                            st.markdown(f"**解説:** {item['explanation']}")
+                    
+                    # 💡 UIを2カラムに分割！左に長文、右に解説
+                    col_passage, col_explanation = st.columns([3, 2])
+                    
+                    with col_passage:
+                        st.markdown("#### 📖 Reading Passage (Input)")
+                        with st.container(border=True, height=550):
+                            # 太字を青色ハイライトに置換
+                            colored_passage = re.sub(r'\*\*(.*?)\*\*', r"<span style='color:#1f77b4; font-weight:bold; font-size:1.05em;'>\1</span>", data.get('passage', ''))
+                            st.markdown(f"<div style='line-height: 1.8; font-size: 1.1em;'>{colored_passage}</div>", unsafe_allow_html=True)
+                        
+                        with st.expander("👁️ 長文の全訳を確認する"):
+                            st.write(data.get("full_translation", ""))
+
+                    with col_explanation:
+                        st.markdown("#### 💡 熟語の文脈解説")
+                        st.caption("本文に登場した順にすべての熟語を解説しています。")
+                        
+                        # 高さを揃えるコンテナ
+                        with st.container(height=550):
+                            for item in data.get("explanations", []):
+                                with st.expander(f"📌 {item.get('idiom', '')}", expanded=False):
+                                    st.markdown(f"**使われ方:** {item.get('sentence_used', '')}")
+                                    st.markdown(f"**解説:** {item.get('explanation', '')}")
 
     # ------------------------------------------
-    # タブ3: アウトプット
+    # タブ3: アウトプット（難易度固定・重複バグ修正・3.5Flash搭載版）
     # ------------------------------------------
     with tab_output:
         if not my_data["idiom_books"]:
@@ -1241,10 +1442,11 @@ elif mode == "🔗 志望校別熟語帳":
                 book_idx = book_titles.index(selected_title_output)
                 current_idiom_book = my_data["idiom_books"][book_idx]
                 
-                difficulty_level = st.slider("📊 長文自体の難易度を指定 (1:易しい 〜 10:難関大レベル)", min_value=1, max_value=10, value=5)
+                # 💡 難易度スライダーを廃止し、簡単なレベル固定のアナウンスを表示
+                st.info("💡 一番簡単なレベル（中学〜高校基礎）の単語のみを使って、熟語の使い方の確認に集中できる長文テストを生成します。")
                 
-                if st.button("🚀 レベルに応じた長文テストを生成する"):
-                    with st.spinner("AIが論理的な長文と精巧なダミー選択肢を生成しています（約20〜30秒お待ちください）..."):
+                if st.button("🚀 長文穴埋めテストを生成する", type="primary"):
+                    with st.spinner("AIが論理的な長文と精巧なダミー選択肢を生成しています（約10〜20秒お待ちください）..."):
                         target_idioms = []
                         candidates = current_idiom_book["idioms"].copy()
                         for _ in range(min(15, len(candidates))):
@@ -1255,20 +1457,28 @@ elif mode == "🔗 志望校別熟語帳":
                             target_idioms.append(chosen["base_form"])
                             candidates.remove(chosen)
                         
-                        sys_output = f"""
-                        プロ英語講師として、指定熟語が自然に含まれる300〜400語の長文を作成せよ。
-                        【絶対ルール】構成難易度は10段階中【レベル {difficulty_level}】だが、ターゲット以外の周辺単語は絶対に中学〜高校基礎（CEFR A1〜B1）の平易な単語のみに限定すること。
-                        熟語箇所を順番通りに ( 1 ), ( 2 )... と空欄にせよ。
-                        {{
+                        # ⚠️ プロンプトを大幅改良（重複防止と解説の充実化）
+                        sys_output = """
+                        あなたはプロの英語予備校講師です。指定された熟語が自然に含まれる150〜200語程度の短い長文を作成してください。
+                        
+                        【絶対ルール】
+                        1. 長文の難易度は、英語が苦手な高校生向け（中学〜高校基礎、CEFR A1〜A2）に固定し、非常に簡単な単語のみを使用してください。
+                        2. 指定された熟語の箇所を順番通りに ( 1 ), ( 2 )... と空欄にして問題を作成してください。
+                        3. ⚠️【致命的エラー防止】空欄の前後と、正解の選択肢の間で、前置詞などの単語が「重複」しないように絶対確認してください。（悪い例：本文が「( 1 ) him into」で正解が「take into」など。熟語の塊をまるごと空欄に置き換えてください）
+                        4. 「解説 (explanation)」には、「なぜその熟語が入るのか」を文脈から丁寧に説明し、不正解のダミー選択肢がなぜダメなのかも簡単に触れてください。
+                        
+                        【出力JSON形式】
+                        {
                           "passage": "This is a story... We must ( 1 ) the issue...",
                           "questions": [
-                            {{"blank_id": 1, "options": ["deal with", "put off", "bring about", "stand for"], "answer": "deal with", "translation": "問題に対処する。", "explanation": "deal with は〜に対処する。..."}}
+                            {"blank_id": 1, "options": ["deal with", "put off", "bring about", "stand for"], "answer": "deal with", "translation": "問題に対処する。", "explanation": "文脈的に「問題に〜する」となるため、「〜に対処する」という意味の deal with が正解です。put offは「延期する」、bring aboutは「引き起こす」なので文意に合いません。"}
                           ],
                           "full_translation": "全訳..."
-                        }}
+                        }
                         """
                         try:
-                            res_output = call_ai(f"熟語リスト:\n{', '.join(target_idioms)}", sys_output, is_json=True, model_name="gemini-2.5-pro")
+                            # 🚀 モデルを最新の 3.5-flash に固定
+                            res_output = call_ai(f"熟語リスト:\n{', '.join(target_idioms)}", sys_output, is_json=True, model_name="gemini-3.5-flash")
                             st.session_state.current_test_drill = json.loads(res_output)
                             st.session_state.test_q_status = {}
                             st.session_state.current_q_index = 0
@@ -1325,12 +1535,32 @@ elif mode == "🔗 志望校別熟語帳":
                                 if chat_key not in st.session_state.quiz_chat_logs: st.session_state.quiz_chat_logs[chat_key] = []
                                 for msg in st.session_state.quiz_chat_logs[chat_key]:
                                     with st.chat_message(msg["role"]): st.markdown(msg["content"])
+                                
                                 if user_q := st.chat_input("例：他の選択肢の意味をもっと詳しく教えて！", key=f"chat_in_{q_id}"):
                                     st.session_state.quiz_chat_logs[chat_key].append({"role": "user", "content": user_q})
                                     with st.spinner("AI講師が考え中..."):
-                                        sys_chat = f"問題の和訳: {q['translation']}\n正解: {q['answer']}\n生徒の質問に高速かつ簡潔に答えてください。"
+                                        # 🚀 長文全体を読み込ませ、文法機能と同じ「優しく寄り添う」プロンプトに進化
+                                        sys_chat = f"""
+                                        あなたは優しく、生徒に寄り添う英語の伴走講師です。絶対に説教や厳しい口調は避けてください。
+                                        生徒からの熟語の穴埋め問題に関する質問に答えます。
+                                        
+                                        【長文の全体（生徒が読んでいる文脈）】
+                                        {drill_data['passage']}
+                                        
+                                        【対象の問題の和訳と正解】
+                                        和訳: {q['translation']}
+                                        正解の熟語: {q['answer']}
+                                        現在の解説: {q.get('explanation', '')}
+                                        
+                                        【指導のルール】
+                                        1. 難しい文法用語は避け、パズルのように視覚的にカタチを教えてください。
+                                        2. 熟語の丸暗記を強要するのではなく、「なぜその前置詞が使われるのか（例：onは接触のイメージだから…）」など、コアとなるニュアンスを優しく教えてあげてください。
+                                        3. 他の選択肢について聞かれたら、それぞれの意味と、なぜこの文脈に合わないかを分かりやすく説明してください。
+                                        """
                                         history_str = "\n".join([f"{m['role']}: {m['content']}" for m in st.session_state.quiz_chat_logs[chat_key][-4:]])
-                                        ans = call_ai(f"会話:\n{history_str}", sys_chat, use_pdf=False, model_name="gemini-2.5-flash")
+                                        
+                                        # 🚀 モデルを最新の 3.5-flash に固定
+                                        ans = call_ai(f"会話:\n{history_str}", sys_chat, use_pdf=False, model_name="gemini-3.5-flash")
                                         st.session_state.quiz_chat_logs[chat_key].append({"role": "assistant", "content": ans}); st.rerun()
                                 st.markdown("---")
                                 if st.button("次の問題へ ▶", use_container_width=True): st.session_state.current_q_index += 1; st.rerun()
@@ -1491,3 +1721,813 @@ elif mode == "🔗 志望校別熟語帳":
                             
                     if "idiom_analysis_result" in st.session_state:
                         st.info(st.session_state.idiom_analysis_result)
+
+# ==========================================
+# モードF: 志望校別文法・語法ノート
+# ==========================================
+elif mode == "📝 志望校別文法・語法ノート":
+    st.markdown("### 📝 志望校別文法・語法ノート")
+    st.caption("過去問のエッセンスから作られたオリジナルドリルと、実践的な長文精読で文法をマスターします。")
+
+    tab_drill, tab_reading = st.tabs(["📚 過去問オリジナルドリル", "📖 実践！長文精読アシスト"])
+
+    # ------------------------------------------
+    # タブ1: 過去問オリジナルドリル（共通UI適用＆弱点克服アルゴリズム搭載版）
+    # ------------------------------------------
+    with tab_drill:
+        st.markdown("#### 📚 過去問データベースから出題")
+        
+        # 🛡️ 文法データがある過去問だけを抽出
+        db_options_grammar = {}
+        if exam_db:
+            for cat, unis in exam_db.items():
+                for uni, facs in unis.items():
+                    for fac, years in facs.items():
+                        for year, methods in years.items():
+                            for method, data in methods.items():
+                                if data.get("grammar_questions"): # 🛡️ 空データ除外！
+                                    label = f"[{cat}] {uni} {fac} ({year}年 {method})"
+                                    db_options_grammar[label] = {"c": cat, "u": uni, "f": fac, "y": year, "m": method}
+
+        if not db_options_grammar:
+            st.info("文法問題のデータがありません。db_manager.py で過去問から文法を抽出してください。")
+        else:
+            st.markdown("##### 🎯 出題範囲の絞り込み")
+            
+            # ✨ 共通ツールを使ってスッキリ階層化！
+            selected_labels = render_exam_selector(db_options_grammar, "grammar_drill")
+
+            # --- 問題の収集とタグ絞り込み ---
+            base_questions = []
+            if selected_labels:
+                for label in selected_labels:
+                    path = db_options_grammar[label]
+                    qs = exam_db[path["c"]][path["u"]][path["f"]][path["y"]][path["m"]].get("grammar_questions", [])
+                    for q in qs:
+                        q_copy = q.copy()
+                        q_copy["source"] = label
+                        base_questions.append(q_copy)
+            
+            # タグが存在すれば、さらにタグで絞り込めるようにする
+            all_tags = set()
+            for q in base_questions:
+                tags = q.get("primary_tags", [])
+                if isinstance(tags, str): tags = [tags]
+                for t in tags: all_tags.add(t)
+            
+            selected_tag = "-- すべて --"
+            if all_tags:
+                selected_tag = st.selectbox("5️⃣ さらに文法テーマ（タグ）で絞り込む", ["-- すべて --"] + sorted(list(all_tags)))
+
+            # 最終的な出題候補
+            final_candidates = []
+            if selected_tag != "-- すべて --":
+                final_candidates = [q for q in base_questions if selected_tag in q.get("primary_tags", [])]
+            else:
+                final_candidates = base_questions
+
+            if selected_labels:
+                st.write(f"該当する問題数: **{len(final_candidates)} 問**")
+
+            if st.button("🚀 この範囲でドリルを開始する", type="primary") and selected_labels:
+                if not final_candidates:
+                    st.warning("選択した条件に合致する文法データがありません。")
+                else:
+                    # --- 🧠 弱点（不正解）優先アルゴリズム ---
+                    if "grammar_stats" not in my_data: my_data["grammar_stats"] = {}
+                    
+                    weights = []
+                    for q in final_candidates:
+                        q_text = q.get("question", "")
+                        stats = my_data["grammar_stats"].get(q_text, {"correct": 0, "incorrect": 0})
+                        w = max(1.0, 10.0 + (stats["incorrect"] * 5.0) - (stats["correct"] * 2.0))
+                        weights.append(w)
+
+                    sample_size = min(10, len(final_candidates))
+                    selected_qs = []
+                    candidates_pool = list(zip(final_candidates, weights))
+                    for _ in range(sample_size):
+                        total_w = sum(w for q, w in candidates_pool)
+                        r = random.uniform(0, total_w)
+                        upto = 0
+                        for i, (q, w) in enumerate(candidates_pool):
+                            if upto + w >= r:
+                                selected_qs.append(q)
+                                candidates_pool.pop(i)
+                                break
+                            upto += w
+
+                    st.session_state.grammar_drill_qs = selected_qs
+                    st.session_state.grammar_drill_idx = 0
+                    st.session_state.grammar_q_status = {}
+                    st.session_state.grammar_chat_logs = {}
+                    st.rerun()
+
+            # --- ドリル実行画面 ---
+            if "grammar_drill_qs" in st.session_state:
+                qs = st.session_state.grammar_drill_qs
+                idx = st.session_state.get("grammar_drill_idx", 0)
+                
+                st.markdown("---")
+                if idx < len(qs):
+                    q = qs[idx]
+                    st.markdown(f"#### 📝 Question {idx + 1} / {len(qs)}")
+                    st.caption(f"出題元: {q.get('source', '')}")
+                    
+                    with st.container(border=True):
+                        st.markdown(f"**{q.get('question', '')}**")
+                        
+                        # 🛡️ 安全装置: 辞書が存在しない場合は空辞書を作成してエラーを防ぐ
+                        if "grammar_q_status" not in st.session_state:
+                            st.session_state.grammar_q_status = {}
+                            
+                        is_answered = str(idx) in st.session_state.grammar_q_status
+                        user_ans = st.radio("選択してください:", q.get("options", []), key=f"g_choice_{idx}", disabled=is_answered)
+                        
+                        st.markdown("<br>", unsafe_allow_html=True)
+                        if not is_answered:
+                            if st.button("📝 解答して解説を見る", key=f"g_ans_btn_{idx}", type="primary", use_container_width=True):
+                                correct_ans = q.get("answer")
+                                is_correct = (user_ans == correct_ans)
+                                st.session_state.grammar_q_status[str(idx)] = {
+                                    "user_ans": user_ans, 
+                                    "is_correct": is_correct
+                                }
+                                
+                                # 正答・誤答の履歴を保存（次回の出題確率に影響）
+                                q_text = q.get("question", "")
+                                if "grammar_stats" not in my_data: my_data["grammar_stats"] = {}
+                                if q_text not in my_data["grammar_stats"]: my_data["grammar_stats"][q_text] = {"correct": 0, "incorrect": 0}
+                                if is_correct: my_data["grammar_stats"][q_text]["correct"] += 1
+                                else: my_data["grammar_stats"][q_text]["incorrect"] += 1
+                                save_data(my_data)
+                                
+                                st.rerun()
+                        
+                        if is_answered:
+                            status = st.session_state.grammar_q_status[str(idx)]
+                            st.markdown("---")
+                            if status["is_correct"]:
+                                st.success(f"⭕ **正解！** : {q.get('answer')}")
+                            else:
+                                st.error(f"❌ **不正解** : あなたの解答「{status['user_ans']}」 ➔ 正解「{q.get('answer')}」")
+                            
+                            st.info(f"**💡 和訳:** {q.get('translation', '記載なし')}\n\n**📘 解説・背景知識:**\n{q.get('explanation', '記載なし')}")
+                            
+                            if st.button("💾 この文法知識を「マイ教訓ノート」に保存", key=f"g_save_note_{idx}"):
+                                if "grammar" not in my_data: my_data["grammar"] = []
+                                my_data["grammar"].append({"title": "文法ドリルからの教訓", "content": q.get('explanation', ''), "source": q.get('source', '')})
+                                save_data(my_data)
+                                st.success("保存しました！")
+
+                            # --- チャット機能 ---
+                            st.markdown("##### 🤖 この問題についてAI講師に深掘り質問する")
+                            chat_key = f"g_chat_{idx}"
+                            if "grammar_chat_logs" not in st.session_state:
+                                st.session_state.grammar_chat_logs = {}
+                            if chat_key not in st.session_state.grammar_chat_logs:
+                                st.session_state.grammar_chat_logs[chat_key] = []
+                            for msg in st.session_state.grammar_chat_logs[chat_key]:
+                                with st.chat_message(msg["role"]): st.markdown(msg["content"])
+                            if user_q := st.chat_input("例：この動詞の他の用法も教えて", key=f"g_chat_in_{idx}"):
+                                st.session_state.grammar_chat_logs[chat_key].append({"role": "user", "content": user_q})
+                                with st.spinner("AI講師が思考中..."):
+                                    sys_chat = f"問題: {q.get('question', '')}\n和訳: {q.get('translation', '')}\n正解: {q.get('answer', '')}\n解説: {q.get('explanation', '')}\n生徒の質問に簡潔に答えてください。"
+                                    history_str = "\n".join([f"{m['role']}: {m['content']}" for m in st.session_state.grammar_chat_logs[chat_key][-4:]])
+                                    ans = call_ai(f"会話:\n{history_str}", sys_chat, use_pdf=False, model_name="gemini-3.5-flash")
+                                    st.session_state.grammar_chat_logs[chat_key].append({"role": "assistant", "content": ans})
+                                    st.rerun()
+
+                            st.markdown("---")
+                            if st.button("次の問題へ ▶", use_container_width=True):
+                                st.session_state.grammar_drill_idx += 1
+                                st.rerun()
+                else:
+                    # 🛡️ 安全にスコアを集計（存在しない場合は無視する）
+                    status_dict = st.session_state.get("grammar_q_status", {})
+                    score = sum(1 for v in status_dict.values() if v.get("is_correct"))
+                    
+                    st.success(f"### 🎉 ドリル終了！\n**スコア: {score} / {len(qs)}**")
+                    if st.button("🔄 終了する", use_container_width=True):
+                        # 🧹 関連するセッション（裏の記憶）をすべて綺麗に削除
+                        for k in ["grammar_drill_qs", "grammar_drill_idx", "grammar_q_status", "grammar_chat_logs"]:
+                            if k in st.session_state:
+                                del st.session_state[k]
+                        st.rerun()
+   # ------------------------------------------
+    # タブ2: 実践！長文精読アシスト（裏メモリ搭載版）
+    # ------------------------------------------
+    with tab_reading:
+        st.markdown("#### 📖 長文を1文ずつ精読し、実践的に文法を学ぶ")
+        
+        read_method = st.radio("題材となる長文の準備方法", ["🤖 AIにランダム生成してもらう", "📝 自分でテキストを貼り付ける", "📄 過去問PDFから抽出する"], horizontal=True)
+        
+        if read_method == "🤖 AIにランダム生成してもらう":
+            st.info("💡 一番簡単なレベル（中学〜高校基礎）の単語のみを使って、純粋な構文把握に集中できる長文を生成します。")
+            if st.button("✨ ランダムなテーマで長文を生成する", type="primary"):
+                with st.spinner("AIがランダムなテーマで長文を書き下ろしています..."):
+                    sys_gen_read = "難易度 CEFR A1〜A2 (中学〜高校基礎レベル) で、英語が苦手な高校生が基本構文を学ぶのに適した論理的な英語長文（150〜200語程度）を作成してください。テーマは毎回ランダムに。英語の本文のみを出力し、タイトルや改行は含めないでください。"
+                    st.session_state.reading_target_text = call_ai("ランダムなテーマで長文を作成してください。", sys_gen_read, use_pdf=False, model_name="gemini-3.5-flash")
+                    st.session_state.reading_sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', st.session_state.reading_target_text.replace('\n', ' ')) if s.strip()]
+                    st.session_state.reading_current_idx = 0
+                    st.session_state.reading_chat_sentence_idx = -1 
+                    st.session_state.temp_memo = []
+                    st.session_state.show_word_selector = False
+                    st.session_state.reading_global_memory = "" # 🚀 ここに裏メモリを初期化
+                    st.rerun()
+                    
+        elif read_method == "📝 自分でテキストを貼り付ける":
+            pasted = st.text_area("英語の長文を貼り付けてください", height=150)
+            if st.button("✅ このテキストで精読を始める", type="primary") and pasted:
+                st.session_state.reading_target_text = pasted
+                st.session_state.reading_sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', pasted.replace('\n', ' ')) if s.strip()]
+                st.session_state.reading_current_idx = 0
+                st.session_state.reading_chat_sentence_idx = -1
+                st.session_state.temp_memo = []
+                st.session_state.show_word_selector = False
+                st.session_state.reading_global_memory = "" # 🚀 ここに裏メモリを初期化
+                st.rerun()
+                
+        elif read_method == "📄 過去問PDFから抽出する":
+            up_pdf = st.file_uploader("PDFをアップロード", type=["pdf"], key="reading_pdf")
+            if st.button("🚀 PDFから長文を抽出する", type="primary") and up_pdf:
+                with st.spinner("AIがPDFから長文部分だけを抽出しています..."):
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+                        tmp.write(up_pdf.getvalue())
+                        tmp_path = tmp.name
+                    g_file = genai.upload_file(tmp_path)
+                    model = genai.GenerativeModel(model_name="gemini-3.5-flash")
+                    res = model.generate_content([g_file, "このPDFから英語の長文（本文）部分のみを抽出して出力してください。設問、選択肢、日本語の指示文は完全に除外してください。改行は極力なくしてください。"])
+                    os.remove(tmp_path)
+                    st.session_state.reading_target_text = res.text
+                    st.session_state.reading_sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', res.text.replace('\n', ' ')) if s.strip()]
+                    st.session_state.reading_current_idx = 0
+                    st.session_state.reading_chat_sentence_idx = -1
+                    st.session_state.temp_memo = []
+                    st.session_state.show_word_selector = False
+                    st.session_state.reading_global_memory = "" # 🚀 ここに裏メモリを初期化
+                    st.rerun()
+
+        # 精読エリア
+        if st.session_state.get("reading_target_text"):
+            st.markdown("---")
+            col_read, col_chat = st.columns([1, 1])
+            
+            sentences = st.session_state.get("reading_sentences", [])
+            idx = st.session_state.get("reading_current_idx", 0)
+            
+            with col_read:
+                st.markdown("##### 📄 全体マップ")
+                with st.container(border=True, height=500):
+                    display_html = ""
+                    for i, s in enumerate(sentences):
+                        if i == idx:
+                            display_html += f"<span style='background-color: #ffeb3b; color: black; font-weight: bold; padding: 2px 4px; border-radius: 3px;'>{s}</span> "
+                        else:
+                            display_html += f"<span style='color: gray;'>{s}</span> "
+                    st.markdown(f"<div style='line-height:1.8; font-size:1.1em;'>{display_html}</div>", unsafe_allow_html=True)
+                
+                if st.button("🗑️ 長文をクリアして別のものを読む", use_container_width=True):
+                    for k in ["reading_target_text", "reading_sentences", "reading_current_idx", "reading_chat_logs", "reading_chat_sentence_idx", "temp_memo", "show_word_selector", "reading_global_memory"]:
+                        if k in st.session_state: del st.session_state[k]
+                    st.rerun()
+
+            with col_chat:
+                if idx < len(sentences):
+                    current_sentence = sentences[idx]
+                    st.markdown(f"##### 🎯 現在のターゲット ({idx+1}/{len(sentences)})")
+                    st.info(f"**{current_sentence}**")
+                    
+                    if st.session_state.get("reading_chat_sentence_idx") != idx:
+                        st.session_state.reading_chat_sentence_idx = idx
+                        st.session_state.reading_chat_logs = [
+                            {"role": "assistant", "content": "まずはこの文の**和訳**に挑戦してみて！間違えても全然大丈夫、一緒にどこが難しかったか考えていこうね。"}
+                        ]
+                        st.session_state.show_word_selector = False
+                        st.session_state.temp_memo = []
+
+                    st.markdown("##### 🤖 和訳チャレンジ＆伴走チャット")
+                    with st.container(border=True, height=450):
+                        for msg in st.session_state.reading_chat_logs:
+                            with st.chat_message(msg["role"]): st.markdown(msg["content"])
+                    
+                    if user_req := st.chat_input("和訳を入力、または質問する...", key="reading_chat"):
+                        st.session_state.reading_chat_logs.append({"role": "user", "content": user_req})
+                        with st.spinner("AI講師が優しく添削中..."):
+                            sys_reading = f"""
+                            あなたは優しく、生徒に寄り添う英語の伴走講師です。スパルタや説教は絶対にやめてください。
+                            
+                            【これまでの長文全体の対話履歴（あなたはこれを記憶しています）】
+                            {st.session_state.get('reading_global_memory', 'まだありません')}
+
+                            【現在のターゲット文】
+                            {current_sentence}
+                            
+                            【指導のルール（A1〜A2レベル向け）】
+                            1. 難しい文法用語は避け、【英語の構文ルール（カタチ・公式）】をパズルのように視覚的に教えてください。
+                            2. 以前の文で登場した話題（裏メモリ参照）と関連があれば、「前の文でも出てきたね」と触れてあげると生徒は喜びます。
+                            3. 生徒が「わからない」と言った場合は、いきなり全訳を教えず、構文のカタチを先に示し、そこに単語を当てはめさせるヒントを出してください。
+                            """
+                            history_str = "\n".join([f"{m['role']}: {m['content']}" for m in st.session_state.reading_chat_logs[-4:]])
+                            ans = call_ai(f"直近の会話:\n{history_str}", sys_reading, use_pdf=False, model_name="gemini-3.5-flash")
+                            st.session_state.reading_chat_logs.append({"role": "assistant", "content": ans})
+                            st.rerun()
+
+                    st.markdown("---")
+                    
+                    col_btn1, col_btn2 = st.columns(2)
+                    if col_btn1.button("❓ わからない単語・熟語がある", use_container_width=True):
+                        st.session_state.show_word_selector = not st.session_state.get("show_word_selector", False)
+                        st.rerun()
+                        
+                    if col_btn2.button("⏭️ 完璧！スキップして次へ", use_container_width=True, type="primary"):
+                        # 🚀 次の文へ行く前に、今の会話を裏メモリに退避させて記憶させる
+                        current_chat = "\n".join([f"{m['role']}: {m['content']}" for m in st.session_state.reading_chat_logs if m['role'] == 'user' or m['role'] == 'assistant'])
+                        st.session_state.reading_global_memory += f"\n【文 {idx+1}: {current_sentence} の対話】\n{current_chat}\n"
+                        
+                        st.session_state.reading_current_idx += 1
+                        st.rerun()
+
+                    # 単語・熟語検索モード
+                    if st.session_state.get("show_word_selector"):
+                        st.markdown("###### 👆 調べたい単語をクリック、または熟語を検索！")
+                        words = [w for w in re.findall(r"\b[a-zA-Z\-']+\b", current_sentence)]
+                        cols = st.columns(6)
+                        for i, w in enumerate(words):
+                            if cols[i % 6].button(w, key=f"wbtn_{i}_{idx}"):
+                                with st.spinner(f"「{w}」の意味を検索中..."):
+                                    sys_dict = "あなたは辞書です。指定された単語の、この文脈における意味を簡潔に（10文字以内で）答えてください。"
+                                    meaning = call_ai(f"文脈: {current_sentence}\n単語: {w}", sys_dict, use_pdf=False, model_name="gemini-3.5-flash")
+                                    st.session_state.temp_memo.append({"word": w, "meaning": meaning.strip()})
+                                    st.rerun()
+                        
+                        st.markdown("<br>", unsafe_allow_html=True)
+                        col_idiom1, col_idiom2 = st.columns([3, 1])
+                        search_idiom = col_idiom1.text_input("熟語・フレーズの検索", label_visibility="collapsed", placeholder="調べたい熟語を入力 (例: take care of)")
+                        if col_idiom2.button("🔍 検索", key=f"search_idiom_btn_{idx}", use_container_width=True):
+                            if search_idiom:
+                                with st.spinner("検索中..."):
+                                    sys_dict = "あなたは辞書です。指定された熟語・フレーズの、この文脈における意味を簡潔に答えてください。"
+                                    meaning = call_ai(f"文脈: {current_sentence}\n熟語: {search_idiom}", sys_dict, use_pdf=False, model_name="gemini-3.5-flash")
+                                    st.session_state.temp_memo.append({"word": search_idiom, "meaning": meaning.strip()})
+                                    st.rerun()
+                                    
+                    # 一時メモ表示
+                    if st.session_state.get("temp_memo"):
+                        st.markdown("###### 📝 単語・熟語の一時メモ")
+                        with st.container(border=True):
+                            for m in st.session_state.temp_memo:
+                                st.markdown(f"- **{m['word']}**: {m['meaning']}")
+
+                    st.markdown("---")
+                    st.markdown("##### 💡 学びをストック")
+                    with st.form("reading_memo_form", clear_on_submit=True):
+                        note_title = st.text_input("📝 項目名（例：関係副詞whereの非制限用法）")
+                        note_content = st.text_area("意味・ルール（AIの解説や単語メモを保存）", height=80)
+                        if st.form_submit_button("🏠 マイ教訓ノート(文法)に保存", type="primary"):
+                            if note_title and note_content:
+                                if "grammar" not in my_data: my_data["grammar"] = []
+                                my_data["grammar"].append({"title": note_title, "content": note_content, "source": "長文精読アシスト"})
+                                save_data(my_data)
+                                st.success(f"教訓ノートに保存しました！")
+                            else:
+                                st.error("項目名とルールの両方を入力してください。")
+                                
+                    with st.expander("📔 学習途中にマイ教訓ノートを参照する"):
+                        if my_data.get("grammar"):
+                            for item in my_data["grammar"]:
+                                st.markdown(f"**{item['title']}**\n> {item['content']}")
+                        else:
+                            st.info("ノートはまだ空です。")
+
+                else:
+                    st.success("🎉 全ての文の精読が完了しました！お疲れ様でした。")
+                    if st.button("🔄 長文をクリアする", use_container_width=True):
+                        for k in ["reading_target_text", "reading_sentences", "reading_current_idx", "reading_chat_logs", "reading_chat_sentence_idx", "temp_memo", "show_word_selector", "reading_global_memory"]:
+                            if k in st.session_state: del st.session_state[k]
+                        st.rerun()
+
+# ==========================================
+# ★最終章 モードG: 過去問演習・合格分析（長文＋スコア管理＋コンパス）
+# ==========================================
+elif mode == "🏆 過去問演習・合格分析":
+    import time
+    
+    st.markdown("### 🏆 過去問演習・合格分析")
+    st.caption("表面的なスピードではなく、「知識の解像度」と「時間の使い方」を多角的に分析し、合格最低点を超えるための最終ダッシュボードです。")
+
+    if "exam_records" not in my_data:
+        my_data["exam_records"] = []
+
+    tab_score, tab_deep, tab_compass = st.tabs(["📊 時間＆戦績データ管理", "🧠 全問ディープ分析＆オウトプシー", "🧭 総合戦略コンパス (全データ連携)"])
+
+    # ------------------------------------------
+    # タブ1: 時間＆戦績データ管理
+    # ------------------------------------------
+    with tab_score:
+        st.markdown("#### 📝 過去問のスコアとタイムを記録")
+        st.info("まずは「時間内」「時間無制限」の得点を記録し、後からディープ分析を経て判明した「実力点」や「期待値得点」を編集・追加できます。")
+        
+        # --- 階層データツリーの構築 ---
+        tree = {}
+        if exam_db:
+            for cat, unis in exam_db.items():
+                for u, facs in unis.items():
+                    if u not in tree: tree[u] = {}
+                    for f, years in facs.items():
+                        if f not in tree[u]: tree[u][f] = {}
+                        for y, methods in years.items():
+                            y_str = str(y)
+                            if y_str not in tree[u][f]: tree[u][f][y_str] = []
+                            for m in methods.keys():
+                                if m not in tree[u][f][y_str]: tree[u][f][y_str].append(m)
+        
+        for r in my_data.get("exam_records", []):
+            u, f, m, y = r.get("uni"), r.get("fac"), r.get("method"), str(r.get("year", ""))
+            if u and f and m and y:
+                if u not in tree: tree[u] = {}
+                if f not in tree[u]: tree[u][f] = {}
+                if y not in tree[u][f]: tree[u][f][y] = []
+                if m not in tree[u][f][y]: tree[u][f][y].append(m)
+
+        # --- カスケード選択 UI ---
+        st.markdown("##### 📍 受験した過去問の指定")
+        col_u, col_f, col_m, col_y = st.columns(4)
+        
+        with col_u:
+            uni_opts = ["-- 選択/新規 --"] + sorted(list(tree.keys()))
+            sel_u = st.selectbox("1️⃣ 大学", uni_opts, key="rec_u")
+            input_uni = st.text_input("大学名を入力", key="in_u") if sel_u == "-- 選択/新規 --" else sel_u
+
+        with col_f:
+            fac_opts = ["-- 選択/新規 --"]
+            if sel_u in tree: fac_opts += sorted(list(tree[sel_u].keys()))
+            sel_f = st.selectbox("2️⃣ 学部", fac_opts, key="rec_f")
+            input_fac = st.text_input("学部を入力", key="in_f") if sel_f == "-- 選択/新規 --" else sel_f
+
+        with col_m:
+            method_opts = ["-- 選択/新規 --"]
+            if sel_u in tree and sel_f in tree[sel_u]: 
+                all_m = set()
+                for y_dict in tree[sel_u][sel_f].values(): all_m.update(y_dict)
+                method_opts += sorted(list(all_m))
+            sel_m = st.selectbox("3️⃣ 方式", method_opts, key="rec_m")
+            input_method = st.text_input("方式を入力", key="in_m") if sel_m == "-- 選択/新規 --" else sel_m
+
+        with col_y:
+            year_opts = ["-- 選択/新規 --"]
+            if sel_u in tree and sel_f in tree[sel_u]:
+                if sel_m != "-- 選択/新規 --":
+                    valid_years = [y for y, m_list in tree[sel_u][sel_f].items() if sel_m in m_list]
+                    year_opts += sorted(valid_years, reverse=True)
+                else:
+                    year_opts += sorted(list(tree[sel_u][sel_f].keys()), reverse=True)
+            sel_y = st.selectbox("4️⃣ 年度", year_opts, key="rec_y")
+            input_year = st.text_input("年度を入力 (例: 2025)", key="in_y") if sel_y == "-- 選択/新規 --" else sel_y
+
+        st.markdown("##### 📊 スコアとタイムの入力")
+        with st.container(border=True):
+            col_s1, col_s2, col_s3 = st.columns(3)
+            target_score = col_s1.number_input("合格最低点(目標)", min_value=0, max_value=1000, value=70, key="rec_ts")
+            score_in_time = col_s2.number_input("制限時間内の得点", min_value=0, max_value=1000, value=50, key="rec_st")
+            score_unlimited = col_s3.number_input("時間無制限での得点", min_value=0, max_value=1000, value=65, key="rec_su")
+            
+            st.caption("※分析後に判明した「実力点」「期待値得点」は、保存後に履歴から編集・追加できます。")
+            
+            col_t1, col_t2 = st.columns(2)
+            time_limit = col_t1.number_input("制限時間（分）", min_value=1, max_value=300, value=60, key="rec_tl")
+            time_taken = col_t2.number_input("完答までにかかった総時間（分）", min_value=1, max_value=500, value=85, key="rec_tt")
+            
+        if st.button("💾 戦績とタイムを初記録する", type="primary", use_container_width=True):
+            if input_uni and input_fac and input_method and input_year:
+                exam_name = f"{input_year}年 {input_uni} {input_fac} {input_method}"
+                my_data["exam_records"].append({
+                    "date": time.strftime("%Y-%m-%d"),
+                    "uni": input_uni,
+                    "fac": input_fac,
+                    "method": input_method,
+                    "year": input_year,
+                    "exam_name": exam_name,
+                    "target_score": target_score,
+                    "score_in_time": score_in_time,
+                    "score_unlimited": score_unlimited,
+                    "time_limit": time_limit,
+                    "time_taken": time_taken,
+                    "true_score": 0, # 初期値
+                    "expected_score": 0 # 初期値
+                })
+                save_data(my_data)
+                st.success("記録しました！")
+                st.rerun()
+            else:
+                st.error("大学・学部・方式・年度をすべて入力してください。")
+
+        st.divider()
+        st.markdown("#### 📈 あなたの戦績履歴 ＆ 分析後データ追記")
+        if not my_data["exam_records"]:
+            st.info("まだ記録がありません。過去問を解いたらデータを記録しましょう。")
+        else:
+            recorded_unis = set([r.get("uni", "その他 (旧データ)") for r in my_data["exam_records"]])
+            filter_uni = st.selectbox("🏫 表示する大学を絞り込む", ["-- すべての大学 --"] + sorted(list(recorded_unis)))
+            
+            filtered_records = []
+            for i, r in enumerate(my_data["exam_records"]):
+                r_with_idx = r.copy()
+                r_with_idx["_orig_idx"] = i 
+                if filter_uni == "-- すべての大学 --" or r.get("uni", "その他 (旧データ)") == filter_uni:
+                    filtered_records.append(r_with_idx)
+                    
+            if not filtered_records:
+                st.info("指定された大学の記録はありません。")
+            else:
+                filtered_records.sort(key=lambda x: str(x.get("year", "0")), reverse=True)
+                
+            for record in filtered_records:
+                s_in_time = record.get('score_in_time', record.get('actual_score', 0))
+                s_unlim = record.get('score_unlimited', s_in_time)
+                t_limit = record.get('time_limit', 0)
+                t_taken = record.get('time_taken', 0)
+                
+                # 新指標
+                true_score = record.get('true_score', 0)
+                expected_score = record.get('expected_score', 0)
+                
+                gap_time = s_in_time - record.get('target_score', 0)
+                knowledge_gap = s_unlim - s_in_time
+                time_over = t_taken - t_limit
+                
+                with st.container(border=True):
+                    st.markdown(f"**{record.get('exam_name', '名称不明')}** <span style='color:gray; font-size:0.8em;'>({record.get('date', '')})</span>", unsafe_allow_html=True)
+                    
+                    c1, c2, c3, c4 = st.columns(4)
+                    c1.metric("時間内得点 (目標)", f"{s_in_time}点", f"{gap_time}点", delta_color="normal" if gap_time >= 0 else "inverse")
+                    c2.metric("無制限得点 (純粋力)", f"{s_unlim}点", f"+{knowledge_gap}点 (時間外)", delta_color="off")
+                    c3.metric("かかった時間", f"{t_taken}分", f"{time_over}分オーバー" if time_over > 0 else f"{abs(time_over)}分余り", delta_color="inverse" if time_over > 0 else "normal")
+                    
+                    # 💡 ディープ分析後の「真の実力」を表示
+                    st.markdown("<div style='margin-top:10px;'></div>", unsafe_allow_html=True)
+                    ce1, ce2, ce3 = st.columns([1, 1, 2])
+                    ce1.metric("🟢 実力点", f"{true_score}点", help="まぐれを排除し、根拠を持って正解できた点数")
+                    ce2.metric("🟡 期待値得点", f"{expected_score}点", help="絞り込めた選択肢から確率論的に算出した期待値（例：2択まで絞れた問題×0.5）")
+                    
+                    with st.expander("✏️ ディープ分析後の実力点・期待値を編集"):
+                        with st.form(f"edit_form_{record['_orig_idx']}"):
+                            st.caption("分析タブでまぐれを排除した後の「実力点」や、選択肢を絞り込んだことによる「期待値得点」を記録します。")
+                            col_e1, col_e2 = st.columns(2)
+                            new_true = col_e1.number_input("実力点", value=true_score, min_value=0, max_value=1000)
+                            new_exp = col_e2.number_input("期待値得点", value=expected_score, min_value=0, max_value=1000)
+                            
+                            col_f1, col_f2 = st.columns(2)
+                            if col_f1.form_submit_button("更新する"):
+                                my_data["exam_records"][record['_orig_idx']]["true_score"] = new_true
+                                my_data["exam_records"][record['_orig_idx']]["expected_score"] = new_exp
+                                save_data(my_data)
+                                st.success("更新しました！"); st.rerun()
+                            
+                            if col_f2.form_submit_button("🗑️ この戦績ごと削除"):
+                                my_data["exam_records"].pop(record['_orig_idx'])
+                                save_data(my_data); st.rerun()
+
+    # ------------------------------------------
+    # タブ2: 全問ディープ分析＆総合戦略 (インタラクティブ＆チェックリスト搭載版)
+    # ------------------------------------------
+    with tab_deep:
+        st.markdown("#### 🧠 全問ディープ・オウトプシー（死因究明）")
+        st.caption("AIと対話して「なぜ間違えたか」「何が足りないか」を解剖しつつ、右側のチェックリストで正直な自分の『実力』を記録します。")
+        
+        # --- 中断データの復元 ---
+        if "saved_review_session" in my_data and my_data["saved_review_session"]:
+            st.info("💾 中断されたレビューセッションがあります。")
+            col_res1, col_res2 = st.columns([1, 3])
+            if col_res1.button("🔄 前回から再開する", type="primary", use_container_width=True):
+                saved = my_data["saved_review_session"]
+                st.session_state.exam_review_text = saved["text"]
+                st.session_state.exam_review_chat = saved["chat"]
+                st.session_state.exam_review_questions = saved["questions"]
+                st.session_state.exam_review_checklist = saved["checklist"]
+                st.session_state.exam_review_name = saved.get("name", "過去問")
+                st.rerun()
+            if col_res2.button("🗑️ 中断データを破棄する"):
+                my_data["saved_review_session"] = {}
+                save_data(my_data)
+                st.rerun()
+
+        # --- PDF抽出関数 ---
+        def extract_exam_text_for_review(uploaded_file):
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+                tmp.write(uploaded_file.getvalue())
+                tmp_path = tmp.name
+            try:
+                g_file = genai.upload_file(tmp_path)
+                model = genai.GenerativeModel(model_name="gemini-2.5-pro")
+                prompt = "このPDF（英語の過去問）から、長文、設問、選択肢などのテキストデータをすべて抽出してください。不要なレイアウト情報は省き、問題の構造がわかるように綺麗にテキスト化してください。"
+                res = model.generate_content([g_file, prompt])
+                return res.text
+            finally:
+                os.remove(tmp_path)
+
+        # 1️⃣ PDFアップロードと抽出フェーズ
+        if "exam_review_text" not in st.session_state and "draft_review_text" not in st.session_state:
+            exam_name_input = st.text_input("🎓 復習する過去問の名前（例：2025 日本大学 文理学部）", key="new_review_name")
+            up_pdf = st.file_uploader("📄 過去問のPDFをアップロード", type=["pdf"], key="review_pdf")
+            
+            if st.button("🚀 PDFからテキストを抽出する", type="primary", key="btn_extract_review_pdf"):
+                if up_pdf and api_key and exam_name_input:
+                    with st.spinner("AIが過去問PDFを解析中...（約10〜20秒）"):
+                        try:
+                            extracted_text = extract_exam_text_for_review(up_pdf)
+                            st.session_state.draft_review_text = extracted_text
+                            st.session_state.exam_review_name = exam_name_input
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"PDFの読み込みに失敗しました: {e}")
+                else:
+                    st.error("⚠️ 過去問の名前とPDFの両方を入力してください。")
+                    
+        # 2️⃣ 抽出テキストの確認 ＆ 問題番号の自動抽出フェーズ
+        if "draft_review_text" in st.session_state and "exam_review_text" not in st.session_state:
+            st.markdown("##### 📝 抽出されたテキストの確認・修正")
+            st.info("文字化けや抜けがあれば修正してください。OKを押すと、AIが自動で「問題数（チェックリスト）」を作成します。")
+            edited_text = st.text_area("テキストデータを修正", st.session_state.draft_review_text, height=300)
+            
+            col_ok, col_cancel = st.columns(2)
+            if col_ok.button("✅ このテキストでレビューを開始する", type="primary", use_container_width=True):
+                with st.spinner("AIが問題構成を把握し、チェックリストを作成中..."):
+                    sys_q_extract = "入力された過去問テキストから、問題番号（例: 大問1 (1), 大問2 問1 など）をすべて抽出し、JSONの配列として出力してください。出力例: [\"大問1 (1)\", \"大問1 (2)\", \"大問2 (A)\"]"
+                    try:
+                        q_res = call_ai(edited_text, sys_q_extract, is_json=True, model_name="gemini-2.5-pro")
+                        q_list = json.loads(q_res)
+                    except:
+                        q_list = ["問題1", "問題2", "問題3"] # エラー時のフォールバック
+                        
+                    st.session_state.exam_review_questions = q_list
+                    st.session_state.exam_review_checklist = {q: "未チェック" for q in q_list}
+                    st.session_state.exam_review_text = edited_text
+                    st.session_state.exam_review_chat = [
+                        {"role": "assistant", "content": "準備完了！さっそく一問ずつ復習していこう。わからないところや、勘違いしていた選択肢について何でも聞いてね。右側のチェックリストは君の自由に使っていいよ！"}
+                    ]
+                    del st.session_state.draft_review_text
+                    st.rerun()
+                    
+            if col_cancel.button("🗑️ やり直す", use_container_width=True):
+                del st.session_state.draft_review_text
+                st.rerun()
+
+        # 3️⃣ レビューセッション（左：チャット、右：自己評価チェックリスト）
+        if "exam_review_text" in st.session_state:
+            st.markdown(f"### 🎯 {st.session_state.exam_review_name} の復習セッション")
+            
+            with st.expander("👀 確定した過去問テキストを確認する", expanded=False):
+                st.text_area("抽出データ", st.session_state.exam_review_text, height=150, disabled=True)
+                
+            col_chat, col_check = st.columns([3, 2])
+            
+            # --- 左側：AIとのディープチャット ---
+            with col_chat:
+                st.markdown("##### 🗣️ AI講師との壁打ち")
+                chat_model_choice = st.radio("🧠 分析モデル", ["推論モデル (2.5 Pro) - 深掘り", "高速モデル (3.5 Flash)"], horizontal=True, label_visibility="collapsed")
+                
+                with st.container(border=True, height=500):
+                    for msg in st.session_state.exam_review_chat:
+                        with st.chat_message(msg["role"]):
+                            st.markdown(msg["content"])
+                
+                if user_req := st.chat_input("例：問1は②にした。なぜ他の選択肢がダメなの？", key="review_chat_in"):
+                    st.session_state.exam_review_chat.append({"role": "user", "content": user_req})
+                    with st.spinner("AI講師が分析中..."):
+                        selected_model_name = "gemini-2.5-pro" if "Pro" in chat_model_choice else "gemini-3.5-flash"
+                        
+                        sys_review = f"""
+                        あなたは生徒に寄り添う予備校講師です。以下の【過去問テキスト】を共有のコンテキストとして復習を行います。
+                        
+                        【絶対ルール】
+                        1. 生徒の「実力評価」は生徒自身に委ねられています。あなたは生徒の言葉を否定せず、知識の補強（どの単語が必要だったか、どの文法を勘違いしていたか）に徹してください。
+                        2. 日本の受験特有の省略（「最初は2にした」「問3は4」等）は空気を読んで文脈から察してください。
+                        3. 「なぜその選択肢はダメなのか」「どういう知識があれば解けたのか」を論理的かつ簡潔に教えてください。
+
+                        【過去問テキスト】
+                        {st.session_state.exam_review_text}
+                        """
+                        history_str = "\n".join([f"{m['role']}: {m['content']}" for m in st.session_state.exam_review_chat[-6:]])
+                        
+                        ans = call_ai(f"会話履歴:\n{history_str}", sys_review, use_pdf=False, model_name=selected_model_name)
+                        st.session_state.exam_review_chat.append({"role": "assistant", "content": ans})
+                        st.rerun()
+
+            # --- 右側：自己評価とセッション管理 ---
+            with col_check:
+                st.markdown("##### 📝 自己評価チェックリスト")
+                st.caption("AIの顔色を気にせず、正直な実力を記録しよう。")
+                
+                with st.container(border=True, height=500):
+                    options = ["未チェック", "🟢 実力で正解", "🟡 まぐれ・他選択肢の勘違いあり", "🔴 不正解（知識・精読不足）"]
+                    for q in st.session_state.exam_review_questions:
+                        current_val = st.session_state.exam_review_checklist.get(q, "未チェック")
+                        # UI上で状態を更新
+                        new_val = st.radio(q, options, index=options.index(current_val), key=f"chk_{q}", horizontal=False)
+                        st.session_state.exam_review_checklist[q] = new_val
+
+                st.markdown("<br>", unsafe_allow_html=True)
+                
+                if st.button("💾 この状態を一時保存して中断する", use_container_width=True):
+                    my_data["saved_review_session"] = {
+                        "name": st.session_state.exam_review_name,
+                        "text": st.session_state.exam_review_text,
+                        "chat": st.session_state.exam_review_chat,
+                        "questions": st.session_state.exam_review_questions,
+                        "checklist": st.session_state.exam_review_checklist
+                    }
+                    save_data(my_data)
+                    st.success("セッションを一時保存しました！次回このタブを開いた時に復元できます。")
+
+            st.markdown("---")
+            st.markdown("##### 💡 判明した課題をストック")
+            with st.form("exam_insight_form", clear_on_submit=True):
+                col_i1, col_i2 = st.columns([1, 2])
+                note_title = col_i1.text_input("📝 足りなかった知識・項目名（例：仮定法過去完了の倒置）")
+                note_content = col_i2.text_input("教訓・戦略（例：Had S p.p. が見えたらIfの省略を疑う！）")
+                
+                if st.form_submit_button("🏠 マイ教訓ノート(戦略)に保存", type="primary"):
+                    if note_title and note_content:
+                        if "strategy" not in my_data: my_data["strategy"] = []
+                        my_data["strategy"].append({"title": note_title, "content": note_content, "source": st.session_state.exam_review_name})
+                        save_data(my_data)
+                        st.success("マイ教訓ノートに保存しました！")
+                    else:
+                        st.error("項目名と教訓の両方を入力してください。")
+                
+            if st.button("🗑️ レビューを完全終了する（保存したチェックリストとチャットを破棄）", use_container_width=True):
+                if "saved_review_session" in my_data: my_data["saved_review_session"] = {}
+                save_data(my_data)
+                for k in ["exam_review_text", "exam_review_chat", "exam_review_questions", "exam_review_checklist", "exam_review_name"]:
+                    if k in st.session_state: del st.session_state[k]
+                st.rerun()
+
+    # ------------------------------------------
+    # タブ3: 総合戦略コンパス (全データ連携)
+    # ------------------------------------------
+    with tab_compass:
+        st.markdown("#### 🧭 総合戦略コンパス")
+        st.caption("アプリ内に蓄積されたすべてのデータ（単語・熟語・文法・教訓・過去問の戦績）をAIが集約し、現在の立ち位置と次にやるべきアクションをコンサルティングします。")
+
+        if not st.session_state.get("compass_permission"):
+            st.warning("⚠️ AIがあなたの全学習データにアクセスして、志望校に向けた専用の戦略を立てます。実行しますか？")
+            if st.button("🔓 全データへのアクセスを許可して戦略会議を始める", type="primary"):
+                st.session_state.compass_permission = True
+                st.rerun()
+        else:
+            st.success("✅ 全データへのアクセスが許可されています。")
+            
+            if "compass_chat" not in st.session_state:
+                st.session_state.compass_chat = [
+                    {"role": "assistant", "content": "データの読み込みが完了したよ！これまでの君の頑張り（単語帳、過去問の戦績、マイ教訓ノートの内容など）はすべて把握しています。\n今の率直な悩みや、「この志望校に届くか不安」といった目標について教えてくれる？一緒に最短ルートの作戦を立てよう！"}
+                ]
+
+            with st.container(border=True, height=500):
+                for msg in st.session_state.compass_chat:
+                    with st.chat_message(msg["role"]):
+                        st.markdown(msg["content"])
+
+            if user_req := st.chat_input("例：〇〇大学に受かりたいけど、何から手をつければいい？"):
+                st.session_state.compass_chat.append({"role": "user", "content": user_req})
+                
+                with st.spinner("全データを横断分析し、戦略を構築中...（推論モデル使用）"):
+                    # データを要約してAIに渡す（トークン溢れ防止）
+                    vocab_count = sum([len(b.get("main_vocab", [])) for b in my_data.get('vocab_books', [])])
+                    idiom_count = sum([len(b.get("idioms", [])) for b in my_data.get('idiom_books', [])])
+                    strat_summary = "\n".join([f"- {s['title']}: {s['content']}" for s in my_data.get('strategy', [])[-15:]]) # 最新15件の教訓
+                    
+                    exam_summary = ""
+                    for r in my_data.get('exam_records', [])[-10:]: # 最新10件の過去問
+                        exam_summary += f"[{r.get('exam_name')}] 時間内:{r.get('score_in_time')}点 / 目標:{r.get('target_score')}点 / 実力点:{r.get('true_score', 0)}点 / 期待値:{r.get('expected_score', 0)}点\n"
+
+                    sys_compass = f"""
+                    あなたは「コンパス」と呼ばれる、受験生の最高峰の戦略AIメンターです。
+                    生徒の全学習データにアクセスし、マクロな視点で戦略を決定・指導してください。
+                    
+                    【生徒の現在地データ】
+                    ■ 単語のストック数: 約 {vocab_count} 語
+                    ■ 熟語のストック数: 約 {idiom_count} 個
+                    ■ 最近のマイ教訓ノート（弱点や気づき）:
+                    {strat_summary}
+                    ■ 過去問の戦績（直近）:
+                    {exam_summary}
+
+                    【指導ルール】
+                    1. データに基づき、現状何が足りないか（語彙力か、文法力か、長文の精読力か、処理スピードか）を論理的に分析してください。
+                    2. 「実力点」や「期待値得点」と「実際の得点」に乖離がある場合、「まぐれに頼っている」「選択肢は絞れているからあと一歩」など、具体的な伸びしろを示唆してください。
+                    3. 一方的に長文を語るのではなく、対話形式で1つずつ課題を潰していくように優しく回答してください。説教は厳禁です。
+                    """
+                    
+                    history_str = "\n".join([f"{m['role']}: {m['content']}" for m in st.session_state.compass_chat[-4:]])
+                    
+                    # コンパスは戦略決定のため、常に賢い 2.5-pro を使用
+                    ans = call_ai(f"会話:\n{history_str}", sys_compass, use_pdf=False, model_name="gemini-2.5-pro")
+                    st.session_state.compass_chat.append({"role": "assistant", "content": ans})
+                    st.rerun()
+
+            if st.button("🔒 アクセス権をリセットして会議を終了する"):
+                del st.session_state.compass_permission
+                if "compass_chat" in st.session_state:
+                    del st.session_state.compass_chat
+                st.rerun()

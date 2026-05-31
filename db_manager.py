@@ -80,8 +80,22 @@ def extract_words_from_text(text):
     return cleaned_words
 
 
+def flatten_tags(tags_data):
+    """
+    AIが文字列、リスト、あるいは多重リスト（例: [["関係詞"]]）のいずれを返してきても、
+    完全に平坦な（1次元の）文字列リストに展開して返す強靭なフィルター。
+    """
+    flat_list = []
+    if isinstance(tags_data, str):
+        flat_list.append(tags_data)
+    elif isinstance(tags_data, list):
+        for item in tags_data:
+            flat_list.extend(flatten_tags(item))
+    return flat_list
+
 def extract_idioms_with_gemini(text):
-    """AIを使って長文から熟語・イディオムを抽出し、JSONで返す関数"""
+    # --- (sys_prompt の定義はそのまま) ---
+    sys_prompt = """AIを使って長文から熟語・イディオムを抽出し、JSONで返す関数"""
     sys_prompt = """
     あなたは大学受験英語の傾向分析と対策に命を懸けているプロの予備校講師であり、精密な構文解析スキャナーです。
     提供された過去問のテキスト（長文、四択問題、整序問題など）を【1文ずつ舐めるように精査】し、大学受験レベル(B1〜B2以上)で重要な熟語・語法を【絶対に一つも漏らさず】抽出し、JSON形式で出力してください。
@@ -123,53 +137,73 @@ def extract_idioms_with_gemini(text):
       ]
     }
     """
+    
     model = genai.GenerativeModel(model_name="gemini-2.5-pro", system_instruction=sys_prompt, generation_config={"response_mime_type": "application/json"})
     try:
         res = model.generate_content(f"以下のテキストから熟語を抽出してください:\n\n{text}")
-        return json.loads(res.text)
+        parsed = json.loads(res.text)
+        
+        # 🛡️ AIがリストを直返ししてきた場合の強靭化処理
+        if isinstance(parsed, list):
+            return {"idioms": parsed}
+        return parsed
+        
     except Exception as e:
         st.error(f"熟語の抽出中にエラーが発生しました: {e}")
         return {"idioms": []}
     
 
 def extract_grammar_with_gemini(text):
-    """AIを使って長文・文法問題から設問と文法要素を抽出し、JSONで返す関数"""
     sys_prompt = """
-    あなたは大学受験英語のプロ予備校講師であり、入試問題の緻密な分析官です。
-    提供された過去問のテキストから、必ず【設問として問われている問題（空所補充、整序問題、下線部言い換え、内容一致問題など）】だけを抽出し、以下のJSON形式で出力してください。
+    あなたは大学受験英語の文法・語法問題を分析する予備校講師です。
+    入力された過去問テキストから、文法・語法問題の出題意図を抽出し、
+    全く同じ知識を問う著作権フリーの完全オリジナル問題を作成してください。
 
-    【絶対ルール：抽出対象の制限】
-    長文の「本文（地の文）」を勝手に文法解析してはいけません。必ず「選択肢が用意されている設問」だけを対象としてください。
 
-    【絶対ルール：タグの統一（表記揺れの防止）】
-    分析結果の集計を正確に行うため、問題の核となる文法・語法テーマを `primary_tags`（配列）として出力してください。
-    タグは【必ず】以下の標準カテゴリからのみ選択してください（勝手に新しいタグを作らないこと）。
-    [標準カテゴリ]: 時制, 助動詞, 仮定法, 受動態, 不定詞, 動名詞, 分詞, 分詞構文, 関係詞, 比較, 接続詞, 前置詞, 名詞・代名詞・冠詞, 形容詞・副詞, 動詞の語法, 無生物主語, 倒置・省略・強調, 否定, 内容一致・要旨把握, 指示語把握
+    【重要】
+    ・過去問の英文を変えつつ、全く同じ文法、語法の知識を問う問題を出題すること。
+    ・必ず required_knowledge を付ける。
+    ・JSON以外は出力しない。
+    ・解説は正解と不正解の根拠をすべて解説し、丁寧に背景知識等(lieの問題であったら例のように網羅的に）も解説すること。
 
-    【絶対ルール：解説の書き方】
-    `explanation` の中に、「なぜそれが正解なのか（正解の根拠）」と、「なぜ他の選択肢はダメなのか（不正解の除外プロセス）」の両方を具体的に記述してください。
-
-    【JSONフォーマット】
+    【JSON出力形式】
     {
       "grammar_questions": [
         {
-          "question": "The man (      ) I thought was a doctor turned out to be a teacher.",
-          "options": ["who", "whose", "whom", "which"],
-          "answer": "whom",
-          "translation": "私が医者だと思っていたその男は、実は教師だった。",
-          "primary_tags": ["関係詞"],
-          "explanation": "【正解の根拠】I thought が挿入された連鎖関係代名詞の構造であり、目的語が欠落しているため目的格 whom が入る。\\n【不正解の除外】whoは主格のため不可。whichは先行詞が人のため不可。whoseは後ろに名詞が必要なため不可。"
+          "question": "The dog was (      ) on the bed.",
+          "options": ["laying", "lying", "lain", "lied"],
+          "answer": "lying",
+          "required_knowledge": ["自動詞lieと他動詞layの区別", "現在分詞"],
+          "explanation": "正解はlying。lieは自動詞として使われ、嘘をつくと横になる（横たわる）の二つの意味がある。lie「嘘をつく」の場合は、lie(原型)-iied(過去形)-lied（過去分詞）-lying(進行形)という活用形をとる。また、lie「横になる」は、lie(原型)-lay(過去形)-lain(過去分詞)-lying(進行形)という活用形になる。layは他動詞として使われ、「横たえる・置く」という意味がある。活用形は、lay-laid-laid-layingとなる。本文は自動詞と使われ現在形であるからlyingが正解。layingは他動詞の現在形だから不適。lainは自動詞であるが、過去分詞であるため不適。liedも過去形と過去分詞で使われるため不適。"
         }
       ]
     }
     """
-    model = genai.GenerativeModel(model_name="gemini-2.5-pro", system_instruction=sys_prompt, generation_config={"response_mime_type": "application/json"})
+
+    model = genai.GenerativeModel(
+        model_name="gemini-2.5-pro",
+        system_instruction=sys_prompt,
+        generation_config={"response_mime_type": "application/json"}
+    )
+
     try:
-        res = model.generate_content(f"以下のテキストから設問を抽出し、分析してください:\n\n{text}")
-        return json.loads(res.text)
+        res = model.generate_content(
+            f"以下のテキストから文法・語法の出題意図を抽出し、オリジナル問題を作ってください:\n\n{text}"
+        )
+        parsed = json.loads(res.text)
+
+        if isinstance(parsed, list):
+            return {"grammar_questions": parsed}
+
+        if "grammar_questions" not in parsed:
+            return {"grammar_questions": []}
+
+        return parsed
+
     except Exception as e:
         st.error(f"文法の抽出中にエラーが発生しました: {e}")
         return {"grammar_questions": []}
+    
 # --- UI用ヘルパー：選択保持 + ソート機能付き ---
 def select_or_create(label, options, key_prefix):
     sorted_options = sorted(list(options))
@@ -319,75 +353,59 @@ with tab1:
                                 
                         target_db["idioms"] = merged_idioms
 
-                    # -----------------------------------------
+                   # -----------------------------------------
+                    # ルートC: 文法・語法の抽出（AI処理）
+                                        # -----------------------------------------
                     # ルートC: 文法・語法の抽出（AI処理）
                     # -----------------------------------------
                     if ext_grammar:
                         extracted_grammar_data = extract_grammar_with_gemini(edited_text)
-                        
+
+                        # デバッグ用：Geminiが何を返したか画面に出す
+                        st.write("DEBUG 文法抽出結果:", extracted_grammar_data)
+
+                        grammar_questions = extracted_grammar_data.get("grammar_questions", [])
+
+                        if not grammar_questions:
+                            st.warning("⚠️ 文法問題が抽出されませんでした。入力テキストかGeminiの返答を確認してください。")
+
                         merged_grammar_questions = target_db.get("grammar_questions", [])
                         merged_grammar_tags = Counter(target_db.get("grammar_tags", {}))
-                        
-                        for q in extracted_grammar_data.get("grammar_questions", []):
+
+                        for q in grammar_questions:
+                            if not isinstance(q, dict):
+                                continue
+
+                            q.setdefault("question", "")
+                            q.setdefault("options", [])
+                            q.setdefault("answer", "")
+                            q.setdefault("explanation", "")
+                            q.setdefault("required_knowledge", [])
+
                             merged_grammar_questions.append(q)
-                            for tag in q.get("required_knowledge", []):
-                                merged_grammar_tags[tag] += 1
-                                
+
+                            raw_tags = q.get("primary_tags", q.get("required_knowledge", []))
+                            safe_tags = flatten_tags(raw_tags)
+
+                            for tag in safe_tags:
+                                if tag:
+                                    merged_grammar_tags[tag] += 1
+
                         target_db["grammar_questions"] = merged_grammar_questions
                         target_db["grammar_tags"] = dict(merged_grammar_tags)
 
-                    # データベースを上書き保存
+                    # -----------------------------------------
+                    # 最終保存処理
+                    # -----------------------------------------
                     save_db(db)
-                    st.success(f"🎉 登録完了！ ({', '.join(executed_tasks)}を抽出・統合しました)")
-                    st.session_state.draft_text = None
-                    st.rerun()
+                    st.success("✅ データベースに保存しました。")
+
                     
-                    # -----------------------------------------
-                    # ルートB: 熟語の抽出（AI処理）
-                    # -----------------------------------------
-                    if extract_target in ["単語と熟語を両方抽出", "熟語だけ抽出 (AI使用)"]:
-                        extracted_idioms_data = extract_idioms_with_gemini(edited_text)
-                        merged_idioms = target_db.get("idioms", {})
-                        
-                        for item in extracted_idioms_data.get("idioms", []):
-                            base_form = item["base_form"]
-                            if base_form in merged_idioms:
-                                merged_idioms[base_form]["count"] += item["count"]
-                                # 引用リストの重複を省いて結合
-                                merged_idioms[base_form]["quotes"] = list(set(merged_idioms[base_form].get("quotes", []) + item["quotes_in_text"]))
-                            else:
-                                merged_idioms[base_form] = {"count": item["count"], "quotes": item["quotes_in_text"]}
-                                
-                        target_db["idioms"] = merged_idioms
+# ------------------------------------------
+# タブ2: データベース閲覧・編集（復活・統合）
+# ------------------------------------------
 
-                    # データベースを上書き保存
-                    save_db(db)
-                    st.success(f"登録完了！ ({extract_target})")
-                    st.session_state.draft_text = None
-                    st.rerun()
-
-                    # -----------------------------------------
-                    # ルートC: 文法の抽出（AI処理）
-                    # -----------------------------------------
-                    if extract_target == "文法・語法問題の抽出と分析 (AI使用)":
-                        extracted_grammar_data = extract_grammar_with_gemini(edited_text)
-                        
-                        # 既存の文法データとタグ集計の取得（無ければ初期化）
-                        merged_grammar_questions = target_db.get("grammar_questions", [])
-                        merged_grammar_tags = Counter(target_db.get("grammar_tags", {}))
-                        
-                        for q in extracted_grammar_data.get("grammar_questions", []):
-                            merged_grammar_questions.append(q)
-                            # 修正: 統一された標準カテゴリ(primary_tags)をカウントする
-                            for tag in q.get("primary_tags", []):
-                                merged_grammar_tags[tag] += 1
-                                
-                        target_db["grammar_questions"] = merged_grammar_questions
-                        target_db["grammar_tags"] = dict(merged_grammar_tags)
-        
-        if col_cancel.button("🗑️ キャンセル"):
-            st.session_state.draft_text = None
-            st.rerun()
+                    
 # ------------------------------------------
 # タブ2: データベース閲覧・編集（復活・統合）
 # ------------------------------------------
@@ -584,9 +602,14 @@ with tab2:
                 if not display_tags:
                     temp_counter = Counter()
                     for q in target_data["grammar_questions"]:
-                        tags = q.get("primary_tags", q.get("required_knowledge", []))
-                        for t in tags:
+                        
+                        # 取得したタグデータを安全に平坦化してからカウントする
+                        raw_tags = q.get("primary_tags", q.get("required_knowledge", []))
+                        safe_tags = flatten_tags(raw_tags)
+                        
+                        for t in safe_tags:
                             temp_counter[t] += 1
+                            
                     display_tags = dict(temp_counter)
                     target_data["grammar_tags"] = display_tags
                     save_db(db) # データベースをここでこっそり修復・保存

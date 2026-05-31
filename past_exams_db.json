@@ -3136,6 +3136,151 @@
                   "work together"
                 ]
               }
+            },
+            "grammar_questions": [
+              {
+                "question": "This surprising outcome was caused (      ) by his brilliant strategy as by his opponent's careless mistake.",
+                "options": [
+                  "not so much",
+                  "not less than",
+                  "no more than",
+                  "so as"
+                ],
+                "answer": "not so much",
+                "required_knowledge": [
+                  "相関構文 not so much A as B"
+                ],
+                "explanation": "正解は not so much。'not so much A as B' は「AというよりはむしろB」という意味の重要な相関構文です。本文は「この驚くべき結果は、彼の見事な戦略によってというよりはむしろ、対戦相手の不注意なミスによって引き起こされた」という意味になります。'B rather than A' とほぼ同じ意味を表します。② 'not less than' は「少なくとも～、～も」(= as much as)、③ 'no more than' は「わずか～しか、～にすぎない」(= only) という意味で、文脈に合いません。④ 'so as' は 'so as to do'「～するために」などの形で使われ、この文の形には入りません。"
+              },
+              {
+                "question": "Due to the unexpected economic boom, the value of our stocks has (      ) considerably in the last few months.",
+                "options": [
+                  "raised",
+                  "rose",
+                  "risen",
+                  "aroused"
+                ],
+                "answer": "risen",
+                "required_knowledge": [
+                  "自動詞と他動詞の区別",
+                  "時制（現在完了形）"
+                ],
+                "explanation": "正解は risen。'rise' は「（主語が）上がる、昇る」という意味の自動詞で、目的語を必要としません。活用は rise - rose - risen です。本文は「株の価値が上がった」という内容で、目的語がないため自動詞が適切です。また、'in the last few months'（ここ数ヶ月で）という期間を表す表現があるため、現在完了形 (have + 過去分詞) を使うのが最も自然です。したがって 'has risen' が正解となります。① 'raised' と ② 'rose' は時制や形が不適切です。'raise' は「～を上げる」という他動詞で、活用は raise - raised - raised です。④ 'arouse' は「（感情などを）引き起こす、喚起する」という意味の他動詞で、文脈に合いません。"
+              },
+              {
+                "question": "(      ) for her dedicated support, I would not have been able to complete my thesis.",
+                "options": [
+                  "If it were not",
+                  "Were it not",
+                  "Had it not been",
+                  "If only"
+                ],
+                "answer": "Had it not been",
+                "required_knowledge": [
+                  "仮定法過去完了",
+                  "ifの省略と倒置"
+                ],
+                "explanation": "正解は Had it not been。主節が 'I would not have been able to...' となっており、'would have + 過去分詞' の形から、仮定法過去完了の文であることがわかります。したがって、条件節も過去の事実に反する仮定を表す仮定法過去完了の形にする必要があります。基本形は 'If it had not been for A'「もしAがなかったならば」です。この構文では、接続詞 If を省略すると、主語と助動詞の倒置が起こり、'Had it not been for A' という語順になります。本文は「もし彼女の献身的なサポートがなかったら、私は論文を完成させることはできなかっただろう」という意味になります。①と②は仮定法過去（現在の事実に反する仮定）で使う形なので不適切。④ 'If only' は「～でありさえすればなあ」という願望を表す表現で、文頭でこの形は取りません。"
+              },
+              {
+                "question": "The historic town is definitely worth (      ) if you are interested in traditional architecture.",
+                "options": [
+                  "to visit",
+                  "visiting",
+                  "to be visited",
+                  "being visited"
+                ],
+                "answer": "visiting",
+                "required_knowledge": [
+                  "be worth -ing"
+                ],
+                "explanation": "正解は visiting。'be worth -ing' は「～する価値がある」という意味を表す頻出の構文です。'worth' の後には動名詞(-ing形)が続きます。この構文の特徴は、動名詞が能動態の形であっても、意味的には「～される価値がある」という受動的な内容を表す点です。したがって、「その歴史的な町は訪れられる価値がある」という意味になり、'visiting' が正解です。①と③の不定詞は'worth'の後には使えません。④ 'being visited' のように受動態の動名詞にする必要はありません。"
+              },
+              {
+                "question": "My roommate and I take (      ) cleaning our apartment every weekend.",
+                "options": [
+                  "turn",
+                  "a turn",
+                  "turns",
+                  "in turn"
+                ],
+                "answer": "turns",
+                "required_knowledge": [
+                  "イディオム take turns"
+                ],
+                "explanation": "正解は turns。'take turns (-ing / at -ing)' は「交代で（～）する」という意味のイディオムです。この 'turns' は常に複数形で使います。本文は「ルームメイトと私は、毎週末、交代でアパートを掃除する」という意味になります。①単数形の 'turn' は不可。② 'take a turn' は「一回交替する」という意味で、習慣的な行為を表す文脈には合いにくいです。④ 'in turn' は「順番に」という意味の副詞句で、'take' の目的語にはなれません。"
+              },
+              {
+                "question": "He took great (      ) to prepare a detailed presentation for the important clients.",
+                "options": [
+                  "pains",
+                  "cares",
+                  "troubles",
+                  "efforts"
+                ],
+                "answer": "pains",
+                "required_knowledge": [
+                  "イディオム take pains"
+                ],
+                "explanation": "正解は pains。'take pains to do' は「～するために骨を折る、労を惜しまない」という意味のイディオムです。ここでの 'pains' は「骨折り、労苦」という意味で、常に複数形で用いるのがポイントです。本文は「彼は重要な顧客のために、詳細なプレゼンテーションを準備しようと大変骨を折った」という意味になります。他の選択肢も「努力」や「世話」といった意味を持ちますが、'take great ... to do' の形では 'pains' が最も自然で定型的な表現です。'care' なら 'take care to do'、'trouble' なら 'take the trouble to do'、'effort' なら 'make an effort to do' という形が一般的です。"
+              },
+              {
+                "question": "She was offered a promotion in another city, but she decided to (      ) it (      ) to stay close to her family.",
+                "options": [
+                  "call / off",
+                  "put / off",
+                  "turn / down",
+                  "get / over"
+                ],
+                "answer": "turn / down",
+                "required_knowledge": [
+                  "句動詞"
+                ],
+                "explanation": "正解は turn / down。'turn down' は「（申し出・要求などを）断る、拒絶する」という意味の句動詞です。本文は「彼女は別の都市での昇進を提示されたが、家族のそばにいるためにそれを断ることに決めた」という意味になり、文脈にぴったりです。'turn down' は目的語を間に挟むことができる分離可能な句動詞です。① 'call off' は「（予定などを）中止する」。② 'put off' は「～を延期する」。④ 'get over' は「～を乗り越える、克服する」。いずれも文脈に合いません。"
+              },
+              {
+                "question": "It was difficult, but we finally (      ) him into joining our team.",
+                "options": [
+                  "said",
+                  "told",
+                  "spoke",
+                  "talked"
+                ],
+                "answer": "talked",
+                "required_knowledge": [
+                  "語法 talk A into -ing"
+                ],
+                "explanation": "正解は talked。'talk A into -ing' は「Aを説得して～させる」という意味の重要な構文です。本文は「難しかったが、私たちはついに彼を説得してチームに参加させた」という意味になります。同じ「説得する」でも 'persuade A to do' という形もよく使われます。反対に「Aを説得して～するのをやめさせる」場合は 'talk A out of -ing' や 'dissuade A from -ing' を使います。他の動詞はこの構文を取ることができません。"
+              },
+              {
+                "question": "I have often wondered (      ) it would be like to travel around the world with no specific plan.",
+                "options": [
+                  "how",
+                  "that",
+                  "which",
+                  "what"
+                ],
+                "answer": "what",
+                "required_knowledge": [
+                  "間接疑問文",
+                  "what ... like"
+                ],
+                "explanation": "正解は what。'what it would be like to do' は「～するのはどのようなものだろうか」と、体験や状況の性質について尋ねる際の定型表現です。'wonder' の目的語となる間接疑問文の節を導いています。この 'what' は、'be like' の補語になる名詞節を尋ねる疑問詞です（例: It would be like a dream. → What would it be like?）。本文は「明確な計画なしに世界中を旅するとは、どのようなものだろうかとよく考えてきた」という意味になります。① 'how' は様態や方法、程度を尋ねる疑問詞で、'like' と共に用いることはできません（例: 'How does it feel to ...'）。② 'that' や ③ 'which' もこの文脈には合いません。"
+              }
+            ],
+            "grammar_tags": {
+              "相関構文 not so much A as B": 1,
+              "自動詞と他動詞の区別": 1,
+              "時制（現在完了形）": 1,
+              "仮定法過去完了": 1,
+              "ifの省略と倒置": 1,
+              "be worth -ing": 1,
+              "イディオム take turns": 1,
+              "イディオム take pains": 1,
+              "句動詞": 1,
+              "語法 talk A into -ing": 1,
+              "間接疑問文": 1,
+              "what ... like": 1
             }
           }
         },
@@ -5218,6 +5363,381 @@
               "read": 1,
               "speed": 1,
               "fluency": 1
+            },
+            "grammar_questions": [
+              {
+                "question": "If you (      ) happen to find my missing wallet, please let me know immediately.",
+                "options": [
+                  "would",
+                  "should",
+                  "were to",
+                  "had"
+                ],
+                "answer": "should",
+                "required_knowledge": [
+                  "仮定法未来",
+                  "If S should V"
+                ],
+                "explanation": "正解は②のshould。これは「万が一〜したら」という、実現可能性が低い未来の出来事を仮定する「仮定法未来」の用法です。`If S should V(原形), ...` の形をとります。この文では「万が一私のなくした財布を見つけたら」という意味になります。① would は主節で使われることが多く、if節では通常使いません。③ were to も仮定法未来で使えますが、`If S were to V(原形)` は「仮に〜するようなことがあれば」と、実現可能性がほぼゼロに近いことや、現実には起こりえない純粋な仮定を表すため、この文脈では should が最も適切です。④ had は仮定法過去完了 `If S had p.p.` で使われ、過去の事実に反する仮定を表すため、不適切です。"
+              },
+              {
+                "question": "The board of directors made a difficult decision (      ) their main office to a different country.",
+                "options": [
+                  "moving",
+                  "to move",
+                  "of moving",
+                  "for moved"
+                ],
+                "answer": "to move",
+                "required_knowledge": [
+                  "不定詞の名詞的用法",
+                  "decision to do"
+                ],
+                "explanation": "正解は②のto move。`decision` (決定) という名詞の内容を具体的に説明する場合、後ろに to不定詞を続けます。`a decision to do` で「〜するという決定」という意味になります。これは不定詞の名詞的用法です。①の動名詞 adopting はこの文脈では使えません。`idea of doing` のように動名詞を伴う名詞もありますが、`decision` は to不定詞と結びつきます。③、④は文法的に誤りです。"
+              },
+              {
+                "question": "The new regulation requires that every driver (      ) their seatbelt at all times.",
+                "options": [
+                  "fasten",
+                  "fastens",
+                  "has fastened",
+                  "would fasten"
+                ],
+                "answer": "fasten",
+                "required_knowledge": [
+                  "要求・提案を表す動詞に続くthat節",
+                  "仮定法現在（動詞の原形）"
+                ],
+                "explanation": "正解は①のfasten。require, request, suggest, demand, insist のような要求・提案・命令などを表す動詞の後のthat節内では、動詞は「should + 原形」または should を省略した「原形」になります（仮定法現在）。この文では、主語が三人称単数 (every driver) ですが、動詞は原形の fasten を使います。② fastens のように三単現のsをつけたり、③ has fastened のような完了形や ④ would fasten のような形は使えません。"
+              },
+              {
+                "question": "My mentor gave me several useful (      ) on how to advance my career.",
+                "options": [
+                  "advice",
+                  "advices",
+                  "piece of advices",
+                  "pieces of advice"
+                ],
+                "answer": "pieces of advice",
+                "required_knowledge": [
+                  "不可算名詞の数量表現"
+                ],
+                "explanation": "正解は④のpieces of advice。`advice` (助言) は数えられない名詞（不可算名詞）です。そのため、複数形 `advices` にしたり、前に `a` をつけたりすることはできません。数を表したい場合は、`a piece of advice` (一つの助言)、`two pieces of advice` (二つの助言) のように、`a piece of` という助数詞を使います。この文では `several` (いくつかの) とあるため、`pieces` と複数形にする必要があります。`luggage`, `information`, `furniture`, `equipment` なども同様の不可算名詞です。"
+              },
+              {
+                "question": "Of the two candidates for the job, we hired (      ) because of her extensive experience.",
+                "options": [
+                  "the more qualified",
+                  "more qualified",
+                  "most qualified",
+                  "the most qualified"
+                ],
+                "answer": "the more qualified",
+                "required_knowledge": [
+                  "the + 比較級 + of the two"
+                ],
+                "explanation": "正解は①のthe more qualified。`of the two` (2つのうちで) という表現がある場合、2つのものを比較して「より〜な方」と特定するため、比較級に定冠詞 `the` をつけます。`the + 比較級 + of the two` は頻出の形です。② more qualified は冠詞がないため不適切。③ most qualified, ④ the most qualified は最上級で、通常3つ以上のものを比較する場合に使うため、`of the two` とは一緒に使えません。"
+              },
+              {
+                "question": "You can learn a lot about a person's character by (      ) they treat service staff.",
+                "options": [
+                  "what",
+                  "that",
+                  "the beginning",
+                  "the way"
+                ],
+                "answer": "the way",
+                "required_knowledge": [
+                  "関係副詞の代用",
+                  "the way S V"
+                ],
+                "explanation": "正解は④のthe way。`the way S V` で「SがVする方法、やり方、様子」という意味になり、関係副詞 how と同じ働きをします。`by the way they treat...` で「彼らがサービススタッフをどのように扱うかによって」という意味になります。関係副詞 how は先行詞 `the way` と一緒に使うことはできないため、`the way how S V` とは言えません。① what は「何」という意味の名詞節を作りますが、ここでは「どのように」という方法が問われているため不適切です。② that、③ the beginning は文脈に合いません。"
+              },
+              {
+                "question": "The newly hired assistant was so inexperienced that his mistakes (      ) the entire project.",
+                "options": [
+                  "spoiled",
+                  "missed",
+                  "suffered",
+                  "lost"
+                ],
+                "answer": "spoiled",
+                "required_knowledge": [
+                  "語彙（動詞）"
+                ],
+                "explanation": "正解は①のspoiled。`spoil` は「～を台無しにする、ダメにする」という意味の動詞です。文脈は「彼のミスがプロジェクト全体を台無しにした」となり、意味が通ります。② `miss` は「～を逃す、～がなくて寂しく思う」、③ `suffer` は「（苦痛などを）経験する、苦しむ」、④ `lose` は「～を失う」という意味で、いずれも文脈に合いません。"
+              },
+              {
+                "question": "Members of the gym can use the swimming pool at no extra (      ).",
+                "options": [
+                  "tax",
+                  "price",
+                  "fare",
+                  "charge"
+                ],
+                "answer": "charge",
+                "required_knowledge": [
+                  "語彙（名詞）",
+                  "コロケーション"
+                ],
+                "explanation": "正解は④のcharge。`charge` はサービスに対する「料金」を意味し、`at no extra charge` で「追加料金なしで」という決まった言い方になります。① `tax` は「税金」。② `price` は商品などの「価格」。③ `fare` は交通機関の「運賃」。文脈から、サービスに対する追加料金を指しているため `charge` が最も適切です。"
+              },
+              {
+                "question": "From the summit of the mountain, it's a (      ) five-hour hike back to the base camp.",
+                "options": [
+                  "lot",
+                  "far",
+                  "much",
+                  "good"
+                ],
+                "answer": "good",
+                "required_knowledge": [
+                  "数量を表す慣用表現"
+                ],
+                "explanation": "正解は④のgood。`a good + 数詞 (+ 名詞)` で「たっぷり～、優に～」という意味の慣用表現になります。`a good five-hour hike` で「たっぷり5時間はかかるハイキング」という意味です。① `a lot of` の形なら使えますが `a lot` 単独ではこの位置には入りません。② `far` や ③ `much` は比較級を強調する場合などに使いますが、この文脈には合いません。"
+              },
+              {
+                "question": "The meat was so (      ) that I could barely cut it with my knife.",
+                "options": [
+                  "tough",
+                  "hard",
+                  "strong",
+                  "tight"
+                ],
+                "answer": "tough",
+                "required_knowledge": [
+                  "語彙（形容詞）"
+                ],
+                "explanation": "正解は①のtough。`tough` は肉などが「硬くて噛みきれない」という意味で使われる形容詞です。文脈にぴったり合います。② `hard` も「硬い」という意味ですが、石のように物理的に硬いものを指すことが多く、肉の硬さを表現するには `tough` がより一般的です。③ `strong` は「強い」、④ `tight` は「きつい、固く締まった」という意味で、食べ物の食感を表すのには不適切です。"
+              },
+              {
+                "question": "Despite his apology, I felt there was little (      ) for doubt about his true intentions.",
+                "options": [
+                  "space",
+                  "home",
+                  "place",
+                  "room"
+                ],
+                "answer": "room",
+                "required_knowledge": [
+                  "語彙（名詞の抽象的用法）"
+                ],
+                "explanation": "正解は④のroom。`room` は物理的な「部屋、空間」以外に、数えられない名詞として「余地、可能性」という意味があります。`room for doubt` で「疑いの余地」という決まった言い方です。① `space` も「空間」ですが、抽象的な「余地」の意味では `room` を使うのが一般的です。② `home` や ③ `place` はこの文脈には合いません。"
+              },
+              {
+                "question": "My father has very good (      ) in literature and owns a large collection of classic novels.",
+                "options": [
+                  "mood",
+                  "style",
+                  "taste",
+                  "preference"
+                ],
+                "answer": "taste",
+                "required_knowledge": [
+                  "語彙（名詞）",
+                  "コロケーション"
+                ],
+                "explanation": "正解は③のtaste。`taste` には「味」以外に「好み、趣味、センス」という意味があります。`have good taste in ~` で「～のセンスが良い」という意味の決まった言い方です。文脈は「父は文学のセンスがとても良い」となり、意味が通ります。① `mood` は「気分」、② `style` は「様式、やり方」、④ `preference` は「（～よりも）好むこと」という意味で、文脈には合いません。"
+              },
+              {
+                "question": "The main bridge is closed for repairs, so we have to use a temporary one (      ).",
+                "options": [
+                  "in no time",
+                  "for the time being",
+                  "in the long run",
+                  "at that time"
+                ],
+                "answer": "for the time being",
+                "required_knowledge": [
+                  "慣用句（イディオム）"
+                ],
+                "explanation": "正解は②のfor the time being。「当分の間、さしあたり」という意味のイディオムです。文脈は「主要な橋が修理で閉鎖されているので、当分の間は仮の橋を使わなければならない」となり、意味が通ります。① `in no time` は「すぐに」。③ `in the long run` は「長い目で見れば、結局は」。④ `at that time` は「その時（過去のある時点）」。いずれも文脈に合いません。"
+              },
+              {
+                "question": "This application allows you to adjust the settings and change the layout (      ).",
+                "options": [
+                  "at will",
+                  "in sight",
+                  "in advance",
+                  "by degree"
+                ],
+                "answer": "at will",
+                "required_knowledge": [
+                  "慣用句（イディオム）"
+                ],
+                "explanation": "正解は①のat will。「意のままに、自由に」という意味のイディオムです。文脈は「このアプリを使えば、意のままに設定を調整し、レイアウトを変更できる」となり、意味が通ります。② `in sight` は「見えて、視界に入って」。③ `in advance` は「前もって」。④ `by degree` は「徐々に、少しずつ」 (`by degrees`が一般的)。いずれも文脈に合いません。"
+              },
+              {
+                "question": "She grew up in a family of musicians, so she is completely (      ) classical composers.",
+                "options": [
+                  "at the mercy of",
+                  "in honor of",
+                  "in the light of",
+                  "at home with"
+                ],
+                "answer": "at home with",
+                "required_knowledge": [
+                  "慣用句（イディオム）"
+                ],
+                "explanation": "正解は④のat home with。`be at home in/with ~` で「～に精通している、～に慣れている」という意味のイディオムです。文脈は「彼女はクラシックの作曲家に完全に精通している」となり、意味が通ります。① `be at the mercy of ~` は「～のなすがままである」。② `in honor of ~` は「～に敬意を表して」。③ `in the light of ~` は「～を考慮すると、～に照らして」。いずれも文脈に合いません。"
+              },
+              {
+                "question": "Could you please (      ) for a moment? I need to find the document you asked for.",
+                "options": [
+                  "ring off",
+                  "talk over",
+                  "hold on",
+                  "hang up"
+                ],
+                "answer": "hold on",
+                "required_knowledge": [
+                  "句動詞"
+                ],
+                "explanation": "正解は③のhold on。「（電話を切らずに）待つ、待つ」という意味の句動詞です。文脈は「少しお待ちいただけますか？」となり、意味が通ります。① `ring off` は「電話を切る」（イギリス英語）。④ `hang up` も「電話を切る」という意味です。② `talk over` は「～について話し合う」。いずれも文脈に合いません。"
+              },
+              {
+                "question": "Our school (      ) creativity and encourages students to think outside the box.",
+                "options": [
+                  "catches sight of",
+                  "makes much of",
+                  "gives rise to",
+                  "keeps pace with"
+                ],
+                "answer": "makes much of",
+                "required_knowledge": [
+                  "慣用句（イディオム）"
+                ],
+                "explanation": "正解は②のmakes much of。`make much of ~` で「～を重視する、重んじる」という意味のイディオムです。文脈は「私たちの学校は創造性を重視している」となり、意味が通ります。① `catch sight of ~` は「～を見つける」。③ `give rise to ~` は「～を引き起こす」。④ `keep pace with ~` は「～に遅れずについていく」。いずれも文脈に合いません。"
+              },
+              {
+                "question": "After reviewing the evidence, the investigators could not (      ) the possibility of an accident.",
+                "options": [
+                  "rule out",
+                  "set up",
+                  "result in",
+                  "come about"
+                ],
+                "answer": "rule out",
+                "required_knowledge": [
+                  "句動詞"
+                ],
+                "explanation": "正解は①のrule out。「（可能性など）を排除する、除外する」という意味の句動詞です。文脈は「捜査官たちは事故の可能性を排除できなかった」となり、意味が通ります。② `set up` は「～を設立する、設置する」。③ `result in ~` は「～という結果になる」。④ `come about` は「（出来事が）起こる」。いずれも文脈に合いません。"
+              },
+              {
+                "question": "He tries to stay positive ( ①faces ②matter ③no ④what ⑤he ⑥difficulty ⑦ ).",
+                "options": [
+                  "faces",
+                  "matter",
+                  "no",
+                  "what",
+                  "he",
+                  "difficulty"
+                ],
+                "answer": "no matter what difficulty he faces",
+                "required_knowledge": [
+                  "複合関係詞",
+                  "no matter wh-"
+                ],
+                "explanation": "正解は `no matter what difficulty he faces` という語順。「彼がどんな困難に直面しようとも」という意味の副詞節を作ります。`no matter + 疑問詞 (what/who/when/where/how) + S V` の形で、「たとえ（疑問詞）が〜であろうとも」という意味になります。`what` は形容詞的に `difficulty` を修飾しているため、`what difficulty` が一つの塊になります。"
+              },
+              {
+                "question": "( ①what ②the presentation ③so successful ④made ⑤was ⑥that ⑦it )?",
+                "options": [
+                  "what",
+                  "the presentation",
+                  "so successful",
+                  "made",
+                  "was",
+                  "that",
+                  "it"
+                ],
+                "answer": "What was it that made the presentation so successful",
+                "required_knowledge": [
+                  "強調構文",
+                  "It is ... that ~"
+                ],
+                "explanation": "正解は `What was it that made the presentation so successful` という語順。これは「そのプレゼンテーションをそれほど成功させたのは何でしたか？」という意味の、強調構文の疑問文です。平叙文の強調構文 `It was X that made ...` (…させたのはXだった) の X の部分が分からず、それを尋ねるために `What` を文頭に出し、`was` と `it` を倒置した形です。"
+              },
+              {
+                "question": "The area of Canada ( ①is ②that ③twice ④about ⑤of ⑥the size ⑦ ) the United States.",
+                "options": [
+                  "is",
+                  "that",
+                  "twice",
+                  "about",
+                  "of",
+                  "the size"
+                ],
+                "answer": "is about twice the size of that of",
+                "required_knowledge": [
+                  "比較（倍数表現）",
+                  "代名詞thatの用法"
+                ],
+                "explanation": "正解は `is about twice the size of that of` という語順。「カナダの面積はアメリカの面積の約2倍です」という意味になります。`A is X times the size of B` で「AはBのX倍の大きさだ」という倍数表現の構文です。ここでの `that` は、前出の名詞 `the area` の繰り返しを避けるための代名詞です。`the size of the area of the United States` となるのを `the size of that of the United States` と簡潔に表現しています。"
+              },
+              {
+                "question": "The sudden economic crisis ( ①robbed ②of ③many people ④their ⑤savings ⑥has ⑦ ).",
+                "options": [
+                  "robbed",
+                  "of",
+                  "many people",
+                  "their",
+                  "savings",
+                  "has"
+                ],
+                "answer": "has robbed many people of their savings",
+                "required_knowledge": [
+                  "SVOO構文",
+                  "rob A of B"
+                ],
+                "explanation": "正解は `has robbed many people of their savings` という語順。「その突然の経済危機は多くの人々から貯蓄を奪った」という意味の現在完了形の文です。`rob A of B` で「AからBを奪う」という構文をとります。Aには人、Bには奪われる物が入ります。似た意味の `steal` は `steal B from A` の形をとり、構文が異なるので注意が必要です。"
+              },
+              {
+                "question": "If you don't book your flight soon, ( ①be ②are ③sold ④they'll ⑤chances ) out before the holidays.",
+                "options": [
+                  "be",
+                  "are",
+                  "sold",
+                  "they'll",
+                  "chances"
+                ],
+                "answer": "chances are that they'll be sold",
+                "required_knowledge": [
+                  "慣用表現",
+                  "Chances are (that) S V"
+                ],
+                "explanation": "正解は `chances are that they'll be sold` という語順。`Chances are (that) S V` は「たぶんSはVだろう、SがVする可能性が高い」という意味の口語的な慣用表現です。この文では「もしすぐに航空券を予約しないと、たぶん休暇前に売り切れてしまうだろう」という意味になります。thatはしばしば省略されます。"
+              }
+            ],
+            "grammar_tags": {
+              "仮定法未来": 1,
+              "If S should V": 1,
+              "不定詞の名詞的用法": 1,
+              "decision to do": 1,
+              "要求・提案を表す動詞に続くthat節": 1,
+              "仮定法現在（動詞の原形）": 1,
+              "不可算名詞の数量表現": 1,
+              "the + 比較級 + of the two": 1,
+              "関係副詞の代用": 1,
+              "the way S V": 1,
+              "語彙（動詞）": 1,
+              "語彙（名詞）": 2,
+              "コロケーション": 2,
+              "数量を表す慣用表現": 1,
+              "語彙（形容詞）": 1,
+              "語彙（名詞の抽象的用法）": 1,
+              "慣用句（イディオム）": 4,
+              "句動詞": 2,
+              "複合関係詞": 1,
+              "no matter wh-": 1,
+              "強調構文": 1,
+              "It is ... that ~": 1,
+              "比較（倍数表現）": 1,
+              "代名詞thatの用法": 1,
+              "SVOO構文": 1,
+              "rob A of B": 1,
+              "慣用表現": 1,
+              "Chances are (that) S V": 1
             }
           }
         },
