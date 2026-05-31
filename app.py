@@ -2175,7 +2175,7 @@ elif mode == "🏆 過去問演習・合格分析":
     if "exam_records" not in my_data:
         my_data["exam_records"] = []
 
-    tab_score, tab_deep, tab_compass = st.tabs(["📊 時間＆戦績データ管理", "🧠 全問ディープ分析＆オウトプシー", "🧭 総合戦略コンパス (全データ連携)"])
+    tab_score, tab_deep, tab_ai_sim, tab_compass = st.tabs(["📊 時間＆戦績データ管理", "🧠 全問ディープ分析＆オウトプシー", "🤖 AI代行受験 (スコア推定)", "🧭 総合戦略コンパス (全データ連携)"])
 
     # ------------------------------------------
     # タブ1: 時間＆戦績データ管理
@@ -2518,6 +2518,83 @@ elif mode == "🏆 過去問演習・合格分析":
                 for k in ["exam_review_text", "exam_review_chat", "exam_review_questions", "exam_review_checklist", "exam_review_name"]:
                     if k in st.session_state: del st.session_state[k]
                 st.rerun()
+    
+    # ------------------------------------------
+    # タブX: AI代行受験 (スコア＆期待値シミュレーター)
+    # ------------------------------------------
+    with tab_ai_sim:
+        st.markdown("#### 🤖 AI代行受験 (合格期待値シミュレーター)")
+        st.caption("現在のあなたの「単語・熟語・文法知識（武器）」だけを持たせたAIのクローンに、初見の過去問を解かせ、数学的な期待値スコアを算出します。")
+
+        # 武器の選択
+        vocab_books = [b["title"] for b in my_data.get("vocab_books", [])]
+        idiom_books = [b["title"] for b in my_data.get("idiom_books", [])]
+
+        col_w1, col_w2, col_w3 = st.columns([2, 2, 1.5])
+        sel_vocab = col_w1.selectbox("⚔️ 装備する単語帳", ["-- なし --"] + vocab_books)
+        sel_idiom = col_w2.selectbox("⚔️ 装備する熟語帳", ["-- なし --"] + idiom_books)
+        
+        
+        col_w3.markdown("<div style='height:28px;'></div>", unsafe_allow_html=True)
+        use_grammar = col_w3.checkbox("⚔️ 過去問DBの文法知識を装備", value=True, help="過去問データベースから抽出・蓄積した「必須知識タグ」をAIに持たせます")
+
+        st.markdown("##### ⚙️ 本番環境のデバフ（ペナルティ）設定")
+        col_p1, col_p2, col_p3 = st.columns(3)
+        careless_rate = col_p1.slider("😰 ケアレスミス率 (実力点ロス)", 0, 30, 5, format="%d%%", help="1択まで絞り切れた問題でも、マークミス等で落としてしまう確率") / 100.0
+        panic_rate = col_p2.slider("🌀 焦り失点率 (期待値ロス)", 0, 50, 20, format="%d%%", help="2択等に絞れても、プレッシャーで本来の確率通りに点が取れないロス率") / 100.0
+        timeout_rate = col_p3.slider("⏳ 時間切れ(塗り絵)率", 0, 50, 10, format="%d%%", help="時間が足りず、問題を読めずに完全な勘（4択=25%の確率）でマークする割合") / 100.0
+
+        exam_text_sim = st.text_area("📄 仮想受験させる過去問のテキスト（長文＋設問＋選択肢）", height=200, placeholder="ここに解かせたい過去問のテキストを貼り付けてください")
+
+        if st.button("🚀 クローンAIに仮想受験させる", type="primary", use_container_width=True):
+            if not exam_text_sim:
+                st.error("過去問のテキストを入力してください。")
+            else:
+                with st.spinner("あなたの知識セットをAIにコピーし、仮想受験を実行中...（約20〜40秒）"):
+                    # 知識の抽出（プロンプト制限回避のため上位を抽出）
+                    known_words = []
+                    if sel_vocab != "-- なし --":
+                        known_words = next((b["main_vocab"] for b in my_data["vocab_books"] if b["title"] == sel_vocab), [])
+                    known_idioms = []
+                    if sel_idiom != "-- なし --":
+                        known_idioms = [i["base_form"] for i in next((b["idioms"] for b in my_data["idiom_books"] if b["title"] == sel_idiom), [])]
+                    
+                    # ▼▼ 修正: 過去問DBから文法タグ（必須知識）を全取得 ▼▼
+                    known_grammar = []
+                    if use_grammar and exam_db:
+                        tags_set = set()
+                        for cat, unis in exam_db.items():
+                            for u, facs in unis.items():
+                                for f, years in facs.items():
+                                    for y, methods in years.items():
+                                        for m, data in methods.items():
+                                            if "grammar_tags" in data:
+                                                tags_set.update(data["grammar_tags"].keys())
+                        known_grammar = sorted(list(tags_set))
+
+                    sys_sim = f"""
+                    あなたは、指定された「習得済み語彙・文法リスト」のみを知識として持つ仮想の受験生です。
+                    リストにない単語や文法事項は「未知」として扱い、文脈から必死に推測して問題を解いてください。
+                    【AIの超人化防止ルール】推測の際は、文章全体から俯瞰して逆算するのではなく「その未知語が含まれる文とその前後の1文」のみを根拠として局所的に推測すること。
+
+                    【あなたの武器（習得済み）】
+                    ■ 単語: {', '.join(known_words[:800]) if known_words else 'なし'} ...
+                    ■ 熟語: {', '.join(known_idioms[:300]) if known_idioms else 'なし'} ...
+                    ■ 文法・語法テーマ: {', '.join(known_grammar) if known_grammar else 'なし'}
+
+                    【指示】
+                    入力された試験問題を解き、各設問について以下のJSONを出力してください。
+                    {{
+                      "results": [
+                        {{
+                          "question_id": "問1",
+                          "narrowed_down_to": 2, 
+                          "reasoning": "〇〇という単語はリストになく未知語だったが、前後の文からプラスの意味だと推測。また、文法テーマ「仮定法」は習得済みのため形から選択肢1と3を消去し、2択に絞った。"
+                        }}
+                      ]
+                    }}
+                    ※ `narrowed_down_to` は、既知の語彙・文法知識と文脈推測で「何択まで絞れたか」を整数で出力（完全に自信があれば1、2択なら2、全く分からなければ4など）。
+                    """
 
     # ------------------------------------------
     # タブ3: 総合戦略コンパス (全データ連携)
