@@ -80,6 +80,36 @@ if st.sidebar.button("⏹️ リセット"):
     st.session_state.clear()
     st.rerun()
 
+# --- 💾 データ管理 (セーブ＆ロード) ---
+st.sidebar.markdown("---")
+st.sidebar.markdown("### 💾 セーブ＆ロード")
+st.sidebar.caption("※ブラウザを閉じる前に「セーブ」を押してデータを保存してください。次回そのファイルを読み込むと続きから再開できます。")
+
+# 1. ダウンロード（セーブ）ボタン
+if os.path.exists(DATA_FILE):
+    with open(DATA_FILE, "r", encoding="utf-8") as f:
+        json_str = f.read()
+    st.sidebar.download_button(
+        label="⬇️ 今のデータを保存 (セーブ)",
+        data=json_str,
+        file_name="my_learning_data.json",
+        mime="application/json",
+        use_container_width=True
+    )
+
+# 2. アップロード（ロード）ボタン
+uploaded_data = st.sidebar.file_uploader("⬆️ 続きから始める (ロード)", type=["json"])
+if uploaded_data is not None:
+    if st.sidebar.button("🔄 データを復元する", type="primary", use_container_width=True):
+        try:
+            loaded_json = json.load(uploaded_data)
+            save_data(loaded_json)
+            st.sidebar.success("復元成功！画面を更新します...")
+            st.rerun()
+        except Exception as e:
+            st.sidebar.error("エラー：正しいファイルを選んでください")
+st.sidebar.markdown("---")    
+
 mode = st.sidebar.radio("モード", ["💬 対話で分析", "☕ 学習の作戦会議", "🏠 マイ教訓ノート", "📖 志望校別単語帳", "🔗 志望校別熟語帳", "📝 志望校別文法・語法ノート", "🏆 過去問演習・合格分析"])
 
 if "messages" not in st.session_state: st.session_state.messages = []
