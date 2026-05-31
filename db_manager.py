@@ -347,9 +347,10 @@ with tab1:
                             base_form = item["base_form"]
                             if base_form in merged_idioms:
                                 merged_idioms[base_form]["count"] += item["count"]
-                                merged_idioms[base_form]["quotes"] = list(set(merged_idioms[base_form].get("quotes", []) + item["quotes_in_text"]))
+                                # ▼ 著作権対策：ここで quotes の結合・保存処理を完全に削除（捨てる）
                             else:
-                                merged_idioms[base_form] = {"count": item["count"], "quotes": item["quotes_in_text"]}
+                                merged_idioms[base_form] = {"count": item["count"]}
+                                # ▼ 著作権対策：ここでも quotes は辞書に入れない（捨てる）
                                 
                         target_db["idioms"] = merged_idioms
 
@@ -564,7 +565,8 @@ with tab2:
                     idiom_display.append({
                         "熟語・構文": base_form,
                         "回数": data["count"],
-                        "本文中での使われ方 (Quote)": " / ".join(data["quotes"])
+                        # ▼ データに quotes が残っている場合は表示し、無い場合は「(著作権保護のため非表示)」とする
+                        "本文中での使われ方 (Quote)": " / ".join(data.get("quotes", [])) if "quotes" in data else "(著作権保護のため非表示)"
                     })
                 st.dataframe(pd.DataFrame(idiom_display), use_container_width=True)
             else:

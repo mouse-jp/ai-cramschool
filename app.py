@@ -147,15 +147,20 @@ def render_exam_selector(options_dict, key_prefix):
     unis = sorted(list(set([v["u"] for v in options_dict.values()])))
     sel_u = st.selectbox("1️⃣ 大学を選択", ["-- 選択 --"] + unis, key=f"{key_prefix}_u")
     if sel_u == "-- 選択 --": return []
+    
     facs = sorted(list(set([v["f"] for v in options_dict.values() if v["u"] == sel_u])))
     sel_f = st.selectbox("2️⃣ 学部を選択", ["-- 選択 --"] + facs, key=f"{key_prefix}_f")
     if sel_f == "-- 選択 --": return []
+    
     methods = sorted(list(set([v["m"] for v in options_dict.values() if v["u"] == sel_u and v["f"] == sel_f])))
-    sel_m = st.selectbox("3️⃣ 方式を選択", ["-- 選択 --"] + methods, key=f"{key_prefix}_m")
-    if sel_m == "-- 選択 --": return []
-    years = sorted(list(set([v["y"] for v in options_dict.values() if v["u"] == sel_u and v["f"] == sel_f and v["m"] == sel_m])), reverse=True)
+    # ▼ ここをマルチセレクト（複数選択）に変更！
+    sel_m_list = st.multiselect("3️⃣ 方式を選択（複数選択可）", methods, default=methods, key=f"{key_prefix}_m")
+    if not sel_m_list: return []
+    
+    years = sorted(list(set([v["y"] for v in options_dict.values() if v["u"] == sel_u and v["f"] == sel_f and v["m"] in sel_m_list])), reverse=True)
     sel_y_list = st.multiselect("4️⃣ 年度を選択（複数選択可）", years, default=years, key=f"{key_prefix}_y")
-    return [lbl for lbl, d in options_dict.items() if d["u"] == sel_u and d["f"] == sel_f and d["m"] == sel_m and d["y"] in sel_y_list]
+    
+    return [lbl for lbl, d in options_dict.items() if d["u"] == sel_u and d["f"] == sel_f and d["m"] in sel_m_list and d["y"] in sel_y_list]
 
 # --- 4. メイン画面 ---
 st.title(mode)
@@ -355,10 +360,16 @@ elif mode == "📖 志望校別単語帳":
                         st.markdown("---")
                         st.markdown("#### 📈 過去問データを追加して単語帳を強化 (マージ)")
                         add_labels = render_exam_selector(db_options, f"merge_vocab_{book_idx}")
+                        
+                        # ▼ AIフィルターのチェックボックスを追加
+                        use_ai_filter_merge = st.checkbox("🤖 マージする新規単語から「人名」等をAIで除外する", value=False, key=f"ai_merge_v_{book_idx}")
+                        
                         if st.button("✨ 選択したデータを追加 (マージ)", type="primary", key=f"btn_merge_vocab_{book_idx}") and add_labels:
-                            with st.spinner("単語データを結合し、頻度を再計算しています..."):
+                            with st.spinner("単語データを結合し、AIフィルターで審査しています..."):
                                 current_counts = Counter(current_book.get("counts", {}))
                                 current_origins = defaultdict(list, current_book.get("origins", {}))
+                                
+                                new_words_candidate = set() # AI審査用の新規単語候補
                                 
                                 for label in add_labels:
                                     path = db_options[label]
@@ -367,18 +378,33 @@ elif mode == "📖 志望校別単語帳":
                                     short_label = f"{str(path['y'])[-2:]}年"
                                     for w, count in freqs.items():
                                         current_origins[w].append(f"{short_label}({count}回)")
+                                        new_words_candidate.add(w)
                                 
                                 current_book["counts"] = dict(current_counts)
                                 current_book["origins"] = dict(current_origins)
                                 
                                 excluded_set = set(current_book.get("excluded_vocab", []))
                                 main_set = set(current_book.get("main_vocab", []))
-                                for w in current_counts.keys():
-                                    if w not in excluded_set and w not in main_set:
-                                        main_set.add(w)
+                                
+                                # まだ単語帳にない完全新規の単語だけを抽出
+                                new_words = [w for w in new_words_candidate if w not in excluded_set and w not in main_set]
+                                
+                                # ▼ AIフィルター処理
+                                if use_ai_filter_merge and api_key and new_words:
+                                    sys_filter = "英単語リストを分類しJSON出力: {\"main_vocab\": [\"technology\"], \"excluded_vocab\": [\"david\"]}。人名・企業名などはexcludedへ。一般名詞・地名はmainへ。"
+                                    try:
+                                        res = call_ai(f"リスト:\n{new_words}", sys_filter, is_json=True)
+                                        filtered_data = json.loads(res)
+                                        main_set.update(filtered_data.get("main_vocab", []))
+                                        excluded_set.update(filtered_data.get("excluded_vocab", []))
+                                    except:
+                                        main_set.update(new_words) # エラー時はとりあえず全部メインへ
+                                else:
+                                    main_set.update(new_words)
                                         
-                                # 新しい頻度でソート（※AIデータは消さずに保持する）
+                                # 新しい頻度でソート
                                 current_book["main_vocab"] = sorted(list(main_set), key=lambda x: current_counts[x], reverse=True)
+                                current_book["excluded_vocab"] = list(excluded_set)
                                 
                                 my_data["vocab_books"][book_idx] = current_book
                                 save_data(my_data)
