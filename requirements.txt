@@ -1,4 +1,6 @@
 streamlit
-google-genai
+google-generativeai
+pandas
+nltk
 tenacity
 PyMuPDF
