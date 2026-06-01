@@ -93,6 +93,44 @@ def flatten_tags(tags_data):
             flat_list.extend(flatten_tags(item))
     return flat_list
 
+def infer_question_type(q):
+    """
+    文法問題を「選択問題」か「整序問題」かに分類する。
+    既存DBに question_type がない問題にも対応するための保険。
+    """
+    question = str(q.get("question", ""))
+    options = q.get("options", [])
+    answer = q.get("answer", "")
+
+    # すでに分類済みならそれを使う
+    if q.get("question_type") in ["multiple_choice", "ordering"]:
+        return q["question_type"]
+
+    # answer が options の中にあるなら、普通の選択問題
+    if isinstance(options, list) and answer in options:
+        return "multiple_choice"
+
+    # ①②③... が question にあるなら、整序問題の可能性が高い
+    if any(mark in question for mark in ["①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨"]):
+        return "ordering"
+
+    # 選択肢が多く、answer が完成英文っぽいなら整序問題
+    if isinstance(options, list) and len(options) >= 5 and isinstance(answer, str) and " " in answer:
+        return "ordering"
+
+    # 不明な場合は今まで通り選択問題扱い
+    return "multiple_choice"
+
+
+def normalize_answer_text(s):
+    """
+    整序問題の採点用に、大小文字・句読点・余分な空白をならす。
+    """
+    s = str(s).strip().lower()
+    s = re.sub(r"[?.!,，。！？]", "", s)
+    s = re.sub(r"\s+", " ", s)
+    return s
+
 def extract_idioms_with_gemini(text):
     # --- (sys_prompt の定義はそのまま) ---
     sys_prompt = """AIを使って長文から熟語・イディオムを抽出し、JSONで返す関数"""
@@ -159,22 +197,38 @@ def extract_grammar_with_gemini(text):
     入力された過去問テキストから、文法・語法問題の出題意図を抽出し、
     全く同じ知識を問う著作権フリーの完全オリジナル問題を作成してください。
 
-
     【重要】
     ・過去問の英文を変えつつ、全く同じ文法、語法の知識を問う問題を出題すること。
     ・必ず required_knowledge を付ける。
     ・JSON以外は出力しない。
     ・解説は正解と不正解の根拠をすべて解説し、丁寧に背景知識等(lieの問題であったら例のように網羅的に）も解説すること。
+    ・問題形式は必ず question_type で示すこと。
+
+    【question_type】
+    ・4択・空所補充問題は "multiple_choice"。
+    ・語句整序・並び替え問題は "ordering"。
+    ・multiple_choice の answer は options の中の1つと完全一致させること。
+    ・ordering の answer は完成英文にし、answer_order に正しい番号順を入れること。
 
     【JSON出力形式】
     {
       "grammar_questions": [
         {
+          "question_type": "multiple_choice",
           "question": "The dog was (      ) on the bed.",
           "options": ["laying", "lying", "lain", "lied"],
           "answer": "lying",
           "required_knowledge": ["自動詞lieと他動詞layの区別", "現在分詞"],
-          "explanation": "正解はlying。lieは自動詞として使われ、嘘をつくと横になる（横たわる）の二つの意味がある。lie「嘘をつく」の場合は、lie(原型)-iied(過去形)-lied（過去分詞）-lying(進行形)という活用形をとる。また、lie「横になる」は、lie(原型)-lay(過去形)-lain(過去分詞)-lying(進行形)という活用形になる。layは他動詞として使われ、「横たえる・置く」という意味がある。活用形は、lay-laid-laid-layingとなる。本文は自動詞と使われ現在形であるからlyingが正解。layingは他動詞の現在形だから不適。lainは自動詞であるが、過去分詞であるため不適。liedも過去形と過去分詞で使われるため不適。"
+          "explanation": "正解はlying。lieは自動詞として使われ、嘘をつくと横になる（横たわる）の二つの意味がある。lie「嘘をつく」の場合は、lie(原型)-lied(過去形)-lied（過去分詞）-lying(進行形)という活用形をとる。また、lie「横になる」は、lie(原型)-lay(過去形)-lain(過去分詞)-lying(進行形)という活用形になる。layは他動詞として使われ、「横たえる・置く」という意味がある。活用形は、lay-laid-laid-layingとなる。本文は自動詞として使われ現在分詞が必要であるからlyingが正解。layingは他動詞layの現在分詞だから不適。lainは過去分詞であるため不適。liedは「嘘をつく」の過去形・過去分詞であり不適。"
+        },
+        {
+          "question_type": "ordering",
+          "question": "次の語句を並べ替えて、自然な英文を完成させなさい。",
+          "options": ["what", "the presentation", "so successful", "made", "was", "that", "it"],
+          "answer_order": [1, 5, 7, 6, 4, 2, 3],
+          "answer": "What was it that made the presentation so successful?",
+          "required_knowledge": ["強調構文", "疑問文の語順"],
+          "explanation": "正解は What was it that made the presentation so successful?。これは強調構文 it is/was ... that ... を疑問文にした形である。疑問詞 what が文頭に出て、その後は was it that ... の語順になる。made の主語は what で、the presentation so successful が目的語と補語の関係になる。"
         }
       ]
     }
@@ -354,9 +408,7 @@ with tab1:
                                 
                         target_db["idioms"] = merged_idioms
 
-                   # -----------------------------------------
-                    # ルートC: 文法・語法の抽出（AI処理）
-                                        # -----------------------------------------
+                                       # -----------------------------------------
                     # ルートC: 文法・語法の抽出（AI処理）
                     # -----------------------------------------
                     if ext_grammar:
@@ -382,6 +434,55 @@ with tab1:
                             q.setdefault("answer", "")
                             q.setdefault("explanation", "")
                             q.setdefault("required_knowledge", [])
+
+                            # 問題形式を必ず付ける
+                            q["question_type"] = infer_question_type(q)
+
+                            options = q.get("options", [])
+                            answer = q.get("answer", "")
+
+                            # 選択問題の最低限チェック
+                            if q["question_type"] == "multiple_choice":
+                                if not isinstance(options, list):
+                                    continue
+                                if len(options) < 2:
+                                    continue
+                                if answer not in options:
+                                    continue
+
+                            # 整序問題の最低限チェック
+                            if q["question_type"] == "ordering":
+                                if not isinstance(options, list):
+                                    continue
+                                if len(options) < 3:
+                                    continue
+                                if not isinstance(answer, str) or not answer.strip():
+                                    continue
+
+                                # answer_order がない場合、answer から自動推定を試す
+                                if "answer_order" not in q or not isinstance(q.get("answer_order"), list):
+                                    normalized_answer = normalize_answer_text(answer)
+                                    normalized_options = [normalize_answer_text(x) for x in options]
+                                    answer_words = normalized_answer.split()
+
+                                    guessed_order = []
+                                    used = set()
+
+                                    for aw in answer_words:
+                                        found_idx = None
+                                        for i, opt in enumerate(normalized_options):
+                                            if i in used:
+                                                continue
+                                            if opt == aw:
+                                                found_idx = i
+                                                break
+
+                                        if found_idx is not None:
+                                            guessed_order.append(found_idx + 1)
+                                            used.add(found_idx)
+
+                                    if len(guessed_order) == len(options):
+                                        q["answer_order"] = guessed_order
 
                             merged_grammar_questions.append(q)
 

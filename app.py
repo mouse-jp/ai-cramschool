@@ -110,13 +110,13 @@ if uploaded_data is not None:
             st.sidebar.error("エラー：正しいファイルを選んでください")
 st.sidebar.markdown("---")    
 
-mode = st.sidebar.radio("モード", ["💬 対話で分析", "☕ 学習の作戦会議", "🏠 マイ教訓ノート", "📖 志望校別単語帳", "🔗 志望校別熟語帳", "📝 志望校別文法・語法ノート", "🏆 過去問演習・合格分析"])
+mode = st.sidebar.radio("モード", [
+    "📖 志望校別単語帳", 
+    "🔗 志望校別熟語帳", 
+    "📝 志望校別文法・語法ノート", 
+    "🏆 過去問演習・合格分析"
+])
 
-if "messages" not in st.session_state: st.session_state.messages = []
-if "auto_insight" not in st.session_state: st.session_state.auto_insight = ""
-if "current_quiz_question" not in st.session_state: st.session_state.current_quiz_question = ""
-if "current_quiz_data" not in st.session_state: st.session_state.current_quiz_data = ""
-if "quiz_chat_history" not in st.session_state: st.session_state.quiz_chat_history = []
 
 # --- 3. AI呼び出し関数 ---
 def call_ai(prompt, sys_msg, use_pdf=False, is_json=False, model_name="gemini-2.5-pro"):
@@ -165,148 +165,12 @@ def render_exam_selector(options_dict, key_prefix):
 # --- 4. メイン画面 ---
 st.title(mode)
 
-# ==========================================
-# モードA: 対話で分析
-# ==========================================
-if mode == "💬 対話で分析":
-    st.markdown("間違えた問題を教えてください。一緒に原因を探りましょう。")
-    for msg in st.session_state.messages:
-        with st.chat_message(msg["role"]): st.markdown(msg["content"])
 
-    if user_text := st.chat_input("例：第6問の問2を①にして間違えました"):
-        st.session_state.messages.append({"role": "user", "content": user_text})
-        with st.chat_message("user"): st.markdown(user_text)
-
-        with st.chat_message("assistant"):
-            with st.spinner("思考中..."):
-                history_text = "\n".join([f"{m['role']}: {m['content']}" for m in st.session_state.messages])
-                sys = "あなたは生徒の思考を引き出す塾講師です。PDFと対話履歴を見て、いきなり正解を教えず「なぜそう思った？」と2〜3文で問いかけてください。"
-                response = call_ai(history_text, sys, use_pdf=True)
-                st.markdown(response)
-                st.session_state.messages.append({"role": "assistant", "content": response})
-                st.rerun()
-                
-    st.markdown("---")
-    st.markdown("### 💡 気づきをストック")
-    if st.button("✨ この対話から教訓を自動生成") and api_key:
-        with st.spinner("教訓を要約中..."):
-            history_text = "\n".join([f"{m['role']}: {m['content']}" for m in st.session_state.messages])
-            sys_summary = "この対話履歴から、生徒が次に活かすべき教訓を1文（20文字程度）で簡潔に出力してください。"
-            st.session_state.auto_insight = call_ai(history_text, sys_summary, use_pdf=False).strip()
-            st.rerun()
-
-    insight_in = st.text_input("教訓", value=st.session_state.auto_insight)
-    if st.button("💾 保存する") and insight_in:
-        my_data["meta"].append({"title": "対話からの気づき", "content": insight_in, "source": "対話分析"})
-        save_data(my_data)
-        st.session_state.auto_insight = ""
-        st.success("✅ 教訓をノートに追加しました！")
-
-# ==========================================
-# モードB: 学習の作戦会議
-# ==========================================
-elif mode == "☕ 学習の作戦会議":
-    st.markdown("今の勉強法や進捗を自由に報告してください。")
-    report_in = st.text_area("例：ターゲット1900を1日1周しています。でも長文が遅いです。", height=100)
-    if st.button("AIに報告・相談する") and api_key and report_in:
-        with st.spinner("作戦を考え中..."):
-            sys = "あなたは生徒の自主性を重んじるメンターです。生徒の学習報告を肯定し、さらに良くなるための具体的なアドバイスを1つだけ、2〜3文で提案してください。説教は禁止です。"
-            st.info(call_ai(report_in, sys, use_pdf=False))
-
-# ==========================================
-# モードC: マイ教訓ノート
-# ==========================================
-elif mode == "🏠 マイ教訓ノート":
-    st.title("🏠 究極のマイ教訓データベース")
-    
-    with st.form("manual_add_form"):
-        st.markdown("#### ✨ 知識を構造化して登録（商用化セーフ版）")
-        col1, col2 = st.columns([1, 2])
-        with col1:
-            category_options = {"🔤 語彙（単語・熟語）": "vocabulary", "📖 文法・構文": "grammar", "🧠 解法・読解戦略": "strategy", "⚠️ メタ認知・その他": "meta"}
-            selected_cat = st.selectbox("カテゴリ", list(category_options.keys()))
-            source_tag = st.text_input("出題元タグ（例：25年日大I-3）")
-        with col2:
-            item_title = st.text_input("項目名（例：pop, 倒置法）")
-            item_content = st.text_area("意味・ルール（例：ひょっこり現れる, 否定の副詞が文頭に来るとVSになる）")
-        
-        if st.form_submit_button("💾 データベースにクリーン登録") and item_title and item_content:
-            my_data[category_options[selected_cat]].append({"title": item_title, "content": item_content, "source": source_tag if source_tag else "タグなし"})
-            save_data(my_data)
-            st.success(f"「{item_title}」を追加しました！")
-            st.rerun() 
-            
-    st.markdown("---")
-
-    def display_entries(category_key, icon_name):
-        with st.expander(icon_name, expanded=True):
-            if my_data.get(category_key):
-                for item in my_data[category_key]:
-                    if isinstance(item, dict):
-                        st.markdown(f"**{item['title']}** （🏷️ {item['source']}）\n↳ {item['content']}")
-                    else:
-                        st.markdown(f"- {item}")
-            else:
-                st.info("まだ登録されていません。")
-
-    display_entries("vocabulary", "🔤 語彙（単語・熟語）")
-    display_entries("grammar", "📖 文法・構文")
-    display_entries("strategy", "🧠 解法・読解戦略（テクニック）")
-    display_entries("meta", "⚠️ メタ認知・その他（メンタル・教訓）")
-
-    st.markdown("---")
-    
-    col_a, col_b = st.columns([1, 1])
-    with col_a: create_quiz = st.button("🔄 教訓から復習テストを作る", use_container_width=True)
-    with col_b:
-        if st.session_state.current_quiz_question and st.button("🗑️ テストを終了・クリア", use_container_width=True):
-            st.session_state.current_quiz_question = ""
-            st.session_state.current_quiz_data = ""
-            st.session_state.quiz_chat_history = []
-            st.rerun()
-
-    if create_quiz and api_key:
-        sys_gen = "ユーザーの教訓リストを踏まえて、シンプルで素直な『短い英語の和訳クイズ』または『穴埋めクイズ』を1問だけ出してください。ひっかけ問題や理不尽な問題は【絶対に】作らないでください。解説や答えはまだ書かないでください。"
-        all_insights = my_data.get("vocabulary", []) + my_data.get("grammar", []) + my_data.get("strategy", []) + my_data.get("meta", [])
-        insight_texts = [f"{i['title']}: {i['content']}" if isinstance(i, dict) else i for i in all_insights]
-        prompt_text = f"私の教訓リスト: {', '.join(insight_texts)}"
-        
-        with st.spinner("クイズを生成中..."):
-            st.session_state.current_quiz_question = call_ai(prompt_text, sys_gen, use_pdf=False)
-            st.session_state.current_quiz_data = prompt_text
-            st.session_state.quiz_chat_history = []
-            st.rerun()
-
-    if st.session_state.current_quiz_question:
-        st.markdown("---")
-        st.markdown("### 📝 今日の復習クイズ")
-        st.info(st.session_state.current_quiz_question)
-        st.markdown("#### 🗣️ AI先生との対話・添削")
-        
-        for chat in st.session_state.quiz_chat_history:
-            with st.chat_message(chat["role"]): st.write(chat["content"])
-
-        if user_input := st.chat_input("ここに回答や質問を入力..."):
-            st.session_state.quiz_chat_history.append({"role": "user", "content": user_input})
-            with st.spinner("AI先生が思考中..."):
-                sys_grading = f"""
-                あなたは優しくフレンドリーな伴走者です。プレッシャーは与えないでください。
-                生徒の『回答』を見てフィードバックしてください。間違えても否定せずヒントを1つ出し、正解したら大げさに褒めてください。
-                ■ 出題された問題: {st.session_state.current_quiz_question}
-                ■ 教訓データ: {st.session_state.current_quiz_data}
-                """
-                history_context = "\n".join([f"{h['role']}: {h['content']}" for h in st.session_state.quiz_chat_history[-6:]])
-                ai_response = call_ai(f"これまでの会話:\n{history_context}\n生徒: {user_input}", sys_grading, use_pdf=False)
-                st.session_state.quiz_chat_history.append({"role": "assistant", "content": ai_response})
-            st.rerun()
 
 # ==========================================
 # ★真の完全版 モードD: 志望校別単語帳（本棚 ＋ 任意AIフィルター ＋ シミュレーター）
 # ==========================================
-# ==========================================
-# ★真の完全版 モードD: 志望校別単語帳（本棚 ＋ 任意AIフィルター ＋ シミュレーター）
-# ==========================================
-elif mode == "📖 志望校別単語帳":
+if mode == "📖 志望校別単語帳":
     st.markdown("あなた専用の単語帳を作成し、本棚で管理します。")
     
     db_options = {}
@@ -784,19 +648,28 @@ elif mode == "📖 志望校別単語帳":
                                     if is_answered:
                                         status = st.session_state.vocab_quiz_status[str(idx)]
                                         st.markdown("---")
-                                        
+
                                         if q_format == "4択":
                                             if status["user_ans"] == "🤔 わからない":
                                                 st.warning(f"💡 正解は **{q['answer']}** でした。")
                                             elif status["is_correct"]:
-                                                st.success(f"⭕ **正解！**")
+                                                st.success(f"⭕ **正解！** : {q['answer']}")
                                             else:
-                                                st.error(f"❌ **不正解** : あなたの解答「{status['user_ans']}」 ➔ 正解「{q['answer']}」")
+                                                st.error(
+                                                    f"❌ **不正解** : あなたの解答「{status['user_ans']}」 ➔ 正解「{q['answer']}」"
+                                                )
                                         else:
                                             st.success(f"💡 正解は **{q['answer']}** です。")
 
                                         item = enriched_dict[word]
-                                        st.info(f"**🔄 変化形:** {item.get('forms', '-')}\n\n**🎯 使い方:**\n" + "\n".join([f"- {c}" for c in item.get('chunks', [])]))
+                                        st.info(
+                                            f"**🔄 変化形:** {item.get('forms', '-')}\n\n"
+                                            f"**🎯 使い方:**\n" + "\n".join([f"- {c}" for c in item.get('chunks', [])])
+                                        )
+
+                                                                                    
+                                                                                  
+                                             
 
                                         
                                         
@@ -1835,12 +1708,32 @@ elif mode == "📝 志望校別文法・語法ノート":
             if all_tags:
                 selected_tag = st.selectbox("5️⃣ さらに文法テーマ（タグ）で絞り込む", ["-- すべて --"] + sorted(list(all_tags)))
 
+            question_type_filter = st.selectbox(
+                "6️⃣ 問題形式で絞り込む",
+                ["すべて", "選択問題のみ", "整序問題のみ"]
+            )
+
             # 最終的な出題候補
             final_candidates = []
             if selected_tag != "-- すべて --":
-                final_candidates = [q for q in base_questions if selected_tag in q.get("primary_tags", [])]
+                final_candidates = [
+                    q for q in base_questions
+                    if selected_tag in q.get("primary_tags", q.get("required_knowledge", []))
+                ]
             else:
                 final_candidates = base_questions
+
+            # 問題形式で絞り込み
+            if question_type_filter == "選択問題のみ":
+                final_candidates = [
+                    q for q in final_candidates
+                    if q.get("question_type", "multiple_choice") == "multiple_choice"
+                ]
+            elif question_type_filter == "整序問題のみ":
+                final_candidates = [
+                    q for q in final_candidates
+                    if q.get("question_type") == "ordering"
+                ]
 
             if selected_labels:
                 st.write(f"該当する問題数: **{len(final_candidates)} 問**")
@@ -1893,46 +1786,126 @@ elif mode == "📝 志望校別文法・語法ノート":
                     with st.container(border=True):
                         st.markdown(f"**{q.get('question', '')}**")
                         
-                        # 🛡️ 安全装置: 辞書が存在しない場合は空辞書を作成してエラーを防ぐ
+                                                # 🛡️ 安全装置: 辞書が存在しない場合は空辞書を作成してエラーを防ぐ
                         if "grammar_q_status" not in st.session_state:
                             st.session_state.grammar_q_status = {}
-                            
+
                         is_answered = str(idx) in st.session_state.grammar_q_status
-                        user_ans = st.radio("選択してください:", q.get("options", []), key=f"g_choice_{idx}", disabled=is_answered)
-                        
+                        q_type = q.get("question_type", "multiple_choice")
+                        options = q.get("options", [])
+
+                        # -----------------------------
+                        # 選択問題
+                        # -----------------------------
+                        if q_type == "multiple_choice":
+                            user_ans = st.radio(
+                                "選択してください:",
+                                options,
+                                key=f"g_choice_{idx}",
+                                disabled=is_answered
+                            )
+
+                        # -----------------------------
+                        # 整序問題
+                        # -----------------------------
+                        elif q_type == "ordering":
+                            st.markdown("**語句一覧**")
+                            for n, word in enumerate(options, start=1):
+                                st.markdown(f"{n}. {word}")
+
+                            user_ans = st.text_input(
+                                "正しい順番を番号で入力してください。例: 1,5,7,6,4,2,3",
+                                key=f"g_order_{idx}",
+                                disabled=is_answered
+                            )
+
+                        else:
+                            st.warning("未対応の問題形式です。")
+                            user_ans = ""
+
                         st.markdown("<br>", unsafe_allow_html=True)
                         if not is_answered:
                             if st.button("📝 解答して解説を見る", key=f"g_ans_btn_{idx}", type="primary", use_container_width=True):
                                 correct_ans = q.get("answer")
-                                is_correct = (user_ans == correct_ans)
+                                user_display_ans = user_ans
+
+                                if q_type == "multiple_choice":
+                                    is_correct = (user_ans == correct_ans)
+
+                                elif q_type == "ordering":
+                                    try:
+                                        nums = [
+                                            int(x.strip())
+                                            for x in str(user_ans).replace("，", ",").split(",")
+                                            if x.strip()
+                                        ]
+
+                                        user_words = [options[n - 1] for n in nums]
+                                        user_sentence = " ".join(user_words)
+
+                                        normalized_user = re.sub(
+                                            r"\s+",
+                                            " ",
+                                            re.sub(r"[?.!,，。！？]", "", user_sentence.lower()).strip()
+                                        )
+                                        normalized_correct = re.sub(
+                                            r"\s+",
+                                            " ",
+                                            re.sub(r"[?.!,，。！？]", "", str(correct_ans).lower()).strip()
+                                        )
+
+                                        is_correct = (normalized_user == normalized_correct)
+                                        user_display_ans = user_sentence
+
+                                    except Exception:
+                                        is_correct = False
+                                        user_display_ans = "入力形式エラー"
+
+                                else:
+                                    is_correct = False
+
                                 st.session_state.grammar_q_status[str(idx)] = {
-                                    "user_ans": user_ans, 
+                                    "user_ans": user_display_ans,
+                                    "raw_user_ans": user_ans,
                                     "is_correct": is_correct
                                 }
-                                
+
                                 # 正答・誤答の履歴を保存（次回の出題確率に影響）
                                 q_text = q.get("question", "")
-                                if "grammar_stats" not in my_data: my_data["grammar_stats"] = {}
-                                if q_text not in my_data["grammar_stats"]: my_data["grammar_stats"][q_text] = {"correct": 0, "incorrect": 0}
-                                if is_correct: my_data["grammar_stats"][q_text]["correct"] += 1
-                                else: my_data["grammar_stats"][q_text]["incorrect"] += 1
+                                if "grammar_stats" not in my_data:
+                                    my_data["grammar_stats"] = {}
+                                if q_text not in my_data["grammar_stats"]:
+                                    my_data["grammar_stats"][q_text] = {"correct": 0, "incorrect": 0}
+                                if is_correct:
+                                    my_data["grammar_stats"][q_text]["correct"] += 1
+                                else:
+                                    my_data["grammar_stats"][q_text]["incorrect"] += 1
                                 save_data(my_data)
-                                
+
                                 st.rerun()
-                        
+
                         if is_answered:
                             status = st.session_state.grammar_q_status[str(idx)]
                             st.markdown("---")
+
                             if status["is_correct"]:
                                 st.success(f"⭕ **正解！** : {q.get('answer')}")
                             else:
                                 st.error(f"❌ **不正解** : あなたの解答「{status['user_ans']}」 ➔ 正解「{q.get('answer')}」")
-                            
+
+                            if q.get("question_type") == "ordering" and q.get("answer_order"):
+                                st.caption(f"正しい番号順: {','.join(map(str, q.get('answer_order', [])))}")
+
                             st.info(f"**💡 和訳:** {q.get('translation', '記載なし')}\n\n**📘 解説・背景知識:**\n{q.get('explanation', '記載なし')}")
-                            
+
                             if st.button("💾 この文法知識を「マイ教訓ノート」に保存", key=f"g_save_note_{idx}"):
-                                if "grammar" not in my_data: my_data["grammar"] = []
-                                my_data["grammar"].append({"title": "文法ドリルからの教訓", "content": q.get('explanation', ''), "source": q.get('source', '')})
+                                if "grammar" not in my_data:
+                                    my_data["grammar"] = []
+                                my_data["grammar"].append({
+                                    "title": "文法ドリルからの教訓",
+                                    "content": q.get("explanation", ""),
+                                    "source": q.get("source", "")
+                                })
                                 save_data(my_data)
                                 st.success("保存しました！")
 
@@ -2534,15 +2507,15 @@ elif mode == "🏆 過去問演習・合格分析":
         sel_vocab = col_w1.selectbox("⚔️ 装備する単語帳", ["-- なし --"] + vocab_books)
         sel_idiom = col_w2.selectbox("⚔️ 装備する熟語帳", ["-- なし --"] + idiom_books)
         
-        
         col_w3.markdown("<div style='height:28px;'></div>", unsafe_allow_html=True)
         use_grammar = col_w3.checkbox("⚔️ 過去問DBの文法知識を装備", value=True, help="過去問データベースから抽出・蓄積した「必須知識タグ」をAIに持たせます")
 
         st.markdown("##### ⚙️ 本番環境のデバフ（ペナルティ）設定")
+        st.caption("※「ケアレスミス」と「焦り」は、どちらも『実力で取れたはずの持ち点』からの失点として合算されます。")
         col_p1, col_p2, col_p3 = st.columns(3)
-        careless_rate = col_p1.slider("😰 ケアレスミス率 (実力点ロス)", 0, 30, 5, format="%d%%", help="1択まで絞り切れた問題でも、マークミス等で落としてしまう確率") / 100.0
-        panic_rate = col_p2.slider("🌀 焦り失点率 (期待値ロス)", 0, 50, 20, format="%d%%", help="2択等に絞れても、プレッシャーで本来の確率通りに点が取れないロス率") / 100.0
-        timeout_rate = col_p3.slider("⏳ 時間切れ(塗り絵)率", 0, 50, 10, format="%d%%", help="時間が足りず、問題を読めずに完全な勘（4択=25%の確率）でマークする割合") / 100.0
+        careless_rate = col_p1.slider("😰 ケアレスミス率", 0, 30, 5, format="%d%%", help="マークミスや読み間違いによる失点率") / 100.0
+        panic_rate = col_p2.slider("🌀 焦り失点率", 0, 50, 10, format="%d%%", help="プレッシャーで普段の論理的思考ができず落としてしまう割合") / 100.0
+        timeout_rate = col_p3.slider("⏳ 時間切れ(塗り絵)率", 0, 50, 10, format="%d%%", help="時間が足りず未着手となり、完全な勘でマークする割合") / 100.0
 
         exam_text_sim = st.text_area("📄 仮想受験させる過去問のテキスト（長文＋設問＋選択肢）", height=200, placeholder="ここに解かせたい過去問のテキストを貼り付けてください")
 
@@ -2551,7 +2524,7 @@ elif mode == "🏆 過去問演習・合格分析":
                 st.error("過去問のテキストを入力してください。")
             else:
                 with st.spinner("あなたの知識セットをAIにコピーし、仮想受験を実行中...（約20〜40秒）"):
-                    # 知識の抽出（プロンプト制限回避のため上位を抽出）
+                    # 知識の抽出
                     known_words = []
                     if sel_vocab != "-- なし --":
                         known_words = next((b["main_vocab"] for b in my_data["vocab_books"] if b["title"] == sel_vocab), [])
@@ -2559,7 +2532,6 @@ elif mode == "🏆 過去問演習・合格分析":
                     if sel_idiom != "-- なし --":
                         known_idioms = [i["base_form"] for i in next((b["idioms"] for b in my_data["idiom_books"] if b["title"] == sel_idiom), [])]
                     
-                    # ▼▼ 修正: 過去問DBから文法タグ（必須知識）を全取得 ▼▼
                     known_grammar = []
                     if use_grammar and exam_db:
                         tags_set = set()
@@ -2588,13 +2560,86 @@ elif mode == "🏆 過去問演習・合格分析":
                       "results": [
                         {{
                           "question_id": "問1",
+                          "total_options": 4,
                           "narrowed_down_to": 2, 
-                          "reasoning": "〇〇という単語はリストになく未知語だったが、前後の文からプラスの意味だと推測。また、文法テーマ「仮定法」は習得済みのため形から選択肢1と3を消去し、2択に絞った。"
+                          "reasoning": "〇〇は未知語だったが、前後の文脈からプラスの意味だと推測。選択肢1と3を消去し、2択に絞った。"
                         }}
                       ]
                     }}
-                    ※ `narrowed_down_to` は、既知の語彙・文法知識と文脈推測で「何択まで絞れたか」を整数で出力（完全に自信があれば1、2択なら2、全く分からなければ4など）。
+                    ※ `total_options` はその問題の本来の選択肢の数（3択なら3、4択なら4、5択なら5）を整数で出力。
+                    ※ `narrowed_down_to` は、既知の語彙・文法と推測で「何択まで絞れたか」を整数で出力（完全に自信があれば1、2択なら2、全く分からなければ total_options と同じ値）。
                     """
+                    try:
+                        res_sim = call_ai(exam_text_sim, sys_sim, is_json=True, model_name="gemini-2.5-pro")
+                        st.session_state.sim_exam_results = json.loads(res_sim)
+                        st.session_state.sim_penalties = {"careless": careless_rate, "panic": panic_rate, "timeout": timeout_rate}
+                    except Exception as e:
+                        st.error(f"シミュレーション失敗: {e}")
+
+        if "sim_exam_results" in st.session_state:
+            results = st.session_state.sim_exam_results.get("results", [])
+            penalties = st.session_state.sim_penalties
+            if results:
+                total_q = len(results)
+                pts_per_q = 100.0 / total_q  # 均等配点（100点満点換算）
+
+                timeout_rate = penalties.get("timeout", 0.0)
+                careless_rate = penalties.get("careless", 0.0)
+                panic_rate = penalties.get("panic", 0.0)
+
+                raw_true_total = 0.0
+                raw_expected_total = 0.0
+                blind_guess_score = 0.0
+
+                for r in results:
+                    tot_opt = max(1, r.get("total_options", 4)) # ゼロ割防止（デフォルト4択）
+                    n = max(1, r.get("narrowed_down_to", tot_opt))
+
+                    # 1. 時間切れ(未着手)分の期待値（問題ごとの選択肢数に応じた純粋な勘）
+                    blind_guess_score += (pts_per_q * timeout_rate) * (1.0 / tot_opt)
+                    
+                    # 2. 着手できた割合による獲得見込み点数
+                    attempted_pts = pts_per_q * (1.0 - timeout_rate)
+                    
+                    if n <= 1:
+                        raw_true_total += attempted_pts
+                    else:
+                        raw_expected_total += attempted_pts * (1.0 / n)
+
+                # 3. デバフ（ケアレスミス ＋ 焦り）の適用
+                # ユーザー仕様: どちらも「実力でとれるはずのもの（True + Expected）」からの失点とする
+                debuff_rate = careless_rate + panic_rate
+                
+                final_true = raw_true_total * (1.0 - debuff_rate)
+                final_expected = raw_expected_total * (1.0 - debuff_rate)
+                debuff_loss = (raw_true_total + raw_expected_total) * debuff_rate
+                
+                final_total = final_true + final_expected + blind_guess_score
+
+                st.markdown("---")
+                st.markdown(f"### 📊 仮想受験スコア（推定期待値）: **{final_total:.1f} / 100 点**")
+
+                col_s1, col_s2, col_s3, col_s4 = st.columns(4)
+                col_s1.metric("🟢 実力点 (確保分)", f"{final_true:.1f}点", f"元の実力: {raw_true_total:.1f}点", delta_color="off")
+                col_s2.metric("🟡 期待値点 (確保分)", f"{final_expected:.1f}点", f"元の期待値: {raw_expected_total:.1f}点", delta_color="off")
+                col_s3.metric("🎲 時間切れ (塗り絵)", f"{blind_guess_score:.1f}点", "問題ごとの確率計算", delta_color="off")
+                col_s4.metric("⚠️ デバフ失点", f"-{debuff_loss:.1f}点", f"ケアレス+焦りのロス", delta_color="inverse")
+
+                st.markdown("#### 🧠 AIクローンの全問オウトプシー（思考・根拠）")
+                st.caption(f"※全問題のうち {(1.0 - timeout_rate)*100:.0f}% に着手できたと仮定した解答プロセスです。")
+                for r in results:
+                    tot_opt = r.get("total_options", 4)
+                    n = r.get("narrowed_down_to", tot_opt)
+                    
+                    if n <= 1:
+                        badge = "🟢 確信 (1択)"
+                    elif n < tot_opt:
+                        badge = f"🟡 絞り込み成功 ({n}/{tot_opt}択)"
+                    else:
+                        badge = f"🔴 完全な勘 ({tot_opt}択のまま)"
+
+                    with st.expander(f"{r.get('question_id', '問題')} - {badge}", expanded=(1 < n < tot_opt)):
+                        st.markdown(f"**思考プロセス（根拠）:**\n{r.get('reasoning', '')}")
 
     # ------------------------------------------
     # タブ3: 総合戦略コンパス (全データ連携)

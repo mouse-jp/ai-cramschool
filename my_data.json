@@ -14275,6 +14275,42 @@
     "If you don't book your flight soon, ( ①be ②are ③sold ④they'll ⑤chances ) out before the holidays.": {
       "correct": 0,
       "incorrect": 1
+    },
+    "The historic town is definitely worth (      ) if you are interested in traditional architecture.": {
+      "correct": 0,
+      "incorrect": 1
+    },
+    "This surprising outcome was caused (      ) by his brilliant strategy as by his opponent's careless mistake.": {
+      "correct": 1,
+      "incorrect": 0
+    },
+    "The main bridge is closed for repairs, so we have to use a temporary one (      ).": {
+      "correct": 1,
+      "incorrect": 0
+    },
+    "She grew up in a family of musicians, so she is completely (      ) classical composers.": {
+      "correct": 1,
+      "incorrect": 0
+    },
+    "My roommate and I take (      ) cleaning our apartment every weekend.": {
+      "correct": 0,
+      "incorrect": 1
+    },
+    "(      ) for her dedicated support, I would not have been able to complete my thesis.": {
+      "correct": 1,
+      "incorrect": 0
+    },
+    "Our school (      ) creativity and encourages students to think outside the box.": {
+      "correct": 0,
+      "incorrect": 1
+    },
+    "He took great (      ) to prepare a detailed presentation for the important clients.": {
+      "correct": 1,
+      "incorrect": 0
+    },
+    "From the summit of the mountain, it's a (      ) five-hour hike back to the base camp.": {
+      "correct": 0,
+      "incorrect": 1
     }
   },
   "exam_records": [
