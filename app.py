@@ -5,6 +5,9 @@ import os
 import json
 import re
 import random
+import io
+import csv
+from datetime import datetime
 from collections import Counter
 import nltk
 from nltk.stem import WordNetLemmatizer
@@ -46,10 +49,16 @@ def process_frequencies(raw_freqs):
 # --- 1. データ保存・読み込み ---
 DATA_FILE = "my_data.json"
 EXAM_DB_FILE = "past_exams_db.json" # 裏アプリ(db_manager)で作ったデータ
+BASE_LEXICON_FILE = "base_lexicon.json"
+BASE_LEXICON_LOG_FILE = "base_lexicon_generation_log.json"
+FREQUENCY_STRONG_TITLE = "頻度つよつよ単語"
+BASE_VOCAB_STATUSES = {"core_verified", "exam_format", "watch_known"}
+EXCLUDED_BASE_VOCAB_STATUSES = {"strict_excluded", "proper_noun_or_noise"}
+CIRCLED_NUMBERS = ["①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", "⑩"]
 
 def load_data():
     if os.path.exists(DATA_FILE):
-        with open(DATA_FILE, "r", encoding="utf-8") as f:
+        with open(DATA_FILE, "r", encoding="utf-8-sig") as f:
             return json.load(f)
     return {"vocabulary": [], "grammar": [], "strategy": [], "meta": []}
 
@@ -59,21 +68,302 @@ def save_data(data):
 
 def load_exam_db():
     if os.path.exists(EXAM_DB_FILE):
-        with open(EXAM_DB_FILE, "r", encoding="utf-8") as f:
+        with open(EXAM_DB_FILE, "r", encoding="utf-8-sig") as f:
             return json.load(f)
     return {}
 
+def load_base_lexicon():
+    if os.path.exists(BASE_LEXICON_FILE):
+        with open(BASE_LEXICON_FILE, "r", encoding="utf-8-sig") as f:
+            return json.load(f)
+    return {}
+
+def save_base_lexicon(lexicon):
+    with open(BASE_LEXICON_FILE, "w", encoding="utf-8") as f:
+        json.dump(lexicon, f, ensure_ascii=False, indent=2)
+
+def load_base_lexicon_generation_log():
+    if os.path.exists(BASE_LEXICON_LOG_FILE):
+        try:
+            with open(BASE_LEXICON_LOG_FILE, "r", encoding="utf-8-sig") as f:
+                return json.load(f)
+        except Exception:
+            return []
+    return []
+
+def append_base_lexicon_generation_log(entry):
+    logs = load_base_lexicon_generation_log()
+    logs.append(entry)
+    with open(BASE_LEXICON_LOG_FILE, "w", encoding="utf-8") as f:
+        json.dump(logs[-200:], f, ensure_ascii=False, indent=2)
+
+def normalize_vocab_word(word):
+    word = str(word).strip().lower()
+    lemma = lemmatizer.lemmatize(word, pos="v")
+    lemma = lemmatizer.lemmatize(lemma, pos="n")
+    return lemma
+
+def split_meanings(value):
+    if isinstance(value, list):
+        return [str(v).strip() for v in value if str(v).strip()]
+    if isinstance(value, str):
+        text = re.sub(r"\s+", " ", value.strip())
+        if not text:
+            return []
+        if re.search(r"[①②③④⑤⑥⑦⑧⑨⑩]", text):
+            parts = re.split(r"\s*(?=[①②③④⑤⑥⑦⑧⑨⑩])", text)
+            return [p.strip(" ;；") for p in parts if p.strip(" ;；")]
+        return [v.strip() for v in re.split(r"[；;]", text) if v.strip()]
+    return []
+
+def meanings_to_text(value):
+    return "；".join(split_meanings(value))
+
+def numbered_meanings_to_text(value):
+    meanings = split_meanings(value)
+    numbered = []
+    for index, meaning in enumerate(meanings):
+        meaning = str(meaning).strip()
+        if not meaning:
+            continue
+        if re.match(r"^[①②③④⑤⑥⑦⑧⑨⑩]", meaning):
+            numbered.append(meaning)
+        else:
+            prefix = CIRCLED_NUMBERS[index] if index < len(CIRCLED_NUMBERS) else f"{index + 1}."
+            numbered.append(f"{prefix} {meaning}")
+    return "；".join(numbered)
+
+def get_frequency_strong_words(lexicon):
+    return {
+        normalize_vocab_word(word)
+        for word, entry in lexicon.items()
+        if entry.get("status") in BASE_VOCAB_STATUSES
+    }
+
+def get_frequency_excluded_words(lexicon):
+    return {
+        normalize_vocab_word(word)
+        for word, entry in lexicon.items()
+        if entry.get("status") in EXCLUDED_BASE_VOCAB_STATUSES
+    }
+
+def build_frequency_strong_meaning_report(lexicon):
+    rows = []
+    for word, entry in lexicon.items():
+        if entry.get("status") not in BASE_VOCAB_STATUSES:
+            continue
+        meanings = split_meanings(entry.get("meanings", []))
+        rows.append({
+            "順位": entry.get("last_seen_rank", ""),
+            "単語": word,
+            "出現回数": entry.get("last_seen_count", 0),
+            "出典数": entry.get("source_count", 0),
+            "意味数": len(meanings),
+            "意味": "；".join(meanings),
+            "注意": entry.get("alert", ""),
+            "生成状態": entry.get("meaning_review_status", ""),
+            "意味更新日時": entry.get("meaning_updated_at", ""),
+        })
+    rows.sort(key=lambda row: (
+        row["順位"] if isinstance(row["順位"], int) else 999999,
+        row["単語"],
+    ))
+    missing = [row for row in rows if row["意味数"] == 0]
+    thin = [
+        row for row in rows
+        if row["意味数"] == 1 and (int(row.get("出典数") or 0) >= 8 or int(row.get("出現回数") or 0) >= 20)
+    ]
+    no_alert_polysemy = [
+        row for row in rows
+        if row["意味数"] >= 3 and not str(row.get("注意", "")).strip()
+    ]
+    return {
+        "rows": rows,
+        "missing": missing,
+        "thin": thin,
+        "no_alert_polysemy": no_alert_polysemy,
+    }
+
+def rows_to_csv(rows):
+    output = io.StringIO()
+    fieldnames = ["順位", "単語", "出現回数", "出典数", "意味数", "意味", "注意", "生成状態", "意味更新日時"]
+    writer = csv.DictWriter(output, fieldnames=fieldnames, extrasaction="ignore")
+    writer.writeheader()
+    writer.writerows(rows)
+    return output.getvalue().encode("utf-8-sig")
+
+def build_frequency_strong_book(lexicon):
+    core_items = [
+        (word, entry)
+        for word, entry in lexicon.items()
+        if entry.get("status") in BASE_VOCAB_STATUSES
+    ]
+    if not core_items:
+        return None
+
+    core_items.sort(key=lambda item: (
+        item[1].get("last_seen_rank") if isinstance(item[1].get("last_seen_rank"), int) else 999999,
+        item[0]
+    ))
+    excluded_words = [
+        word
+        for word, entry in lexicon.items()
+        if entry.get("status") in EXCLUDED_BASE_VOCAB_STATUSES
+    ]
+    enriched_vocab = []
+    for word, entry in core_items:
+        meanings = numbered_meanings_to_text(entry.get("meanings", []))
+        if not meanings:
+            continue
+        enriched_vocab.append({
+            "word": word,
+            "forms": entry.get("forms", ""),
+            "meanings": meanings,
+            "chunks": entry.get("chunks", []),
+            "context": entry.get("context", "頻度つよつよ単語に固定登録済み。"),
+            "alert": entry.get("alert", ""),
+        })
+
+    return {
+        "title": FREQUENCY_STRONG_TITLE,
+        "main_vocab": [word for word, _ in core_items],
+        "excluded_vocab": excluded_words,
+        "counts": {word: entry.get("last_seen_count", 0) for word, entry in core_items},
+        "origins": {word: ["頻度つよつよ単語3000"] for word, _ in core_items},
+        "enriched_vocab": enriched_vocab,
+        "skipped_vocab": [],
+        "fixed_source": BASE_LEXICON_FILE,
+    }
+
+def apply_frequency_strong_enrichment(lexicon, enriched_items, skipped_words):
+    changed = 0
+    for item in enriched_items:
+        word = normalize_vocab_word(item.get("word", ""))
+        if not word or word not in lexicon:
+            continue
+        entry = lexicon[word]
+        meanings = split_meanings(item.get("meanings", ""))
+        if meanings:
+            entry["meanings"] = meanings
+        for key in ["forms", "chunks", "context", "alert"]:
+            if item.get(key):
+                entry[key] = item.get(key)
+        entry["source"] = "frequency_strong_gemini_enrichment"
+        entry["meaning_policy"] = "broad_exam_coverage"
+        entry["meaning_review_status"] = "ai_generated"
+        entry["meaning_updated_at"] = datetime.now().isoformat(timespec="seconds")
+        changed += 1
+
+    for word in skipped_words:
+        normalized = normalize_vocab_word(word)
+        if normalized in lexicon:
+            lexicon[normalized]["note"] = "Gemini meaning generation skipped this word."
+    if changed:
+        save_base_lexicon(lexicon)
+    return changed
+
+def reset_frequency_strong_enrichment(lexicon):
+    reset_count = 0
+    generated_keys = [
+        "forms",
+        "chunks",
+        "context",
+        "alert",
+        "meaning_policy",
+        "meaning_review_status",
+        "meaning_updated_at",
+    ]
+    for entry in lexicon.values():
+        if entry.get("status") not in BASE_VOCAB_STATUSES:
+            continue
+        entry["meanings"] = []
+        for key in generated_keys:
+            entry.pop(key, None)
+        reset_count += 1
+    save_base_lexicon(lexicon)
+    return reset_count
+
+def build_frequency_strong_enrich_prompt():
+    return """
+    あなたは大学受験英語に精通したプロの予備校講師です。
+    提供された英単語リストは、すでに「頻度つよつよ単語」として固定採用された基礎語です。
+    この3000語はあとから通常の単語解析AIで逐次追加しない前提なので、簡潔さより網羅性を優先してください。
+    スキップは絶対にしないでください。入力された全単語を "enriched" に入れてください。
+    各単語について、大学入試で読解に必要になり得る意味を、基本義・抽象義・品詞違い・入試頻出の多義語まで漏れなく日本語で列挙してください。
+    ただし、専門辞書にしか載らない極端にまれな意味は除き、共通テスト・私大・国公立二次の英文読解で誤読を防ぐための意味に絞ってください。
+    "meanings" は文字列ではなく、意味グループごとの配列にしてください。似た意味はまとめてよいですが、別義は分けてください。各項目には [形] [副] [動] [名] など品詞ラベルを必要に応じて付けてください。
+    画面側で ①②③ を付けるので、"meanings" の各項目には番号を書かないでください。
+    "chunks" には、主要な意味の訳し分けが分かる短い句を2〜5個入れてください。各句の先頭には、必ず対応する意味番号を書いてください。例: "① more people（もっと多くの人々）"、"② more importantly（さらに重要なことに）"。
+    文法説明をここに入れすぎないでください。文法ノートに回すべき説明ではなく、単語の意味判別に必要な最小限の注意だけ "alert" に書いてください。
+    "alert" には、訳し分け・多義語・不可算/可算・自動詞/他動詞など、入試で誤読しやすい注意点がある場合だけ短く書いてください。
+    {
+      "enriched": [
+        {
+          "word": "company",
+          "forms": "複数形: companies",
+          "meanings": ["[名] 会社、企業", "[名] 仲間、同席", "[名] 一緒にいること、付き合い"],
+          "chunks": ["① run a company（会社を経営する）", "② in company with ...（...と一緒に）", "③ enjoy someone's company（人と一緒にいるのを楽しむ）"],
+          "context": "ビジネス・社会系の長文で頻出。",
+          "alert": "「仲間」「同席」の意味では company を単数・不可算的に読む場面がある。"
+        }
+      ],
+      "skipped": []
+    }
+    """
+
+def apply_frequency_strong_ai_response(lexicon, target_words, parsed_data):
+    target_norms = {normalize_vocab_word(word) for word in target_words}
+    enriched_items = parsed_data.get("enriched", [])
+    returned_words = {
+        normalize_vocab_word(item.get("word", ""))
+        for item in enriched_items
+        if normalize_vocab_word(item.get("word", ""))
+    }
+    extra_returned = sorted(returned_words - target_norms)
+    valid_enriched_items = [
+        item
+        for item in enriched_items
+        if normalize_vocab_word(item.get("word", "")) in target_norms
+    ]
+    missing_returned = [
+        word
+        for word in target_words
+        if normalize_vocab_word(word) not in returned_words
+    ]
+    changed = apply_frequency_strong_enrichment(
+        lexicon,
+        valid_enriched_items,
+        parsed_data.get("skipped", []),
+    )
+    return {
+        "requested": len(target_words),
+        "saved": changed,
+        "missing": missing_returned,
+        "extra": extra_returned,
+    }
+
 my_data = load_data()
 exam_db = load_exam_db()
+base_lexicon = load_base_lexicon()
+frequency_strong_words = get_frequency_strong_words(base_lexicon)
+frequency_excluded_words = get_frequency_excluded_words(base_lexicon)
 
 # --- 2. 設定とUI ---
 st.set_page_config(page_title="自律型AI塾", page_icon="🧭", layout="wide")
 st.sidebar.title("設定")
 
-if "GEMINI_API_KEY" in st.secrets:
-    api_key = st.secrets["GEMINI_API_KEY"]
-else:
+api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or ""
+if not api_key:
+    try:
+        api_key = st.secrets.get("GEMINI_API_KEY", "") or st.secrets.get("GOOGLE_API_KEY", "")
+    except Exception:
+        api_key = ""
+if not api_key:
     api_key = st.sidebar.text_input("Gemini API Key", type="password")
+if api_key:
+    genai.configure(api_key=api_key)
+else:
+    st.sidebar.warning("Gemini API Keyを入力するとAI生成が使えます。")
 uploaded_pdf = st.sidebar.file_uploader("問題PDF", type=["pdf"])
 
 if st.sidebar.button("⏹️ リセット"):
@@ -114,12 +404,15 @@ mode = st.sidebar.radio("モード", [
     "📖 志望校別単語帳", 
     "🔗 志望校別熟語帳", 
     "📝 志望校別文法・語法ノート", 
+    "📚 長文読解",
     "🏆 過去問演習・合格分析"
 ])
 
 
 # --- 3. AI呼び出し関数 ---
 def call_ai(prompt, sys_msg, use_pdf=False, is_json=False, model_name="gemini-2.5-pro"):
+    if not api_key:
+        raise ValueError("Gemini API Keyが未入力です。左サイドバーにAPIキーを入力してから実行してください。")
     genai.configure(api_key=api_key)
     
     # モデルの指定（デフォルトは 2.5-pro、クイズ等で 3.1-flash-lite を渡せるようにする）
@@ -139,6 +432,529 @@ def call_ai(prompt, sys_msg, use_pdf=False, is_json=False, model_name="gemini-2.
     else:
         res = model.generate_content(prompt)
         return res.text
+
+def split_reading_sentences(text):
+    return [s.strip() for s in re.split(r'(?<=[.!?])\s+', str(text).replace('\n', ' ')) if s.strip()]
+
+def clear_reading_state(prefix="reading"):
+    suffixes = [
+        "target_text", "sentences", "current_idx", "chat_logs", "chat_sentence_idx",
+        "temp_memo", "show_word_selector", "global_memory", "translations", "structures",
+        "last_note_title", "last_note_content"
+    ]
+    for suffix in suffixes:
+        key = f"{prefix}_{suffix}"
+        if key in st.session_state:
+            del st.session_state[key]
+    for key in ["temp_memo", "show_word_selector"]:
+        if key in st.session_state:
+            del st.session_state[key]
+
+def set_reading_text(text, prefix="reading"):
+    st.session_state[f"{prefix}_target_text"] = text
+    st.session_state[f"{prefix}_sentences"] = split_reading_sentences(text)
+    st.session_state[f"{prefix}_current_idx"] = 0
+    st.session_state[f"{prefix}_chat_sentence_idx"] = -1
+    st.session_state[f"{prefix}_temp_memo"] = []
+    st.session_state[f"{prefix}_show_word_selector"] = False
+    st.session_state[f"{prefix}_global_memory"] = ""
+    st.session_state[f"{prefix}_translations"] = {}
+    st.session_state[f"{prefix}_structures"] = {}
+    st.session_state.temp_memo = []
+    st.session_state.show_word_selector = False
+
+def save_reading_note(title, content, category="構文・文法", source="長文読解", also_grammar=False):
+    if "reading_notes" not in my_data:
+        my_data["reading_notes"] = []
+    note = {
+        "title": title,
+        "content": content,
+        "category": category,
+        "source": source,
+        "created_at": datetime.now().isoformat(timespec="seconds"),
+    }
+    my_data["reading_notes"].append(note)
+    if also_grammar:
+        if "grammar" not in my_data:
+            my_data["grammar"] = []
+        my_data["grammar"].append({
+            "title": title,
+            "content": content,
+            "source": f"{source} / {category}",
+        })
+    save_data(my_data)
+
+def render_close_reading_tab():
+    st.markdown("#### 📖 精読・構文・和訳")
+    st.caption("長文を読みながら、わからない文だけ対話式に構造・文法・和訳を確認します。")
+
+    read_method = st.radio(
+        "題材となる長文の準備方法",
+        ["📝 自分でテキストを貼り付ける", "📄 過去問PDFから抽出する", "🤖 AIにウォームアップ文を作ってもらう"],
+        horizontal=True,
+        key="close_read_method",
+    )
+
+    if read_method == "📝 自分でテキストを貼り付ける":
+        pasted = st.text_area("英語の長文を貼り付けてください", height=150, key="close_read_pasted")
+        if st.button("✅ このテキストで精読を始める", type="primary", key="close_read_start_text") and pasted:
+            set_reading_text(pasted)
+            st.rerun()
+
+    elif read_method == "📄 過去問PDFから抽出する":
+        up_pdf = st.file_uploader("PDFをアップロード", type=["pdf"], key="close_read_pdf")
+        if st.button("🚀 PDFから長文を抽出する", type="primary", key="close_read_extract_pdf") and up_pdf:
+            with st.spinner("AIがPDFから長文部分だけを抽出しています..."):
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+                    tmp.write(up_pdf.getvalue())
+                    tmp_path = tmp.name
+                try:
+                    g_file = genai.upload_file(tmp_path)
+                    model = genai.GenerativeModel(model_name="gemini-2.5-pro")
+                    res = model.generate_content([g_file, "このPDFから英語の長文本文だけを抽出してください。設問、選択肢、日本語の指示文、ページ番号、不要なレイアウト情報は除外してください。英文本文のみを自然な段落で出力してください。"])
+                    set_reading_text(res.text)
+                finally:
+                    os.remove(tmp_path)
+                st.rerun()
+
+    else:
+        st.info("ウォームアップ用です。実力を伸ばす本番練習では、過去問PDFか実際の英文を使うのがおすすめです。")
+        if st.button("✨ ウォームアップ文を生成する", type="primary", key="close_read_generate_warmup"):
+            with st.spinner("AIがウォームアップ用の英文を書いています..."):
+                sys_gen_read = "大学受験の長文読解に向けたウォームアップ用英文を180〜250語で作成してください。簡単すぎる文だけにせず、関係詞、分詞、不定詞、比較、接続、指示語が自然に含まれる英文にしてください。英文本文のみ出力してください。"
+                text = call_ai("テーマはランダムでよいので、構文練習になる英文を作成してください。", sys_gen_read, use_pdf=False, model_name="gemini-3.5-flash")
+                set_reading_text(text)
+                st.rerun()
+
+    if st.session_state.get("reading_target_text"):
+        st.markdown("---")
+        st.markdown("""
+        <style>
+        div[data-testid="column"]:has(.reading-sticky-anchor) {
+            position: sticky;
+            top: 0.75rem;
+            align-self: flex-start;
+            z-index: 2;
+        }
+        div[data-testid="column"]:has(.reading-sticky-anchor) [data-testid="stVerticalBlock"] {
+            max-height: calc(100vh - 1.5rem);
+        }
+        @media (max-width: 900px) {
+            div[data-testid="column"]:has(.reading-sticky-anchor) {
+                position: static;
+            }
+        }
+        </style>
+        """, unsafe_allow_html=True)
+        col_read, col_chat = st.columns([1, 1])
+        sentences = st.session_state.get("reading_sentences", [])
+        idx = st.session_state.get("reading_current_idx", 0)
+
+        with col_read:
+            st.markdown('<div class="reading-sticky-anchor"></div>', unsafe_allow_html=True)
+            st.markdown("##### 📄 全体マップ")
+            with st.container(border=True, height=500):
+                display_html = ""
+                for i, s in enumerate(sentences):
+                    if i == idx:
+                        display_html += f"<span style='background-color:#ffeb3b; color:black; font-weight:bold; padding:2px 4px; border-radius:3px;'>{s}</span> "
+                    elif i in st.session_state.get("reading_translations", {}):
+                        display_html += f"<span style='color:#e7e7e7;'>{s}</span><br><span style='color:#8ab4ff;'>↳ {st.session_state['reading_translations'][i]}</span> "
+                    else:
+                        display_html += f"<span style='color:gray;'>{s}</span> "
+                st.markdown(f"<div style='line-height:1.8; font-size:1.1em;'>{display_html}</div>", unsafe_allow_html=True)
+
+            if st.button("🗑️ 長文をクリアして別のものを読む", use_container_width=True, key="close_read_clear"):
+                clear_reading_state()
+                st.rerun()
+
+        with col_chat:
+            if idx < len(sentences):
+                current_sentence = sentences[idx]
+                st.markdown(f"##### 🎯 現在のターゲット ({idx + 1}/{len(sentences)})")
+                st.info(f"**{current_sentence}**")
+
+                if st.session_state.get("reading_chat_sentence_idx") != idx:
+                    st.session_state.reading_chat_sentence_idx = idx
+                    st.session_state.reading_chat_logs = [
+                        {"role": "assistant", "content": "まずはこの文の和訳に挑戦してみて。質問でも大丈夫です。必要なら構造・修飾・文法まで一緒にほどいていきます。"}
+                    ]
+                    st.session_state.show_word_selector = False
+                    st.session_state.temp_memo = []
+
+                col_t1, col_t2 = st.columns(2)
+                if col_t1.button("🈁 この文の訳を見る", use_container_width=True, key=f"show_translation_{idx}"):
+                    with st.spinner("自然な日本語訳を作成中..."):
+                        sys_translation = "あなたは大学受験英語の講師です。英文を自然な日本語に訳してください。必要以上の解説はせず、訳だけを出力してください。"
+                        if "reading_translations" not in st.session_state:
+                            st.session_state.reading_translations = {}
+                        st.session_state.reading_translations[idx] = call_ai(current_sentence, sys_translation, model_name="gemini-3.5-flash").strip()
+                        st.rerun()
+                if col_t2.button("🧩 構造を見る", use_container_width=True, key=f"show_structure_{idx}"):
+                    with st.spinner("構文を分解中..."):
+                        sys_structure = """
+                        あなたは大学受験英語の構文解説者です。英文を読むために必要な文法だけを、結論から、短く説明してください。
+
+                        【文体ルール】
+                        - 「受験生の皆さん、こんにちは」「今日の一文」などの定型あいさつは禁止。
+                        - 励ましは必要なときだけ短く入れてよい。ただし本文解説と関係ない締めメッセージは不要。
+                        - 「超重要」「良問」「どこよりも詳しく」「ギュッと詰まった」などの誇張表現は禁止。
+                        - 雑談、長いテーマ紹介、まとめメッセージは不要。
+                        - 口調は丁寧でよいが、予備校の解答解説、または参考書の欄外メモのように短く書く。
+                        - 英文全体を再掲しない。必要な語句だけ引用する。
+                        - 初回表示で読む量を増やしすぎない。原則250〜450字以内。
+                        - 説明は「結論 → 形で読む → 訳」の順にする。
+                        - 文法名から説明を始めない。まず「この形はこう読めばよい」という直観的な型に落とし込む。
+                        - 初学者が見てすぐ使える説明にする。S/V/O/C、関係副詞、関係代名詞、修飾節、分詞構文などの文法名は原則出さない。
+                        - 文法名が必要な場合も、最後に「文法名でいうと〜」と1行だけ補足する。
+                        - 例: "the way + S + V" は、まず「SがVする方法・やり方」と説明する。必要な場合だけ「関係副詞 how が省略された形と考えられる」のように補足する。
+                        - 文法用語は補足として使ってよいが、長く説明しない。読めるようになるための最小限にする。
+
+                        【必ず含める項目】
+                        1. まずこう読む: この文の大まかな意味を1文で言う
+                        2. 形のヒント: 覚えるべき形を「形 = 意味」で示す
+                        3. どこで切るか: 文を読む順番で2〜3か所に区切る
+                        4. 自然な訳: 入試答案として使える自然な日本語訳
+                        5. 注意: 誤読しやすい点があれば1点だけ
+
+                        【出力形式】
+                        見出しは「まずこう読む」「形のヒント」「どこで切るか」「自然な訳」「注意」の5つだけにしてください。
+                        各見出しは1行まで。箇条書きは最大3つまで。
+                        詳しい派生説明は書かず、生徒が質問したら追加で説明する前提にしてください。
+
+                        【禁止】
+                        「今回扱う英文」「ステップ」「まとめ」「講師から」などの長い教材風構成は禁止。
+                        S/V/O/C の記号をメインにした説明は禁止。
+                        「関係副詞が省略された修飾節」のような文法名中心の説明は禁止。
+                        """
+                        if "reading_structures" not in st.session_state:
+                            st.session_state.reading_structures = {}
+                        st.session_state.reading_structures[idx] = call_ai(current_sentence, sys_structure, model_name="gemini-3.5-flash").strip()
+                        st.rerun()
+
+                if idx in st.session_state.get("reading_translations", {}):
+                    st.success(f"日本語訳: {st.session_state['reading_translations'][idx]}")
+                if idx in st.session_state.get("reading_structures", {}):
+                    structure_text = st.session_state["reading_structures"][idx]
+                    old_long_style = (
+                        "受験生の皆さん" in structure_text
+                        or "今日の一文" in structure_text
+                        or "今回扱う英文" in structure_text
+                        or len(structure_text) > 1400
+                    )
+                    with st.expander("🧩 この文の構造解説", expanded=True):
+                        if old_long_style:
+                            st.info("古い長文形式の解説が残っています。もう一度「構造を見る」を押すと、短い形式で作り直します。")
+                        else:
+                            st.markdown(structure_text)
+
+                col_chat_title, col_chat_reset = st.columns([3, 1])
+                with col_chat_title:
+                    st.markdown("##### 🤖 和訳チャレンジ＆伴走チャット")
+                if col_chat_reset.button("🧹 リセット", use_container_width=True, key=f"reset_reading_chat_{idx}"):
+                    st.session_state.reading_chat_logs = [
+                        {"role": "assistant", "content": "まずはこの文を一緒に短くほどきます。和訳でも質問でも大丈夫です。"}
+                    ]
+                    st.rerun()
+                with st.container(border=True, height=450):
+                    for msg in st.session_state.reading_chat_logs:
+                        with st.chat_message(msg["role"]):
+                            st.markdown(msg["content"])
+
+                if user_req := st.chat_input("和訳を入力、または質問する...", key="reading_chat"):
+                    st.session_state.reading_chat_logs.append({"role": "user", "content": user_req})
+                    with st.spinner("解説を作成中..."):
+                        sys_reading = f"""
+                        あなたは大学受験英語のやさしい読解サポーターです。
+                        知識を見せるためではなく、生徒が次に自分で読めるようになるためだけに答えてください。
+
+                        【これまでの長文全体の対話履歴】
+                        {st.session_state.get('reading_global_memory', 'まだありません')}
+
+                        【現在のターゲット文】
+                        {current_sentence}
+
+                        【指導方針】
+                        - 「受験生の皆さん」「今日の一文」などの定型あいさつは禁止です。
+                        - 生徒の回答に対する短い励まし・受け止めは必ず入れてください。例:「その読み方でかなり近いです」「そこに気づけているのは良いです」。
+                        - ただし本文と関係ない長い応援文や締めメッセージは不要です。
+                        - 「超重要」「神」「どこよりも詳しく」などの誇張表現は禁止です。
+                        - 口調は丁寧でよいが、雑談をせず、読解に必要な説明だけを出してください。
+                        - 返答は原則250〜450字以内。長くなる場合は、まず要点だけを出し、詳しい説明は質問された部分だけに絞ってください。
+                        - 生徒の質問への答えを最初に出してください。基本の流れは「短い受け止め → 結論 → 形のヒント → 自然な訳」です。
+                        - 生徒の自主性を大切にし、まず生徒の読み方を受け止めてください。
+                        - 説明は必要な点を落とさず、ただし一度に全部を詰め込みすぎないでください。
+                        - 文法名から入らず、まず「形 → 意味」の直観的な読み方に落としてください。文法用語は必要なときだけ補足として使ってください。
+                        - 初学者向けには S/V/O/C や関係詞名よりも、「どこで切るか」「どの形がどの意味になるか」を優先してください。
+                        - 例: "the way + S + V" は「SがVする方法・やり方」と先に説明し、必要なら「how の省略」と一言だけ補足してください。
+                        - S/V/O/C、関係詞名、分詞構文などの文法名は、生徒が聞いたとき、または誤読修正に必要なときだけ使ってください。
+                        - 生徒が和訳を書いた場合は、良い点、ズレ、自然な訳、構文の根拠を示してください。
+                        - いきなり全訳だけで終わらず、なぜそう読めるのかを説明してください。
+
+                        【禁止する出力】
+                        - 知識を列挙するだけの長い講義
+                        - 「この文の骨組みは実はとてもシンプルです」のような講師っぽい前置き
+                        - 4項目以上の長い番号付き解説
+                        - 生徒が聞いていない文法知識の見せびらかし
+                        - 1回の返答で全文を分解し切ろうとすること
+                        """
+                        history_str = "\n".join([f"{m['role']}: {m['content']}" for m in st.session_state.reading_chat_logs[-4:]])
+                        ans = call_ai(f"直近の会話:\n{history_str}", sys_reading, use_pdf=False, model_name="gemini-3.5-flash")
+                        st.session_state.reading_chat_logs.append({"role": "assistant", "content": ans})
+                        st.rerun()
+
+                st.markdown("---")
+                col_btn1, col_btn2 = st.columns(2)
+                if col_btn1.button("❓ わからない単語・熟語がある", use_container_width=True, key=f"toggle_words_{idx}"):
+                    st.session_state.show_word_selector = not st.session_state.get("show_word_selector", False)
+                    st.rerun()
+
+                if col_btn2.button("⏭️ 完璧！スキップして次へ", use_container_width=True, type="primary", key=f"next_sentence_{idx}"):
+                    current_chat = "\n".join([f"{m['role']}: {m['content']}" for m in st.session_state.reading_chat_logs if m['role'] in ["user", "assistant"]])
+                    st.session_state.reading_global_memory += f"\n【文 {idx + 1}: {current_sentence} の対話】\n{current_chat}\n"
+                    st.session_state.reading_current_idx += 1
+                    st.rerun()
+
+                if st.session_state.get("show_word_selector"):
+                    st.markdown("###### 👆 調べたい単語をクリック、または熟語を検索！")
+                    words = [w for w in re.findall(r"\b[a-zA-Z\-']+\b", current_sentence)]
+                    cols = st.columns(6)
+                    for i, w in enumerate(words):
+                        if cols[i % 6].button(w, key=f"wbtn_{i}_{idx}"):
+                            with st.spinner(f"「{w}」の意味を検索中..."):
+                                sys_dict = "あなたは辞書です。指定された単語の、この文脈における意味を簡潔に答えてください。"
+                                meaning = call_ai(f"文脈: {current_sentence}\n単語: {w}", sys_dict, use_pdf=False, model_name="gemini-3.5-flash")
+                                st.session_state.temp_memo.append({"word": w, "meaning": meaning.strip()})
+                                st.rerun()
+
+                    st.markdown("<br>", unsafe_allow_html=True)
+                    col_idiom1, col_idiom2 = st.columns([3, 1])
+                    search_idiom = col_idiom1.text_input("熟語・フレーズの検索", label_visibility="collapsed", placeholder="調べたい熟語を入力 (例: take care of)", key=f"search_idiom_{idx}")
+                    if col_idiom2.button("🔍 検索", key=f"search_idiom_btn_{idx}", use_container_width=True) and search_idiom:
+                        with st.spinner("検索中..."):
+                            sys_dict = "あなたは辞書です。指定された熟語・フレーズの、この文脈における意味を簡潔に答えてください。"
+                            meaning = call_ai(f"文脈: {current_sentence}\n熟語: {search_idiom}", sys_dict, use_pdf=False, model_name="gemini-3.5-flash")
+                            st.session_state.temp_memo.append({"word": search_idiom, "meaning": meaning.strip()})
+                            st.rerun()
+
+                if st.session_state.get("temp_memo"):
+                    st.markdown("###### 📝 単語・熟語の一時メモ")
+                    with st.container(border=True):
+                        for m in st.session_state.temp_memo:
+                            st.markdown(f"- **{m['word']}**: {m['meaning']}")
+
+                st.markdown("---")
+                st.markdown("##### 💡 学びをストック")
+                with st.form("reading_memo_form", clear_on_submit=True):
+                    note_title = st.text_input("📝 項目名（例：関係副詞whereの非制限用法）", key="close_read_note_title")
+                    note_category = st.selectbox("分類", ["構文・文法", "単語", "熟語", "指示語", "論理展開", "和訳", "設問根拠", "その他"], key="close_read_note_category")
+                    note_content = st.text_area("意味・ルール（AIの解説や単語メモを保存）", height=80, key="close_read_note_content")
+                    also_grammar = st.checkbox("文法・語法ノートにも保存する", value=(note_category == "構文・文法"), key="close_read_note_also_grammar")
+                    if st.form_submit_button("🏠 読解メモに保存", type="primary"):
+                        if note_title and note_content:
+                            save_reading_note(note_title, note_content, note_category, "精読・構文・和訳", also_grammar)
+                            st.success("読解メモに保存しました！")
+                        else:
+                            st.error("項目名と内容の両方を入力してください。")
+
+            else:
+                st.success("🎉 全ての文の精読が完了しました。")
+                if st.button("🔄 長文をクリアする", use_container_width=True, key="close_read_finish_clear"):
+                    clear_reading_state()
+                    st.rerun()
+
+def render_evidence_training_tab():
+    st.markdown("#### 🎯 設問根拠トレーニング")
+    st.caption("長文全体を読み、設問ごとに本文の根拠と選択肢を切る理由を考える練習です。")
+
+    source = st.radio("題材の準備方法", ["📝 長文＋設問を貼り付ける", "📄 PDFから抽出する"], horizontal=True, key="evidence_source")
+    if source == "📝 長文＋設問を貼り付ける":
+        raw_text = st.text_area("長文・設問・選択肢をまとめて貼り付けてください", height=220, key="evidence_raw_text")
+        if st.button("✅ この内容で実践読解を始める", type="primary", key="start_evidence_text") and raw_text:
+            st.session_state.evidence_text = raw_text
+            st.session_state.evidence_feedback = ""
+            st.rerun()
+    else:
+        up_pdf = st.file_uploader("PDFをアップロード", type=["pdf"], key="evidence_pdf")
+        if st.button("🚀 PDFから長文・設問を抽出する", type="primary", key="extract_evidence_pdf") and up_pdf:
+            with st.spinner("AIが長文・設問・選択肢を抽出しています..."):
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+                    tmp.write(up_pdf.getvalue())
+                    tmp_path = tmp.name
+                try:
+                    g_file = genai.upload_file(tmp_path)
+                    model = genai.GenerativeModel(model_name="gemini-2.5-pro")
+                    prompt = "このPDFから英語長文、設問、選択肢を読みやすく抽出してください。解答や解説は作らず、本文・設問番号・選択肢が分かる形で整理してください。"
+                    res = model.generate_content([g_file, prompt])
+                    st.session_state.evidence_text = res.text
+                    st.session_state.evidence_feedback = ""
+                finally:
+                    os.remove(tmp_path)
+                st.rerun()
+
+    if st.session_state.get("evidence_text"):
+        st.markdown("---")
+        st.markdown("""
+        <style>
+        div[data-testid="column"]:has(.evidence-sticky-anchor) {
+            position: sticky;
+            top: 0.75rem;
+            align-self: flex-start;
+            z-index: 2;
+        }
+        div[data-testid="column"]:has(.evidence-sticky-anchor) [data-testid="stVerticalBlock"] {
+            max-height: calc(100vh - 1.5rem);
+        }
+        @media (max-width: 900px) {
+            div[data-testid="column"]:has(.evidence-sticky-anchor) {
+                position: static;
+            }
+        }
+        </style>
+        """, unsafe_allow_html=True)
+        col_passage, col_work = st.columns([1, 1])
+        with col_passage:
+            st.markdown('<div class="evidence-sticky-anchor"></div>', unsafe_allow_html=True)
+            st.markdown("##### 📄 本文・設問")
+            with st.container(border=True, height=560):
+                st.markdown(st.session_state.evidence_text)
+            if st.button("🗑️ 実践読解をクリア", use_container_width=True, key="clear_evidence"):
+                for k in ["evidence_text", "evidence_feedback", "evidence_summary"]:
+                    if k in st.session_state:
+                        del st.session_state[k]
+                st.rerun()
+
+        with col_work:
+            st.markdown("##### 🧠 自分の根拠を書く")
+            question_ref = st.text_input("設問番号・設問名", placeholder="例: 問3 / Q2", key="evidence_question_ref")
+            user_answer = st.text_input("自分の答え", placeholder="例: 2 / B", key="evidence_user_answer")
+            evidence_sentence = st.text_area("根拠にした本文", height=110, key="evidence_sentence")
+            elimination_reason = st.text_area("選択肢を切った理由・迷った理由", height=110, key="evidence_reason")
+            col_e1, col_e2 = st.columns(2)
+            if col_e1.button("🔍 根拠を添削してもらう", type="primary", use_container_width=True, key="check_evidence"):
+                with st.spinner("根拠の取り方を確認中..."):
+                    sys_evidence = """
+                    あなたは大学受験英語の長文読解講師です。生徒の答えを頭ごなしに否定せず、本文根拠・選択肢処理・読み戻し方を丁寧に添削してください。
+                    必ず以下を含めてください。
+                    1. 生徒の根拠の良い点
+                    2. 根拠として弱い点・読み違い
+                    3. 本文のどこを見るべきか
+                    4. 選択肢を切る判断基準
+                    5. 次に同じタイプを解く時の読み方
+                    """
+                    prompt = f"""
+                    【本文・設問】
+                    {st.session_state.evidence_text}
+
+                    【設問】
+                    {question_ref}
+                    【生徒の答え】
+                    {user_answer}
+                    【生徒が根拠にした本文】
+                    {evidence_sentence}
+                    【選択肢を切った理由・迷った理由】
+                    {elimination_reason}
+                    """
+                    st.session_state.evidence_feedback = call_ai(prompt, sys_evidence, model_name="gemini-2.5-pro")
+                    st.rerun()
+
+            if col_e2.button("🧭 全体の読み方を見る", use_container_width=True, key="summarize_evidence"):
+                with st.spinner("段落役割と要旨を整理中..."):
+                    sys_summary = """
+                    あなたは大学受験英語の長文読解講師です。本文全体について、段落の役割、筆者の主張、対比・因果・具体例、指示語、設問で狙われそうな根拠を整理してください。
+                    説明は優しく詳しく、ただし本文から離れた一般論にしないでください。
+                    """
+                    st.session_state.evidence_summary = call_ai(st.session_state.evidence_text, sys_summary, model_name="gemini-2.5-pro")
+                    st.rerun()
+
+            if st.session_state.get("evidence_feedback"):
+                with st.expander("🔍 根拠添削", expanded=True):
+                    st.markdown(st.session_state.evidence_feedback)
+            if st.session_state.get("evidence_summary"):
+                with st.expander("🧭 全体の読み方", expanded=True):
+                    st.markdown(st.session_state.evidence_summary)
+
+            with st.form("evidence_note_form", clear_on_submit=True):
+                st.markdown("##### 💾 この設問から学んだことを保存")
+                title = st.text_input("項目名", placeholder="例: 指示語thisの根拠を前文に戻って確認する", key="evidence_note_title")
+                content = st.text_area("内容", value=st.session_state.get("evidence_feedback", "")[:1200], height=120, key="evidence_note_content")
+                if st.form_submit_button("読解メモに保存"):
+                    if title and content:
+                        save_reading_note(title, content, "設問根拠", "設問根拠トレーニング", False)
+                        st.success("読解メモに保存しました。")
+                    else:
+                        st.error("項目名と内容を入力してください。")
+
+def render_reading_notes_tab():
+    st.markdown("#### 🗂️ 読解メモ・弱点ノート")
+    st.caption("長文中で読めなかった構文・文法・論理・設問根拠を体系的に蓄積します。")
+
+    categories = ["構文・文法", "単語", "熟語", "指示語", "論理展開", "和訳", "設問根拠", "その他"]
+    with st.form("manual_reading_note_form", clear_on_submit=True):
+        col_n1, col_n2 = st.columns([2, 1])
+        title = col_n1.text_input("項目名", placeholder="例: 分詞構文が主節全体を説明する形", key="manual_reading_note_title")
+        category = col_n2.selectbox("分類", categories, key="manual_reading_note_category")
+        content = st.text_area("内容", height=120, placeholder="読めなかった理由、AIの解説、次に見るべきポイントなど", key="manual_reading_note_content")
+        source = st.text_input("出典・メモ", placeholder="例: 日本大学 2024 N方式 第2問", key="manual_reading_note_source")
+        also_grammar = st.checkbox("文法・語法ノートにも保存する", value=(category == "構文・文法"), key="manual_reading_note_also_grammar")
+        if st.form_submit_button("💾 読解メモに保存", type="primary"):
+            if title and content:
+                save_reading_note(title, content, category, source or "読解メモ", also_grammar)
+                st.success("保存しました。")
+            else:
+                st.error("項目名と内容を入力してください。")
+
+    notes = my_data.get("reading_notes", [])
+    if not notes:
+        st.info("読解メモはまだありません。精読や設問根拠トレーニングから保存できます。")
+        return
+
+    st.markdown("---")
+    col_f1, col_f2 = st.columns([1, 2])
+    selected_category = col_f1.selectbox("分類で絞り込み", ["すべて"] + categories, key="reading_notes_filter_category")
+    keyword = col_f2.text_input("検索", placeholder="関係詞、指示語、根拠など", key="reading_notes_filter_keyword")
+    filtered = []
+    for note in notes:
+        if selected_category != "すべて" and note.get("category") != selected_category:
+            continue
+        haystack = f"{note.get('title', '')} {note.get('content', '')} {note.get('source', '')}"
+        if keyword and keyword.lower() not in haystack.lower():
+            continue
+        filtered.append(note)
+
+    st.write(f"表示中: **{len(filtered)}件** / 全 **{len(notes)}件**")
+    for cat in categories:
+        cat_notes = [n for n in filtered if n.get("category") == cat]
+        if not cat_notes:
+            continue
+        with st.expander(f"{cat} ({len(cat_notes)}件)", expanded=(selected_category == cat)):
+            for note in reversed(cat_notes):
+                st.markdown(f"**{note.get('title', '')}**")
+                st.caption(f"{note.get('source', '')} / {note.get('created_at', '')}")
+                st.markdown(note.get("content", ""))
+                st.markdown("---")
+
+    if st.button("🧭 読解メモを体系化して弱点を整理する", type="primary", use_container_width=True):
+        with st.spinner("読解メモを整理しています..."):
+            compact_notes = "\n\n".join([
+                f"分類: {n.get('category', '')}\n項目: {n.get('title', '')}\n内容: {n.get('content', '')}"
+                for n in notes[-80:]
+            ])
+            sys_notes = """
+            あなたは大学受験英語の学習設計者です。生徒の読解メモを体系化し、弱点を整理してください。
+            出力は以下の形にしてください。
+            1. 主要な弱点カテゴリ
+            2. 似たメモの統合
+            3. 次に優先して練習すべきこと
+            4. 文法・語法ノートに移すべき知識
+            5. 長文読解で毎回見るチェックリスト
+            """
+            st.session_state.reading_notes_summary = call_ai(compact_notes, sys_notes, model_name="gemini-2.5-pro")
+            st.rerun()
+
+    if st.session_state.get("reading_notes_summary"):
+        with st.expander("🧭 体系化された弱点整理", expanded=True):
+            st.markdown(st.session_state.reading_notes_summary)
 
 # --- 共通UIコンポーネント（階層型過去問選択） ---
 def render_exam_selector(options_dict, key_prefix):
@@ -194,7 +1010,9 @@ if mode == "📖 志望校別単語帳":
         # タブ1: 本棚 (保存された単語帳の管理)
         # ------------------------------------------
         with tab_shelf:
-            books = my_data.get("vocab_books", [])
+            saved_books = my_data.get("vocab_books", [])
+            fixed_book = build_frequency_strong_book(base_lexicon)
+            books = ([fixed_book] if fixed_book else []) + saved_books
             if not books:
                 st.info("まだ単語帳がありません。「新しい単語帳を作る」タブから作成してください。")
             else:
@@ -204,19 +1022,67 @@ if mode == "📖 志望校別単語帳":
                 if selected_title != "-- 選択してください --":
                     book_idx = book_titles.index(selected_title)
                     current_book = books[book_idx]
+                    is_fixed_book = current_book.get("fixed_source") == BASE_LEXICON_FILE
+                    saved_book_idx = book_idx - 1 if fixed_book else book_idx
                     
                     st.markdown(f"### 📘 {current_book['title']}")
                     st.write(f"収録語数: メイン **{len(current_book['main_vocab'])}語** / 除外 **{len(current_book['excluded_vocab'])}語**")
+                    if is_fixed_book:
+                        st.info(f"この単語帳は `{BASE_LEXICON_FILE}` から固定読み込みしています。意味登録済み: **{len(current_book.get('enriched_vocab', [])):,} / {len(current_book['main_vocab']):,}語**")
+                        last_generation = st.session_state.pop("last_frequency_strong_generation", None)
+                        if last_generation:
+                            batch_text = f" / {last_generation['batches']}回実行" if last_generation.get("batches") else ""
+                            st.success(f"直前の意味生成: 依頼 {last_generation['requested']}語 / 保存 {last_generation['saved']}語{batch_text}")
+                            if last_generation.get("missing"):
+                                st.warning("AIが返さなかった単語があります。もう一度同じ語数で生成すると、未保存分から続きます: " + ", ".join(last_generation["missing"]))
+                            if last_generation.get("extra"):
+                                st.info("AIが指定外の単語も返しましたが、保存対象から外しました: " + ", ".join(last_generation["extra"]))
+                            if last_generation.get("failed"):
+                                st.warning("途中停止しました。次回は未保存分から続けられます。失敗時の先頭語: " + ", ".join(last_generation.get("failed_words", [])))
+                        meaning_report = build_frequency_strong_meaning_report(base_lexicon)
+                        with st.expander("🧪 頻度つよつよ単語3000の意味完成度チェック", expanded=False):
+                            report_cols = st.columns(4)
+                            report_cols[0].metric("固定語", f"{len(meaning_report['rows']):,}語")
+                            report_cols[1].metric("意味未生成", f"{len(meaning_report['missing']):,}語")
+                            report_cols[2].metric("薄い可能性", f"{len(meaning_report['thin']):,}語")
+                            report_cols[3].metric("注意メモ候補", f"{len(meaning_report['no_alert_polysemy']):,}語")
+
+                            st.download_button(
+                                "📥 意味チェックCSVをダウンロード",
+                                data=rows_to_csv(meaning_report["rows"]),
+                                file_name="frequency_strong_meaning_check.csv",
+                                mime="text/csv",
+                                use_container_width=True,
+                                key="download_frequency_strong_meaning_check",
+                            )
+
+                            check_tab1, check_tab2, check_tab3 = st.tabs(["未生成", "意味が薄い候補", "注意メモ候補"])
+                            with check_tab1:
+                                st.caption("ここに出る語は、次の意味生成で上から順に処理されます。")
+                                st.dataframe(meaning_report["missing"][:200], use_container_width=True)
+                            with check_tab2:
+                                st.caption("高頻度なのに意味が1項目だけの語です。多義語の取りこぼし確認に使います。")
+                                st.dataframe(meaning_report["thin"][:200], use_container_width=True)
+                            with check_tab3:
+                                st.caption("意味が3項目以上あるのに注意メモが空の語です。訳し分けの注意が必要か確認します。")
+                                st.dataframe(meaning_report["no_alert_polysemy"][:200], use_container_width=True)
+
+                        generation_logs = load_base_lexicon_generation_log()
+                        if generation_logs:
+                            with st.expander("🧾 頻度つよつよ単語の生成履歴", expanded=False):
+                                st.dataframe(list(reversed(generation_logs[-20:])), use_container_width=True)
                     
                     # --- 管理機能 ---
                     with st.expander("⚙️ 単語帳の管理・編集（名前変更・追加・マージ）", expanded=False):
+                        if is_fixed_book:
+                            st.info("頻度つよつよ単語は固定単語帳です。ここでの名前変更・マージ・削除は無効です。意味生成だけ下のボタンから実行できます。")
                         st.markdown("#### 🏷️ 名前の変更")
                         col_rn1, col_rn2 = st.columns([3, 1])
                         new_title_input = col_rn1.text_input("新しい名前", value=current_book["title"], label_visibility="collapsed", key=f"rn_vocab_{book_idx}")
-                        if col_rn2.button("名前を更新", use_container_width=True, key=f"btn_rn_vocab_{book_idx}"):
+                        if col_rn2.button("名前を更新", use_container_width=True, key=f"btn_rn_vocab_{book_idx}") and not is_fixed_book:
                             if new_title_input and new_title_input != current_book["title"]:
                                 current_book["title"] = new_title_input
-                                my_data["vocab_books"][book_idx] = current_book
+                                my_data["vocab_books"][saved_book_idx] = current_book
                                 save_data(my_data)
                                 st.success("名前を変更しました！")
                                 st.rerun()
@@ -227,8 +1093,9 @@ if mode == "📖 志望校別単語帳":
                         
                         # ▼ AIフィルターのチェックボックスを追加
                         use_ai_filter_merge = st.checkbox("🤖 マージする新規単語から「人名」等をAIで除外する", value=False, key=f"ai_merge_v_{book_idx}")
+                        exclude_frequency_strong_merge = st.checkbox("💪 頻度つよつよ単語3000をマージ対象から外す", value=True, key=f"strong_merge_v_{book_idx}")
                         
-                        if st.button("✨ 選択したデータを追加 (マージ)", type="primary", key=f"btn_merge_vocab_{book_idx}") and add_labels:
+                        if st.button("✨ 選択したデータを追加 (マージ)", type="primary", key=f"btn_merge_vocab_{book_idx}") and add_labels and not is_fixed_book:
                             with st.spinner("単語データを結合し、AIフィルターで審査しています..."):
                                 current_counts = Counter(current_book.get("counts", {}))
                                 current_origins = defaultdict(list, current_book.get("origins", {}))
@@ -238,6 +1105,8 @@ if mode == "📖 志望校別単語帳":
                                 for label in add_labels:
                                     path = db_options[label]
                                     freqs = exam_db[path["c"]][path["u"]][path["f"]][path["y"]][path["m"]]["frequencies"]
+                                    if exclude_frequency_strong_merge:
+                                        freqs = {w: c for w, c in freqs.items() if normalize_vocab_word(w) not in frequency_strong_words}
                                     current_counts.update(freqs)
                                     short_label = f"{str(path['y'])[-2:]}年"
                                     for w, count in freqs.items():
@@ -270,7 +1139,7 @@ if mode == "📖 志望校別単語帳":
                                 current_book["main_vocab"] = sorted(list(main_set), key=lambda x: current_counts[x], reverse=True)
                                 current_book["excluded_vocab"] = list(excluded_set)
                                 
-                                my_data["vocab_books"][book_idx] = current_book
+                                my_data["vocab_books"][saved_book_idx] = current_book
                                 save_data(my_data)
                                 st.success("データをマージしました！頻度順に再ソートされています。")
                                 st.rerun()
@@ -278,14 +1147,15 @@ if mode == "📖 志望校別単語帳":
                         st.markdown("---")
                         st.markdown("#### 📋 複製と削除")
                         col_dup, col_del = st.columns(2)
-                        if col_dup.button("📋 この単語帳を複製する", use_container_width=True):
+                        if col_dup.button("📋 この単語帳を複製する", use_container_width=True) and not is_fixed_book:
                             new_book = current_book.copy()
                             new_book["title"] = current_book["title"] + " (コピー)"
+                            new_book.pop("fixed_source", None)
                             my_data["vocab_books"].append(new_book)
                             save_data(my_data); st.rerun()
                             
-                        if col_del.button("🗑️ この単語帳を削除する", use_container_width=True):
-                            my_data["vocab_books"].pop(book_idx)
+                        if col_del.button("🗑️ この単語帳を削除する", use_container_width=True) and not is_fixed_book:
+                            my_data["vocab_books"].pop(saved_book_idx)
                             save_data(my_data); st.rerun()
                         
                         st.markdown("---")
@@ -294,11 +1164,12 @@ if mode == "📖 志望校別単語帳":
                         with col_edit1:
                             with st.form(f"add_word_form_{book_idx}"):
                                 new_word = st.text_input("➕ 新しい単語を手動で追加")
-                                if st.form_submit_button("追加する") and new_word:
+                                if st.form_submit_button("追加する") and new_word and not is_fixed_book:
                                     new_word = new_word.lower().strip()
                                     if new_word not in current_book["main_vocab"]:
                                         current_book["main_vocab"].insert(0, new_word)
                                         if new_word not in current_book.get("counts", {}): current_book.setdefault("counts", {})[new_word] = 1
+                                        my_data["vocab_books"][saved_book_idx] = current_book
                                         save_data(my_data); st.rerun()
                                     else:
                                         st.warning("登録済みです。")
@@ -306,18 +1177,25 @@ if mode == "📖 志望校別単語帳":
                         with col_edit2:
                             with st.form(f"del_word_form_{book_idx}"):
                                 del_word = st.selectbox("🗑️ 削除したい単語を選択", ["-- 選択 --"] + current_book["main_vocab"] + current_book["excluded_vocab"])
-                                if st.form_submit_button("削除する") and del_word != "-- 選択 --":
+                                if st.form_submit_button("削除する") and del_word != "-- 選択 --" and not is_fixed_book:
                                     del_word = del_word.lower().strip()
                                     if del_word in current_book["main_vocab"]: current_book["main_vocab"].remove(del_word)
                                     elif del_word in current_book["excluded_vocab"]: current_book["excluded_vocab"].remove(del_word)
+                                    my_data["vocab_books"][saved_book_idx] = current_book
                                     save_data(my_data); st.rerun()
                         
                         st.markdown("---")
                         st.markdown("#### 🗑️ データの完全初期化")
                         if st.button("🗑️ AI生成データ(意味・例文等)をすべてリセットする", use_container_width=True):
-                            if "enriched_vocab" in current_book: del current_book["enriched_vocab"]
-                            if "skipped_vocab" in current_book: del current_book["skipped_vocab"]
-                            save_data(my_data); st.rerun()
+                            if is_fixed_book:
+                                reset_count = reset_frequency_strong_enrichment(base_lexicon)
+                                st.success(f"頻度つよつよ単語のAI生成データを {reset_count}語分リセットしました。")
+                                st.rerun()
+                            else:
+                                if "enriched_vocab" in current_book: del current_book["enriched_vocab"]
+                                if "skipped_vocab" in current_book: del current_book["skipped_vocab"]
+                                my_data["vocab_books"][saved_book_idx] = current_book
+                                save_data(my_data); st.rerun()
                                 
                     st.markdown("---")
                     
@@ -330,19 +1208,46 @@ if mode == "📖 志望校別単語帳":
                     # 未生成（差分）の単語をリストアップ
                     enriched_words = [e["word"] for e in current_book["enriched_vocab"]]
                     missing_words = [w for w in current_book["main_vocab"] if w not in enriched_words and w not in current_book["skipped_vocab"]]
+                    generation_candidates = missing_words
+                    generation_mode = "未生成語"
+                    if is_fixed_book:
+                        fixed_generation_report = build_frequency_strong_meaning_report(base_lexicon)
+                        generation_mode = st.selectbox(
+                            "意味生成・補強の対象",
+                            ["未生成語", "意味が薄い候補を補強", "注意メモ候補を補強"],
+                            key=f"strong_generation_mode_{book_idx}",
+                        )
+                        if generation_mode == "意味が薄い候補を補強":
+                            generation_candidates = [row["単語"] for row in fixed_generation_report["thin"]]
+                        elif generation_mode == "注意メモ候補を補強":
+                            generation_candidates = [row["単語"] for row in fixed_generation_report["no_alert_polysemy"]]
                     
-                    if missing_words:
-                        st.info(f"💡 未生成の単語が **{len(missing_words)}** 個あります。（過去問マージ等で追加された単語です）")
+                    if generation_candidates:
+                        if is_fixed_book:
+                            st.info(f"💡 {generation_mode} が **{len(generation_candidates)}** 語あります。")
+                        else:
+                            st.info(f"💡 未生成の単語が **{len(missing_words)}** 個あります。（過去問マージ等で追加された単語です）")
                         
                         # --- 生成数指定UI ---
                         col_gen1, col_gen2 = st.columns([1, 2])
-                        gen_count = col_gen1.number_input("生成する単語数", min_value=1, max_value=len(missing_words), value=min(30, len(missing_words)), step=10, key=f"gen_v_{book_idx}")
+                        default_gen_count = min(30, len(generation_candidates))
+                        gen_help = "30語ずつが安全ですが、入力した語数ちょうど生成します。" if is_fixed_book else "入力した語数ちょうど生成します。"
+                        gen_count = int(col_gen1.number_input("生成する単語数", min_value=1, max_value=len(generation_candidates), value=default_gen_count, step=1, help=gen_help, key=f"gen_v_{book_idx}"))
+                        batch_count = 1
+                        if is_fixed_book:
+                            max_batches = max(1, min(20, (len(generation_candidates) + gen_count - 1) // gen_count))
+                            batch_count = int(col_gen1.number_input("連続回数", min_value=1, max_value=max_batches, value=1, step=1, help="例: 30語 × 5回 = 150語を連続生成します。", key=f"gen_batch_v_{book_idx}"))
                         
                         col_gen2.markdown("<div style='height:28px;'></div>", unsafe_allow_html=True) # ボタンの高さを合わせる
-                        if col_gen2.button(f"✨ 未生成の単語を上位 {gen_count} 語生成して追加", use_container_width=True, type="primary"):
-                            with st.spinner(f"AIがネイティブの脳内ネットワークを作成中...（上位 {gen_count} 語）"):
-                                target_words = missing_words[:gen_count] 
-                                sys_enrich = """
+                        total_requested_words = min(gen_count * batch_count, len(generation_candidates))
+                        button_label = f"✨ {generation_mode}を上位 {total_requested_words} 語生成・補強" if is_fixed_book else f"✨ 未生成の単語を上位 {gen_count} 語生成して追加"
+                        if col_gen2.button(button_label, use_container_width=True, type="primary"):
+                            with st.spinner(f"AIがネイティブの脳内ネットワークを作成中...（上位 {total_requested_words} 語）"):
+                                target_words = generation_candidates[:total_requested_words]
+                                if is_fixed_book:
+                                    sys_enrich = build_frequency_strong_enrich_prompt()
+                                else:
+                                    sys_enrich = """
                                 あなたは受験英語に精通したプロの予備校講師です。提供された英単語リストを精査し、以下のJSON形式を作成してください。
                                 【絶対ルール】
                                 1. 「大学受験レベル(B1以上)で重要な単語」は "enriched" へ、「中学レベル(A1〜A2)やゴミ」は "skipped" へ。
@@ -361,16 +1266,71 @@ if mode == "📖 志望校別単語帳":
                                 }
                                 """
                                 try:
-                                    response_json = call_ai(f"処理対象:\n{target_words}", sys_enrich, is_json=True)
-                                    parsed_data = json.loads(response_json)
-                                    current_book["enriched_vocab"].extend(parsed_data.get("enriched", []))
-                                    current_book["skipped_vocab"].extend(parsed_data.get("skipped", []))
-                                    my_data["vocab_books"][book_idx] = current_book
-                                    save_data(my_data)
-                                    st.success("🎉 生成が完了しました！")
+                                    if is_fixed_book:
+                                        total_saved = 0
+                                        all_missing = []
+                                        all_extra = []
+                                        actual_batches = 0
+                                        failed_message = ""
+                                        failed_words = []
+                                        progress = st.progress(0) if batch_count > 1 else None
+                                        for batch_index in range(batch_count):
+                                            batch_words = target_words[batch_index * gen_count:(batch_index + 1) * gen_count]
+                                            if not batch_words:
+                                                break
+                                            try:
+                                                response_json = call_ai(f"処理対象:\n{batch_words}", sys_enrich, is_json=True)
+                                                parsed_data = json.loads(response_json)
+                                                batch_result = apply_frequency_strong_ai_response(base_lexicon, batch_words, parsed_data)
+                                            except Exception as batch_error:
+                                                failed_message = str(batch_error)
+                                                failed_words = batch_words[:30]
+                                                break
+                                            total_saved += batch_result["saved"]
+                                            all_missing.extend(batch_result["missing"])
+                                            all_extra.extend(batch_result["extra"])
+                                            actual_batches += 1
+                                            if progress:
+                                                progress.progress(actual_batches / batch_count)
+                                        generation_result = {
+                                            "requested": len(target_words),
+                                            "saved": total_saved,
+                                            "missing": all_missing[:30],
+                                            "extra": all_extra[:30],
+                                            "batches": actual_batches,
+                                        }
+                                        if failed_message:
+                                            generation_result["failed"] = failed_message
+                                            generation_result["failed_words"] = failed_words
+                                        st.session_state["last_frequency_strong_generation"] = generation_result
+                                        append_base_lexicon_generation_log({
+                                            "time": datetime.now().isoformat(timespec="seconds"),
+                                            "mode": generation_mode,
+                                            "requested": len(target_words),
+                                            "saved": total_saved,
+                                            "batches": actual_batches,
+                                            "missing_count": len(all_missing),
+                                            "extra_count": len(all_extra),
+                                            "failed": bool(failed_message),
+                                            "failed_message": failed_message[:200],
+                                        })
+                                        if failed_message:
+                                            st.warning(f"途中まで保存しました。保存 {total_saved}語 / 実行 {actual_batches}回。失敗箇所は次回もう一度回せます。")
+                                        else:
+                                            st.success(f"🎉 頻度つよつよ単語に {total_saved}語分の意味を保存しました！")
+                                    else:
+                                        response_json = call_ai(f"処理対象:\n{target_words}", sys_enrich, is_json=True)
+                                        parsed_data = json.loads(response_json)
+                                        current_book["enriched_vocab"].extend(parsed_data.get("enriched", []))
+                                        current_book["skipped_vocab"].extend(parsed_data.get("skipped", []))
+                                        my_data["vocab_books"][saved_book_idx] = current_book
+                                        save_data(my_data)
+                                        st.success("🎉 生成が完了しました！")
                                     st.rerun()
                                 except Exception as e:
                                     st.error(f"生成エラー: {e}")
+                    elif is_fixed_book:
+                        st.success(f"{generation_mode} はありません。")
                     
                     # 生成済みデータが1つもない場合は生のリストを表示
                     if not current_book["enriched_vocab"]:
@@ -543,7 +1503,8 @@ if mode == "📖 志望校別単語帳":
             st.markdown("### 📤 単語アウトプット学習")
             st.caption("AI生成済みの単語データを使って、記憶の定着度をテストします。")
 
-            books = my_data.get("vocab_books", [])
+            fixed_book_for_output = build_frequency_strong_book(base_lexicon)
+            books = ([fixed_book_for_output] if fixed_book_for_output else []) + my_data.get("vocab_books", [])
             if not books:
                 st.info("単語帳がありません。")
             else:
@@ -716,6 +1677,7 @@ if mode == "📖 志望校別単語帳":
         with tab_create:
             selected_labels = render_exam_selector(db_options, "create_vocab")
             use_ai_filter = st.checkbox("🤖 【テスト機能】AIで明らかな「人名」だけを除外する", value=False)
+            exclude_frequency_strong_create = st.checkbox("💪 頻度つよつよ単語3000を単語帳対象から外す", value=True)
             
             if st.button("✨ 選択した過去問から単語帳を生成") and selected_labels:
                 with st.spinner("単語を集計中..."):
@@ -724,6 +1686,8 @@ if mode == "📖 志望校別単語帳":
                     for label in selected_labels:
                         path = db_options[label]
                         freqs = exam_db[path["c"]][path["u"]][path["f"]][path["y"]][path["m"]]["frequencies"]
+                        if exclude_frequency_strong_create:
+                            freqs = {w: c for w, c in freqs.items() if normalize_vocab_word(w) not in frequency_strong_words}
                         combined_counter.update(freqs)
                         short_label = f"{str(path['y'])[-2:]}年"
                         for w, count in freqs.items(): word_origins[w].append(f"{short_label}({count}回)")
@@ -775,7 +1739,8 @@ if mode == "📖 志望校別単語帳":
             st.markdown("### 📊 過去問カバー率（定量分析）シミュレーター")
             st.info("あなたが作った「単語帳（武器）」が、特定の「過去問（敵）」にどれくらい通用するかを定量的にシミュレーションします。")
             
-            books = my_data.get("vocab_books", [])
+            fixed_book_for_sim = build_frequency_strong_book(base_lexicon)
+            books = ([fixed_book_for_sim] if fixed_book_for_sim else []) + my_data.get("vocab_books", [])
             if not books:
                 st.warning("まずは「✨ 新しい単語帳を作る」タブから、ベースとなる単語帳（例：2020〜2025年基礎マスター）を作成・保存してください。")
             else:
@@ -794,7 +1759,7 @@ if mode == "📖 志望校別単語帳":
                             for fac, years in facs.items():
                                 for year, methods in years.items():
                                     for method, data in methods.items():
-                                        if data.get("idioms"): # 🛡️ 空データ除外
+                                        if data.get("frequencies"): # 🛡️ 空データ除外
                                             label = f"[{cat}] {uni} {fac} ({year}年 {method})"
                                             target_options[label] = {"c": cat, "u": uni, "f": fac, "y": year, "m": method}
                     
@@ -811,11 +1776,17 @@ if mode == "📖 志望校別単語帳":
                             raw_base_words = base_book["main_vocab"]
                             base_words = set(lemmatizer.lemmatize(word.lower(), pos='v') for word in raw_base_words)
                             base_words = set(lemmatizer.lemmatize(word, pos='n') for word in base_words)
+                            base_words.update(frequency_strong_words)
 
                             path = target_options[selected_target]
                             target_data = exam_db[path["c"]][path["u"]][path["f"]][path["y"]][path["m"]]
                             raw_target_freqs = target_data["frequencies"]
                             target_freqs = process_frequencies(raw_target_freqs)
+                            target_freqs = {
+                                w: c
+                                for w, c in target_freqs.items()
+                                if w not in frequency_excluded_words
+                            }
 
                             total_tokens = sum(target_freqs.values())
                             covered_tokens = 0
@@ -1656,9 +2627,9 @@ elif mode == "🔗 志望校別熟語帳":
 # ==========================================
 elif mode == "📝 志望校別文法・語法ノート":
     st.markdown("### 📝 志望校別文法・語法ノート")
-    st.caption("過去問のエッセンスから作られたオリジナルドリルと、実践的な長文精読で文法をマスターします。")
+    st.caption("過去問の文法・語法問題そのものを練習し、整序・空所補充・語法知識を固めます。")
 
-    tab_drill, tab_reading = st.tabs(["📚 過去問オリジナルドリル", "📖 実践！長文精読アシスト"])
+    tab_drill = st.tabs(["📚 過去問オリジナルドリル"])[0]
 
     # ------------------------------------------
     # タブ1: 過去問オリジナルドリル（共通UI適用＆弱点克服アルゴリズム搭載版）
@@ -1943,201 +2914,30 @@ elif mode == "📝 志望校別文法・語法ノート":
                             if k in st.session_state:
                                 del st.session_state[k]
                         st.rerun()
-   # ------------------------------------------
-    # タブ2: 実践！長文精読アシスト（裏メモリ搭載版）
-    # ------------------------------------------
-    with tab_reading:
-        st.markdown("#### 📖 長文を1文ずつ精読し、実践的に文法を学ぶ")
-        
-        read_method = st.radio("題材となる長文の準備方法", ["🤖 AIにランダム生成してもらう", "📝 自分でテキストを貼り付ける", "📄 過去問PDFから抽出する"], horizontal=True)
-        
-        if read_method == "🤖 AIにランダム生成してもらう":
-            st.info("💡 一番簡単なレベル（中学〜高校基礎）の単語のみを使って、純粋な構文把握に集中できる長文を生成します。")
-            if st.button("✨ ランダムなテーマで長文を生成する", type="primary"):
-                with st.spinner("AIがランダムなテーマで長文を書き下ろしています..."):
-                    sys_gen_read = "難易度 CEFR A1〜A2 (中学〜高校基礎レベル) で、英語が苦手な高校生が基本構文を学ぶのに適した論理的な英語長文（150〜200語程度）を作成してください。テーマは毎回ランダムに。英語の本文のみを出力し、タイトルや改行は含めないでください。"
-                    st.session_state.reading_target_text = call_ai("ランダムなテーマで長文を作成してください。", sys_gen_read, use_pdf=False, model_name="gemini-3.5-flash")
-                    st.session_state.reading_sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', st.session_state.reading_target_text.replace('\n', ' ')) if s.strip()]
-                    st.session_state.reading_current_idx = 0
-                    st.session_state.reading_chat_sentence_idx = -1 
-                    st.session_state.temp_memo = []
-                    st.session_state.show_word_selector = False
-                    st.session_state.reading_global_memory = "" # 🚀 ここに裏メモリを初期化
-                    st.rerun()
-                    
-        elif read_method == "📝 自分でテキストを貼り付ける":
-            pasted = st.text_area("英語の長文を貼り付けてください", height=150)
-            if st.button("✅ このテキストで精読を始める", type="primary") and pasted:
-                st.session_state.reading_target_text = pasted
-                st.session_state.reading_sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', pasted.replace('\n', ' ')) if s.strip()]
-                st.session_state.reading_current_idx = 0
-                st.session_state.reading_chat_sentence_idx = -1
-                st.session_state.temp_memo = []
-                st.session_state.show_word_selector = False
-                st.session_state.reading_global_memory = "" # 🚀 ここに裏メモリを初期化
-                st.rerun()
-                
-        elif read_method == "📄 過去問PDFから抽出する":
-            up_pdf = st.file_uploader("PDFをアップロード", type=["pdf"], key="reading_pdf")
-            if st.button("🚀 PDFから長文を抽出する", type="primary") and up_pdf:
-                with st.spinner("AIがPDFから長文部分だけを抽出しています..."):
-                    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-                        tmp.write(up_pdf.getvalue())
-                        tmp_path = tmp.name
-                    g_file = genai.upload_file(tmp_path)
-                    model = genai.GenerativeModel(model_name="gemini-3.5-flash")
-                    res = model.generate_content([g_file, "このPDFから英語の長文（本文）部分のみを抽出して出力してください。設問、選択肢、日本語の指示文は完全に除外してください。改行は極力なくしてください。"])
-                    os.remove(tmp_path)
-                    st.session_state.reading_target_text = res.text
-                    st.session_state.reading_sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', res.text.replace('\n', ' ')) if s.strip()]
-                    st.session_state.reading_current_idx = 0
-                    st.session_state.reading_chat_sentence_idx = -1
-                    st.session_state.temp_memo = []
-                    st.session_state.show_word_selector = False
-                    st.session_state.reading_global_memory = "" # 🚀 ここに裏メモリを初期化
-                    st.rerun()
+# ==========================================
+# モードG: 長文読解
+# ==========================================
+elif mode == "📚 長文読解":
+    st.markdown("### 📚 長文読解")
+    st.caption("長文を読むための文法、1文精読、設問根拠、読解メモをここに集約します。")
 
-        # 精読エリア
-        if st.session_state.get("reading_target_text"):
-            st.markdown("---")
-            col_read, col_chat = st.columns([1, 1])
-            
-            sentences = st.session_state.get("reading_sentences", [])
-            idx = st.session_state.get("reading_current_idx", 0)
-            
-            with col_read:
-                st.markdown("##### 📄 全体マップ")
-                with st.container(border=True, height=500):
-                    display_html = ""
-                    for i, s in enumerate(sentences):
-                        if i == idx:
-                            display_html += f"<span style='background-color: #ffeb3b; color: black; font-weight: bold; padding: 2px 4px; border-radius: 3px;'>{s}</span> "
-                        else:
-                            display_html += f"<span style='color: gray;'>{s}</span> "
-                    st.markdown(f"<div style='line-height:1.8; font-size:1.1em;'>{display_html}</div>", unsafe_allow_html=True)
-                
-                if st.button("🗑️ 長文をクリアして別のものを読む", use_container_width=True):
-                    for k in ["reading_target_text", "reading_sentences", "reading_current_idx", "reading_chat_logs", "reading_chat_sentence_idx", "temp_memo", "show_word_selector", "reading_global_memory"]:
-                        if k in st.session_state: del st.session_state[k]
-                    st.rerun()
+    tab_close, tab_evidence, tab_notes = st.tabs([
+        "📖 精読・構文・和訳",
+        "🎯 設問根拠トレーニング",
+        "🗂️ 読解メモ・弱点ノート",
+    ])
 
-            with col_chat:
-                if idx < len(sentences):
-                    current_sentence = sentences[idx]
-                    st.markdown(f"##### 🎯 現在のターゲット ({idx+1}/{len(sentences)})")
-                    st.info(f"**{current_sentence}**")
-                    
-                    if st.session_state.get("reading_chat_sentence_idx") != idx:
-                        st.session_state.reading_chat_sentence_idx = idx
-                        st.session_state.reading_chat_logs = [
-                            {"role": "assistant", "content": "まずはこの文の**和訳**に挑戦してみて！間違えても全然大丈夫、一緒にどこが難しかったか考えていこうね。"}
-                        ]
-                        st.session_state.show_word_selector = False
-                        st.session_state.temp_memo = []
+    with tab_close:
+        render_close_reading_tab()
 
-                    st.markdown("##### 🤖 和訳チャレンジ＆伴走チャット")
-                    with st.container(border=True, height=450):
-                        for msg in st.session_state.reading_chat_logs:
-                            with st.chat_message(msg["role"]): st.markdown(msg["content"])
-                    
-                    if user_req := st.chat_input("和訳を入力、または質問する...", key="reading_chat"):
-                        st.session_state.reading_chat_logs.append({"role": "user", "content": user_req})
-                        with st.spinner("AI講師が優しく添削中..."):
-                            sys_reading = f"""
-                            あなたは優しく、生徒に寄り添う英語の伴走講師です。スパルタや説教は絶対にやめてください。
-                            
-                            【これまでの長文全体の対話履歴（あなたはこれを記憶しています）】
-                            {st.session_state.get('reading_global_memory', 'まだありません')}
+    with tab_evidence:
+        render_evidence_training_tab()
 
-                            【現在のターゲット文】
-                            {current_sentence}
-                            
-                            【指導のルール（A1〜A2レベル向け）】
-                            1. 難しい文法用語は避け、【英語の構文ルール（カタチ・公式）】をパズルのように視覚的に教えてください。
-                            2. 以前の文で登場した話題（裏メモリ参照）と関連があれば、「前の文でも出てきたね」と触れてあげると生徒は喜びます。
-                            3. 生徒が「わからない」と言った場合は、いきなり全訳を教えず、構文のカタチを先に示し、そこに単語を当てはめさせるヒントを出してください。
-                            """
-                            history_str = "\n".join([f"{m['role']}: {m['content']}" for m in st.session_state.reading_chat_logs[-4:]])
-                            ans = call_ai(f"直近の会話:\n{history_str}", sys_reading, use_pdf=False, model_name="gemini-3.5-flash")
-                            st.session_state.reading_chat_logs.append({"role": "assistant", "content": ans})
-                            st.rerun()
-
-                    st.markdown("---")
-                    
-                    col_btn1, col_btn2 = st.columns(2)
-                    if col_btn1.button("❓ わからない単語・熟語がある", use_container_width=True):
-                        st.session_state.show_word_selector = not st.session_state.get("show_word_selector", False)
-                        st.rerun()
-                        
-                    if col_btn2.button("⏭️ 完璧！スキップして次へ", use_container_width=True, type="primary"):
-                        # 🚀 次の文へ行く前に、今の会話を裏メモリに退避させて記憶させる
-                        current_chat = "\n".join([f"{m['role']}: {m['content']}" for m in st.session_state.reading_chat_logs if m['role'] == 'user' or m['role'] == 'assistant'])
-                        st.session_state.reading_global_memory += f"\n【文 {idx+1}: {current_sentence} の対話】\n{current_chat}\n"
-                        
-                        st.session_state.reading_current_idx += 1
-                        st.rerun()
-
-                    # 単語・熟語検索モード
-                    if st.session_state.get("show_word_selector"):
-                        st.markdown("###### 👆 調べたい単語をクリック、または熟語を検索！")
-                        words = [w for w in re.findall(r"\b[a-zA-Z\-']+\b", current_sentence)]
-                        cols = st.columns(6)
-                        for i, w in enumerate(words):
-                            if cols[i % 6].button(w, key=f"wbtn_{i}_{idx}"):
-                                with st.spinner(f"「{w}」の意味を検索中..."):
-                                    sys_dict = "あなたは辞書です。指定された単語の、この文脈における意味を簡潔に（10文字以内で）答えてください。"
-                                    meaning = call_ai(f"文脈: {current_sentence}\n単語: {w}", sys_dict, use_pdf=False, model_name="gemini-3.5-flash")
-                                    st.session_state.temp_memo.append({"word": w, "meaning": meaning.strip()})
-                                    st.rerun()
-                        
-                        st.markdown("<br>", unsafe_allow_html=True)
-                        col_idiom1, col_idiom2 = st.columns([3, 1])
-                        search_idiom = col_idiom1.text_input("熟語・フレーズの検索", label_visibility="collapsed", placeholder="調べたい熟語を入力 (例: take care of)")
-                        if col_idiom2.button("🔍 検索", key=f"search_idiom_btn_{idx}", use_container_width=True):
-                            if search_idiom:
-                                with st.spinner("検索中..."):
-                                    sys_dict = "あなたは辞書です。指定された熟語・フレーズの、この文脈における意味を簡潔に答えてください。"
-                                    meaning = call_ai(f"文脈: {current_sentence}\n熟語: {search_idiom}", sys_dict, use_pdf=False, model_name="gemini-3.5-flash")
-                                    st.session_state.temp_memo.append({"word": search_idiom, "meaning": meaning.strip()})
-                                    st.rerun()
-                                    
-                    # 一時メモ表示
-                    if st.session_state.get("temp_memo"):
-                        st.markdown("###### 📝 単語・熟語の一時メモ")
-                        with st.container(border=True):
-                            for m in st.session_state.temp_memo:
-                                st.markdown(f"- **{m['word']}**: {m['meaning']}")
-
-                    st.markdown("---")
-                    st.markdown("##### 💡 学びをストック")
-                    with st.form("reading_memo_form", clear_on_submit=True):
-                        note_title = st.text_input("📝 項目名（例：関係副詞whereの非制限用法）")
-                        note_content = st.text_area("意味・ルール（AIの解説や単語メモを保存）", height=80)
-                        if st.form_submit_button("🏠 マイ教訓ノート(文法)に保存", type="primary"):
-                            if note_title and note_content:
-                                if "grammar" not in my_data: my_data["grammar"] = []
-                                my_data["grammar"].append({"title": note_title, "content": note_content, "source": "長文精読アシスト"})
-                                save_data(my_data)
-                                st.success(f"教訓ノートに保存しました！")
-                            else:
-                                st.error("項目名とルールの両方を入力してください。")
-                                
-                    with st.expander("📔 学習途中にマイ教訓ノートを参照する"):
-                        if my_data.get("grammar"):
-                            for item in my_data["grammar"]:
-                                st.markdown(f"**{item['title']}**\n> {item['content']}")
-                        else:
-                            st.info("ノートはまだ空です。")
-
-                else:
-                    st.success("🎉 全ての文の精読が完了しました！お疲れ様でした。")
-                    if st.button("🔄 長文をクリアする", use_container_width=True):
-                        for k in ["reading_target_text", "reading_sentences", "reading_current_idx", "reading_chat_logs", "reading_chat_sentence_idx", "temp_memo", "show_word_selector", "reading_global_memory"]:
-                            if k in st.session_state: del st.session_state[k]
-                        st.rerun()
+    with tab_notes:
+        render_reading_notes_tab()
 
 # ==========================================
-# ★最終章 モードG: 過去問演習・合格分析（長文＋スコア管理＋コンパス）
+# ★最終章 モードH: 過去問演習・合格分析（長文＋スコア管理＋コンパス）
 # ==========================================
 elif mode == "🏆 過去問演習・合格分析":
     import time
@@ -2500,7 +3300,9 @@ elif mode == "🏆 過去問演習・合格分析":
         st.caption("現在のあなたの「単語・熟語・文法知識（武器）」だけを持たせたAIのクローンに、初見の過去問を解かせ、数学的な期待値スコアを算出します。")
 
         # 武器の選択
-        vocab_books = [b["title"] for b in my_data.get("vocab_books", [])]
+        fixed_book_for_ai_sim = build_frequency_strong_book(base_lexicon)
+        vocab_book_objects = ([fixed_book_for_ai_sim] if fixed_book_for_ai_sim else []) + my_data.get("vocab_books", [])
+        vocab_books = [b["title"] for b in vocab_book_objects]
         idiom_books = [b["title"] for b in my_data.get("idiom_books", [])]
 
         col_w1, col_w2, col_w3 = st.columns([2, 2, 1.5])
@@ -2525,9 +3327,11 @@ elif mode == "🏆 過去問演習・合格分析":
             else:
                 with st.spinner("あなたの知識セットをAIにコピーし、仮想受験を実行中...（約20〜40秒）"):
                     # 知識の抽出
-                    known_words = []
+                    known_words = sorted(frequency_strong_words)
                     if sel_vocab != "-- なし --":
-                        known_words = next((b["main_vocab"] for b in my_data["vocab_books"] if b["title"] == sel_vocab), [])
+                        selected_vocab_book = next((b for b in vocab_book_objects if b["title"] == sel_vocab), None)
+                        if selected_vocab_book:
+                            known_words = sorted(set(known_words) | set(selected_vocab_book.get("main_vocab", [])))
                     known_idioms = []
                     if sel_idiom != "-- なし --":
                         known_idioms = [i["base_form"] for i in next((b["idioms"] for b in my_data["idiom_books"] if b["title"] == sel_idiom), [])]
@@ -2671,7 +3475,7 @@ elif mode == "🏆 過去問演習・合格分析":
                 
                 with st.spinner("全データを横断分析し、戦略を構築中...（推論モデル使用）"):
                     # データを要約してAIに渡す（トークン溢れ防止）
-                    vocab_count = sum([len(b.get("main_vocab", [])) for b in my_data.get('vocab_books', [])])
+                    vocab_count = len(frequency_strong_words) + sum([len(b.get("main_vocab", [])) for b in my_data.get('vocab_books', [])])
                     idiom_count = sum([len(b.get("idioms", [])) for b in my_data.get('idiom_books', [])])
                     strat_summary = "\n".join([f"- {s['title']}: {s['content']}" for s in my_data.get('strategy', [])[-15:]]) # 最新15件の教訓
                     

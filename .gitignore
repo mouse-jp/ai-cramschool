@@ -1,2 +1,3 @@
 .streamlit/
 __pycache__/
+base_lexicon_generation_log.json

@@ -21,6 +21,10 @@ lemmatizer = WordNetLemmatizer()
 
 # --- 設定 ---
 DB_FILE = "past_exams_db.json"
+MY_DATA_FILE = "my_data.json"
+BASE_LEXICON_FILE = "base_lexicon.json"
+BASE_VOCAB_STATUSES = {"core_verified", "exam_format", "watch_known"}
+EXCLUDED_BASE_VOCAB_STATUSES = {"strict_excluded", "proper_noun_or_noise"}
 
 if "GEMINI_API_KEY" in st.secrets:
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
@@ -45,6 +49,104 @@ def load_db():
 def save_db(db):
     with open(DB_FILE, "w", encoding="utf-8") as f:
         json.dump(db, f, ensure_ascii=False, indent=2)
+
+def load_json_file(path, default):
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return default
+
+def load_base_lexicon():
+    return load_json_file(BASE_LEXICON_FILE, {})
+
+def normalize_vocab_word(word):
+    word = str(word).strip().lower()
+    lemma = lemmatizer.lemmatize(word, pos="v")
+    lemma = lemmatizer.lemmatize(lemma, pos="n")
+    return lemma
+
+def split_meanings(value):
+    if isinstance(value, list):
+        return [str(v).strip() for v in value if str(v).strip()]
+    if isinstance(value, str):
+        text = re.sub(r"\s+", " ", value.strip())
+        if not text:
+            return []
+        if re.search(r"[①②③④⑤⑥⑦⑧⑨⑩]", text):
+            parts = re.split(r"\s*(?=[①②③④⑤⑥⑦⑧⑨⑩])", text)
+            return [p.strip(" ;；") for p in parts if p.strip(" ;；")]
+        return [v.strip() for v in re.split(r"[；;]", text) if v.strip()]
+    return []
+
+def get_frequency_strong_words(lexicon):
+    return {
+        normalize_vocab_word(word)
+        for word, entry in lexicon.items()
+        if entry.get("status") in BASE_VOCAB_STATUSES
+    }
+
+def get_frequency_excluded_words(lexicon):
+    return {
+        normalize_vocab_word(word)
+        for word, entry in lexicon.items()
+        if entry.get("status") in EXCLUDED_BASE_VOCAB_STATUSES
+    }
+
+def build_meaning_registry(lexicon):
+    registry = {}
+    for word, entry in lexicon.items():
+        meanings = split_meanings(entry.get("meanings", []))
+        if meanings:
+            registry[normalize_vocab_word(word)] = "；".join(meanings)
+
+    my_data = load_json_file(MY_DATA_FILE, {})
+    for item in my_data.get("vocabulary", []):
+        word = normalize_vocab_word(item.get("title", ""))
+        meaning = str(item.get("content", "")).strip()
+        if word and meaning:
+            registry[word] = meaning
+
+    for book in my_data.get("vocab_books", []):
+        for item in book.get("enriched_vocab", []):
+            word = normalize_vocab_word(item.get("word", ""))
+            meaning = "；".join(split_meanings(item.get("meanings", "")))
+            if word and meaning:
+                registry[word] = meaning
+    return registry
+
+def summarize_words_without_frequency_strong(freqs):
+    lexicon = load_base_lexicon()
+    strong_words = get_frequency_strong_words(lexicon)
+    excluded_words = get_frequency_excluded_words(lexicon)
+    meaning_registry = build_meaning_registry(lexicon)
+
+    normalized_counts = Counter()
+    for word, count in freqs.items():
+        normalized = normalize_vocab_word(word)
+        if not normalized:
+            continue
+        normalized_counts[normalized] += int(count)
+
+    strong_tokens = sum(count for word, count in normalized_counts.items() if word in strong_words)
+    excluded_tokens = sum(count for word, count in normalized_counts.items() if word in excluded_words)
+    remaining = {
+        word: count
+        for word, count in normalized_counts.items()
+        if word not in strong_words and word not in excluded_words
+    }
+    known_meaning_words = {word for word in remaining if word in meaning_registry}
+    missing_meaning_words = set(remaining) - known_meaning_words
+
+    return {
+        "strong_words": strong_words,
+        "remaining": dict(sorted(remaining.items(), key=lambda item: item[1], reverse=True)),
+        "strong_tokens": strong_tokens,
+        "excluded_tokens": excluded_tokens,
+        "remaining_tokens": sum(remaining.values()),
+        "known_meaning_words": known_meaning_words,
+        "missing_meaning_words": missing_meaning_words,
+        "meaning_registry": meaning_registry,
+    }
 
 def extract_text_with_gemini(uploaded_file):
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
@@ -630,6 +732,50 @@ with tab2:
             st.write(f"総語数: **{target_data.get('total_words', 0)} 語** / 種類: **{target_data.get('unique_words', 0)} 種類**")
             top_words = [{"単語": k, "回数": v} for k, v in list(target_data.get('frequencies', {}).items())[:200]]
             st.dataframe(pd.DataFrame(top_words), use_container_width=True)
+
+            with st.expander("💪 頻度つよつよ単語3000を外した意味カウント", expanded=False):
+                strong_summary = summarize_words_without_frequency_strong(target_data.get("frequencies", {}))
+                raw_total_tokens = sum(int(v) for v in target_data.get("frequencies", {}).values())
+                col_s1, col_s2, col_s3, col_s4 = st.columns(4)
+                col_s1.metric("頻度つよつよでカバー", f"{strong_summary['strong_tokens']:,}語")
+                col_s2.metric("3000語除外後", f"{strong_summary['remaining_tokens']:,}語")
+                col_s3.metric("意味あり", f"{len(strong_summary['known_meaning_words']):,}種類")
+                col_s4.metric("意味なし", f"{len(strong_summary['missing_meaning_words']):,}種類")
+
+                if raw_total_tokens:
+                    st.progress(
+                        min(strong_summary["strong_tokens"] / raw_total_tokens, 1.0),
+                        text=f"頻度つよつよ単語による無条件カバー: {strong_summary['strong_tokens'] / raw_total_tokens:.1%}"
+                    )
+
+                remaining_rows = []
+                for word, count in strong_summary["remaining"].items():
+                    meaning = strong_summary["meaning_registry"].get(word, "")
+                    remaining_rows.append({
+                        "単語": word,
+                        "回数": count,
+                        "意味登録": "あり" if meaning else "なし",
+                        "意味": meaning,
+                    })
+                remaining_df = pd.DataFrame(remaining_rows)
+                missing_df = remaining_df[remaining_df["意味登録"] == "なし"] if not remaining_df.empty else remaining_df
+
+                dl_col1, dl_col2 = st.columns(2)
+                dl_col1.download_button(
+                    "📥 3000語除外後の意味カウントCSV",
+                    data=remaining_df.to_csv(index=False).encode("utf-8-sig"),
+                    file_name="meaning_count_without_frequency_strong.csv",
+                    mime="text/csv",
+                    use_container_width=True,
+                )
+                dl_col2.download_button(
+                    "📥 意味なしだけCSV",
+                    data=missing_df.to_csv(index=False).encode("utf-8-sig"),
+                    file_name="missing_meanings_without_frequency_strong.csv",
+                    mime="text/csv",
+                    use_container_width=True,
+                )
+                st.dataframe(remaining_df.head(500), use_container_width=True)
 
             st.markdown("---")
             
