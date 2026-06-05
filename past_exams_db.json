@@ -6695,6 +6695,1368 @@
               "rob A of B": 1,
               "慣用表現": 1,
               "Chances are (that) S V": 1
+            },
+            "idioms": {
+              "come up with": {
+                "count": 4,
+                "meaning_counts": {
+                  "思いつく": {
+                    "meaning_ja": "（考えや解決策などを）思いつく、提案する",
+                    "count": 3,
+                    "usage_hints": [
+                      "新しいアイデアや解決策を提示する",
+                      "アイデアや解決策などを思いつく文脈",
+                      "新しいアイデアや解決策を考案する文脈"
+                    ]
+                  },
+                  "考案する": {
+                    "meaning_ja": "（アイデアや解決策などを）考案する、考え出す",
+                    "count": 1,
+                    "usage_hints": [
+                      "新しいアイデアや解決策を提案する文脈"
+                    ]
+                  }
+                }
+              },
+              "come from": {
+                "count": 4,
+                "meaning_counts": {
+                  "〜に由来する": {
+                    "meaning_ja": "〜に由来する、〜から来る",
+                    "count": 4,
+                    "usage_hints": [
+                      "物事の起源や出所を示す文脈",
+                      "薬の原料が植物に由来する文脈",
+                      "原因や発生源を示す文脈",
+                      "起源や出所を示す"
+                    ]
+                  }
+                }
+              },
+              "take advantage of": {
+                "count": 3,
+                "meaning_counts": {
+                  "利用する": {
+                    "meaning_ja": "〜を利用する、活用する",
+                    "count": 2,
+                    "usage_hints": [
+                      "機会や制度を活用する文脈",
+                      "自然な物質が薬の原料として使われている文脈"
+                    ]
+                  },
+                  "つけこむ": {
+                    "meaning_ja": "人の弱みなどにつけこむ",
+                    "count": 1,
+                    "usage_hints": [
+                      "相手の弱い立場を悪用する文脈"
+                    ]
+                  }
+                }
+              },
+              "used to": {
+                "count": 2,
+                "meaning_counts": {
+                  "以前は〜だった": {
+                    "meaning_ja": "以前は〜だった（が、今は違う）",
+                    "count": 1,
+                    "usage_hints": [
+                      "過去の習慣や状態を表す文脈"
+                    ]
+                  },
+                  "〜するのに慣れている": {
+                    "meaning_ja": "〜するのに慣れている",
+                    "count": 1,
+                    "usage_hints": [
+                      "経験によって身についた習慣や能力を表す文脈"
+                    ]
+                  }
+                }
+              },
+              "trickle down": {
+                "count": 2,
+                "meaning_counts": {
+                  "浸透する": {
+                    "meaning_ja": "（富や影響などが）下位に浸透する",
+                    "count": 1,
+                    "usage_hints": [
+                      "上位から下位へ徐々に伝わる様子"
+                    ]
+                  },
+                  "徐々に浸透する": {
+                    "meaning_ja": "（影響などが）徐々に浸透する、普及する",
+                    "count": 1,
+                    "usage_hints": [
+                      "上位から下位へ徐々に影響が広がる文脈"
+                    ]
+                  }
+                }
+              },
+              "draw out": {
+                "count": 2,
+                "meaning_counts": {
+                  "引き出す": {
+                    "meaning_ja": "（炭素などを）吸収する、引き出す",
+                    "count": 1,
+                    "usage_hints": [
+                      "大気中から特定の物質を取り除く"
+                    ]
+                  },
+                  "〜を引き出す": {
+                    "meaning_ja": "〜を引き出す、吸い出す",
+                    "count": 1,
+                    "usage_hints": [
+                      "物質を吸収したり、性質を引き出したりする文脈"
+                    ]
+                  }
+                }
+              },
+              "go from a to b": {
+                "count": 2,
+                "meaning_counts": {
+                  "AからBへ移行する": {
+                    "meaning_ja": "Aの状態からBの状態へ移り変わる",
+                    "count": 1,
+                    "usage_hints": [
+                      "ある状態から別の状態へと変化する"
+                    ]
+                  },
+                  "AからBに移行する": {
+                    "meaning_ja": "AからBへ移行する、変化する",
+                    "count": 1,
+                    "usage_hints": [
+                      "状態や役割などが変化する文脈"
+                    ]
+                  }
+                }
+              },
+              "hate to say": {
+                "count": 2,
+                "meaning_counts": {
+                  "言いたくないが": {
+                    "meaning_ja": "言いたくないが",
+                    "count": 2,
+                    "usage_hints": [
+                      "不本意なことを伝える際に使う表現",
+                      "相手にとって好ましくない、あるいは自分自身も言いたくない事実を伝える際に、前置きとして使う表現"
+                    ]
+                  }
+                }
+              },
+              "be naive": {
+                "count": 2,
+                "meaning_counts": {
+                  "世間知らずだ": {
+                    "meaning_ja": "世間知らずである、お人好しである",
+                    "count": 2,
+                    "usage_hints": [
+                      "物事を甘く見すぎている状況を表す文脈",
+                      "物事の現実や複雑さを理解していない、あるいは楽観的すぎる様子を指す文脈"
+                    ]
+                  }
+                }
+              },
+              "state-of-the-art": {
+                "count": 2,
+                "meaning_counts": {
+                  "最新式の": {
+                    "meaning_ja": "最新式の、最先端の",
+                    "count": 2,
+                    "usage_hints": [
+                      "技術や設備などが最も進んでいることを示す文脈",
+                      "技術や設備などが最も進んだ段階にあることを示す文脈"
+                    ]
+                  }
+                }
+              },
+              "out of": {
+                "count": 2,
+                "meaning_counts": {
+                  "〜のうち": {
+                    "meaning_ja": "〜のうちの、〜の中から",
+                    "count": 2,
+                    "usage_hints": [
+                      "集団や数の中から一部を取り出す文脈",
+                      "全体に対する割合や数を示す"
+                    ]
+                  }
+                }
+              },
+              "make up": {
+                "count": 1,
+                "meaning_counts": {
+                  "〜を構成する": {
+                    "meaning_ja": "〜を構成する、〜になっている",
+                    "count": 1,
+                    "usage_hints": [
+                      "〜から作られている、〜で構成されている"
+                    ]
+                  }
+                }
+              },
+              "get trapped": {
+                "count": 1,
+                "meaning_counts": {
+                  "閉じ込められる": {
+                    "meaning_ja": "（ある状況・場所に）閉じ込められる、行き詰まる",
+                    "count": 1,
+                    "usage_hints": [
+                      "意図せずある状況に陥る"
+                    ]
+                  }
+                }
+              },
+              "be responsible for": {
+                "count": 1,
+                "meaning_counts": {
+                  "〜の原因である": {
+                    "meaning_ja": "〜の原因である、〜に責任がある",
+                    "count": 1,
+                    "usage_hints": [
+                      "ある結果や状況を引き起こす原因となっている"
+                    ]
+                  }
+                }
+              },
+              "give reason to": {
+                "count": 1,
+                "meaning_counts": {
+                  "〜の理由を与える": {
+                    "meaning_ja": "〜の理由を与える、〜させる原因となる",
+                    "count": 1,
+                    "usage_hints": [
+                      "希望を持つことのできる根拠を与える"
+                    ]
+                  }
+                }
+              },
+              "not come without": {
+                "count": 1,
+                "meaning_counts": {
+                  "〜を伴う": {
+                    "meaning_ja": "〜なしでは得られない、〜を伴う",
+                    "count": 1,
+                    "usage_hints": [
+                      "何かを受け取る代わりに、何らかの条件や義務が伴う"
+                    ]
+                  }
+                }
+              },
+              "get something wrong": {
+                "count": 1,
+                "meaning_counts": {
+                  "誤解する": {
+                    "meaning_ja": "〜を誤解する、間違って理解する",
+                    "count": 1,
+                    "usage_hints": [
+                      "相手に誤解を与えないように訂正する文脈"
+                    ]
+                  }
+                }
+              },
+              "be surprised if": {
+                "count": 1,
+                "meaning_counts": {
+                  "〜なら驚くだろう": {
+                    "meaning_ja": "もし〜なら驚くだろう",
+                    "count": 1,
+                    "usage_hints": [
+                      "仮定に対する驚きを表す文脈"
+                    ]
+                  }
+                }
+              },
+              "carry out": {
+                "count": 1,
+                "meaning_counts": {
+                  "実行する": {
+                    "meaning_ja": "（計画・調査・研究などを）実行する、実施する",
+                    "count": 1,
+                    "usage_hints": [
+                      "計画や研究などを実行する文脈"
+                    ]
+                  }
+                }
+              },
+              "be benefit of": {
+                "count": 1,
+                "meaning_counts": {
+                  "〜の利益になる": {
+                    "meaning_ja": "〜の利益になる、〜のためになる",
+                    "count": 1,
+                    "usage_hints": [
+                      "何かが誰かの利益になることを示す文脈"
+                    ]
+                  }
+                }
+              },
+              "point out": {
+                "count": 1,
+                "meaning_counts": {
+                  "指摘する": {
+                    "meaning_ja": "〜を指摘する、〜を明らかにする",
+                    "count": 1,
+                    "usage_hints": [
+                      "事実や問題点を指摘する文脈"
+                    ]
+                  }
+                }
+              },
+              "look confident in": {
+                "count": 1,
+                "meaning_counts": {
+                  "〜に自信があるように見える": {
+                    "meaning_ja": "〜に自信があるように見える",
+                    "count": 1,
+                    "usage_hints": [
+                      "服装や状況に対して自信がある様子を表す文脈"
+                    ]
+                  }
+                }
+              },
+              "make someone mad": {
+                "count": 1,
+                "meaning_counts": {
+                  "〜を怒らせる": {
+                    "meaning_ja": "〜を怒らせる",
+                    "count": 1,
+                    "usage_hints": [
+                      "何かが原因で相手を怒らせた文脈"
+                    ]
+                  }
+                }
+              },
+              "be about the size of": {
+                "count": 1,
+                "meaning_counts": {
+                  "〜くらいの大きさだ": {
+                    "meaning_ja": "〜くらいの大きさである",
+                    "count": 1,
+                    "usage_hints": [
+                      "比較対象との大きさを述べる文脈"
+                    ]
+                  }
+                }
+              },
+              "differ from": {
+                "count": 1,
+                "meaning_counts": {
+                  "〜と異なる": {
+                    "meaning_ja": "〜と異なる、〜と違う",
+                    "count": 1,
+                    "usage_hints": [
+                      "二つのものが互いに違うことを示す文脈"
+                    ]
+                  }
+                }
+              },
+              "just in case": {
+                "count": 1,
+                "meaning_counts": {
+                  "万一に備えて": {
+                    "meaning_ja": "万一の場合に備えて、念のために",
+                    "count": 1,
+                    "usage_hints": [
+                      "不測の事態に備える文脈"
+                    ]
+                  }
+                }
+              },
+              "wait until": {
+                "count": 1,
+                "meaning_counts": {
+                  "〜まで待つ": {
+                    "meaning_ja": "〜まで待つ",
+                    "count": 1,
+                    "usage_hints": [
+                      "ある時まで待機する文脈"
+                    ]
+                  }
+                }
+              },
+              "be reported that": {
+                "count": 1,
+                "meaning_counts": {
+                  "〜と報道される": {
+                    "meaning_ja": "〜と報道される、〜と伝えられている",
+                    "count": 1,
+                    "usage_hints": [
+                      "ニュースなどで報じられた内容を示す文脈"
+                    ]
+                  }
+                }
+              },
+              "rob of": {
+                "count": 1,
+                "meaning_counts": {
+                  "〜を奪う": {
+                    "meaning_ja": "〜を奪う、〜から強奪する",
+                    "count": 1,
+                    "usage_hints": [
+                      "財産などを強奪された文脈"
+                    ]
+                  }
+                }
+              },
+              "make with": {
+                "count": 1,
+                "meaning_counts": {
+                  "〜で作られる": {
+                    "meaning_ja": "〜で作られる、〜を材料とする",
+                    "count": 1,
+                    "usage_hints": [
+                      "製品の材料や構成要素を示す文脈"
+                    ]
+                  }
+                }
+              },
+              "treat illness": {
+                "count": 1,
+                "meaning_counts": {
+                  "病気を治療する": {
+                    "meaning_ja": "病気を治療する、病気に対処する",
+                    "count": 1,
+                    "usage_hints": [
+                      "病気や疾患に対する処置や治療を示す文脈"
+                    ]
+                  }
+                }
+              },
+              "recognize as": {
+                "count": 1,
+                "meaning_counts": {
+                  "〜として認識する": {
+                    "meaning_ja": "〜として認識する、〜と認める",
+                    "count": 1,
+                    "usage_hints": [
+                      "あるものを特定のカテゴリーや地位に属すると認める文脈"
+                    ]
+                  }
+                }
+              },
+              "reduce blood pressure": {
+                "count": 1,
+                "meaning_counts": {
+                  "血圧を下げる": {
+                    "meaning_ja": "血圧を下げる",
+                    "count": 1,
+                    "usage_hints": [
+                      "健康効果として血圧が低下することを示す文脈"
+                    ]
+                  }
+                }
+              },
+              "fight disease": {
+                "count": 1,
+                "meaning_counts": {
+                  "病気と闘う": {
+                    "meaning_ja": "病気と闘う、病気の進行を抑える",
+                    "count": 1,
+                    "usage_hints": [
+                      "病気に対する抵抗力や治療効果を示す文脈"
+                    ]
+                  }
+                }
+              },
+              "prevent heart disease": {
+                "count": 1,
+                "meaning_counts": {
+                  "心臓病を防ぐ": {
+                    "meaning_ja": "心臓病を防ぐ、心臓病を予防する",
+                    "count": 1,
+                    "usage_hints": [
+                      "健康効果として心臓病のリスクを低減することを示す文脈"
+                    ]
+                  }
+                }
+              },
+              "help cure": {
+                "count": 1,
+                "meaning_counts": {
+                  "〜の治癒を助ける": {
+                    "meaning_ja": "〜の治癒を助ける、〜の回復を促進する",
+                    "count": 1,
+                    "usage_hints": [
+                      "症状の改善や回復を助ける効果を示す文脈"
+                    ]
+                  }
+                }
+              },
+              "arise": {
+                "count": 1,
+                "meaning_counts": {
+                  "生じる": {
+                    "meaning_ja": "（問題などが）生じる、起こる",
+                    "count": 1,
+                    "usage_hints": [
+                      "問題や状況が自然に発生する文脈"
+                    ]
+                  }
+                }
+              },
+              "in vain": {
+                "count": 1,
+                "meaning_counts": {
+                  "無駄に": {
+                    "meaning_ja": "無駄に、むなしく",
+                    "count": 1,
+                    "usage_hints": [
+                      "努力などが報われない文脈"
+                    ]
+                  }
+                }
+              },
+              "point towards": {
+                "count": 1,
+                "meaning_counts": {
+                  "〜を示唆する": {
+                    "meaning_ja": "〜を示唆する、〜を指し示す",
+                    "count": 1,
+                    "usage_hints": [
+                      "証拠などが将来の状況を示唆する文脈"
+                    ]
+                  }
+                }
+              },
+              "curb": {
+                "count": 1,
+                "meaning_counts": {
+                  "抑制する": {
+                    "meaning_ja": "〜を抑制する、抑える",
+                    "count": 1,
+                    "usage_hints": [
+                      "排出量などを制限する文脈"
+                    ]
+                  }
+                }
+              },
+              "estimate": {
+                "count": 1,
+                "meaning_counts": {
+                  "〜と推定する": {
+                    "meaning_ja": "〜と推定する、見積もる",
+                    "count": 1,
+                    "usage_hints": [
+                      "量や規模を概算する文脈"
+                    ]
+                  }
+                }
+              },
+              "go beyond": {
+                "count": 1,
+                "meaning_counts": {
+                  "〜を超える": {
+                    "meaning_ja": "〜を超える、〜以上に進む",
+                    "count": 1,
+                    "usage_hints": [
+                      "通常の範囲や限界を超える文脈"
+                    ]
+                  }
+                }
+              },
+              "reduce": {
+                "count": 1,
+                "meaning_counts": {
+                  "〜を削減する": {
+                    "meaning_ja": "〜を削減する、減らす",
+                    "count": 1,
+                    "usage_hints": [
+                      "排出量やコストなどを減らす文脈"
+                    ]
+                  }
+                }
+              },
+              "eliminate": {
+                "count": 1,
+                "meaning_counts": {
+                  "〜を除去する": {
+                    "meaning_ja": "〜を除去する、取り除く",
+                    "count": 1,
+                    "usage_hints": [
+                      "不要なものや有害なものを完全になくす文脈"
+                    ]
+                  }
+                }
+              },
+              "introduce": {
+                "count": 1,
+                "meaning_counts": {
+                  "〜を導入する": {
+                    "meaning_ja": "〜を導入する、紹介する",
+                    "count": 1,
+                    "usage_hints": [
+                      "新しい概念やシステムなどを導入する文脈"
+                    ]
+                  }
+                }
+              },
+              "perceive": {
+                "count": 1,
+                "meaning_counts": {
+                  "〜と認識する": {
+                    "meaning_ja": "〜と認識する、〜だと感じる",
+                    "count": 1,
+                    "usage_hints": [
+                      "あるように感じられたり、認識されたりする文脈"
+                    ]
+                  }
+                }
+              },
+              "claim": {
+                "count": 1,
+                "meaning_counts": {
+                  "〜だと主張する": {
+                    "meaning_ja": "〜だと主張する、断言する",
+                    "count": 1,
+                    "usage_hints": [
+                      "事実かどうかに関わらず、あることを主張する文脈"
+                    ]
+                  }
+                }
+              },
+              "revolutionize": {
+                "count": 1,
+                "meaning_counts": {
+                  "〜に革命を起こす": {
+                    "meaning_ja": "〜に革命を起こす、劇的に変える",
+                    "count": 1,
+                    "usage_hints": [
+                      "方法やシステムなどを根本的に変える文脈"
+                    ]
+                  }
+                }
+              },
+              "apply to": {
+                "count": 1,
+                "meaning_counts": {
+                  "〜に適用する": {
+                    "meaning_ja": "〜に適用する、〜に塗布する",
+                    "count": 1,
+                    "usage_hints": [
+                      "物質を表面に塗る、または規則などを適用する文脈"
+                    ]
+                  }
+                }
+              },
+              "absorb": {
+                "count": 1,
+                "meaning_counts": {
+                  "〜を吸収する": {
+                    "meaning_ja": "〜を吸収する",
+                    "count": 1,
+                    "usage_hints": [
+                      "気体や液体などを吸い込む文脈"
+                    ]
+                  }
+                }
+              },
+              "emit": {
+                "count": 1,
+                "meaning_counts": {
+                  "〜を放出する": {
+                    "meaning_ja": "〜を放出する、発する",
+                    "count": 1,
+                    "usage_hints": [
+                      "気体や光などを外に出す文脈"
+                    ]
+                  }
+                }
+              },
+              "speculate": {
+                "count": 1,
+                "meaning_counts": {
+                  "〜と推測する": {
+                    "meaning_ja": "〜と推測する、憶測する",
+                    "count": 1,
+                    "usage_hints": [
+                      "確証はないが、〜だろうと推測する文脈"
+                    ]
+                  }
+                }
+              },
+              "be made from": {
+                "count": 1,
+                "meaning_counts": {
+                  "〜から作られる": {
+                    "meaning_ja": "〜を原料・材料として作られる",
+                    "count": 1,
+                    "usage_hints": [
+                      "原材料が何であるかを示す文脈"
+                    ]
+                  }
+                }
+              },
+              "put a strain on": {
+                "count": 1,
+                "meaning_counts": {
+                  "〜に負担をかける": {
+                    "meaning_ja": "〜に負担をかける、〜を圧迫する",
+                    "count": 1,
+                    "usage_hints": [
+                      "環境や経済などに大きな負荷がかかる文脈"
+                    ]
+                  }
+                }
+              },
+              "be blamed for": {
+                "count": 1,
+                "meaning_counts": {
+                  "〜の責任を問われる": {
+                    "meaning_ja": "〜の責任を問われる、〜のせいにされる",
+                    "count": 1,
+                    "usage_hints": [
+                      "ある問題や悪い出来事の原因として非難される文脈"
+                    ]
+                  }
+                }
+              },
+              "responsible for": {
+                "count": 1,
+                "meaning_counts": {
+                  "〜の原因である": {
+                    "meaning_ja": "〜の原因である、〜に責任がある",
+                    "count": 1,
+                    "usage_hints": [
+                      "ある結果や状況の原因となっている文脈"
+                    ]
+                  }
+                }
+              },
+              "ship": {
+                "count": 1,
+                "meaning_counts": {
+                  "輸送する": {
+                    "meaning_ja": "〜を輸送する",
+                    "count": 1,
+                    "usage_hints": [
+                      "商品を船や飛行機などで運ぶ文脈"
+                    ]
+                  }
+                }
+              },
+              "remove": {
+                "count": 1,
+                "meaning_counts": {
+                  "〜を取り除く": {
+                    "meaning_ja": "〜を取り除く、除去する",
+                    "count": 1,
+                    "usage_hints": [
+                      "不要なものや有害なものを除去する文脈"
+                    ]
+                  }
+                }
+              },
+              "benefit": {
+                "count": 1,
+                "meaning_counts": {
+                  "〜に利益をもたらす": {
+                    "meaning_ja": "〜に利益をもたらす、〜に良い影響を与える",
+                    "count": 1,
+                    "usage_hints": [
+                      "ある行動や状況が〜にとって有益である文脈"
+                    ]
+                  }
+                }
+              },
+              "come across": {
+                "count": 1,
+                "meaning_counts": {
+                  "偶然見つける": {
+                    "meaning_ja": "偶然〜を見つける、〜に思いがけず出会う",
+                    "count": 1,
+                    "usage_hints": [
+                      "予期せず何かを見つける文脈"
+                    ]
+                  }
+                }
+              },
+              "make a decision": {
+                "count": 1,
+                "meaning_counts": {
+                  "決定する": {
+                    "meaning_ja": "決定を下す",
+                    "count": 1,
+                    "usage_hints": [
+                      "何かを行うことを決める文脈"
+                    ]
+                  }
+                }
+              },
+              "turn off": {
+                "count": 1,
+                "meaning_counts": {
+                  "消す": {
+                    "meaning_ja": "（明かりや電子機器などを）消す",
+                    "count": 1,
+                    "usage_hints": [
+                      "携帯電話などの電源を切る文脈"
+                    ]
+                  }
+                }
+              },
+              "piece of luggage": {
+                "count": 1,
+                "meaning_counts": {
+                  "荷物": {
+                    "meaning_ja": "1つの荷物",
+                    "count": 1,
+                    "usage_hints": [
+                      "数えられる単位としての荷物"
+                    ]
+                  }
+                }
+              },
+              "by the way": {
+                "count": 1,
+                "meaning_counts": {
+                  "ところで": {
+                    "meaning_ja": "ところで、話変わるが",
+                    "count": 1,
+                    "usage_hints": [
+                      "話題を変えるときや、付け加えることがあるとき"
+                    ]
+                  }
+                }
+              },
+              "spoil": {
+                "count": 1,
+                "meaning_counts": {
+                  "台無しにする": {
+                    "meaning_ja": "〜を台無しにする、損なう",
+                    "count": 1,
+                    "usage_hints": [
+                      "景観や機会などを悪くする文脈"
+                    ]
+                  }
+                }
+              },
+              "at no extra charge": {
+                "count": 1,
+                "meaning_counts": {
+                  "追加料金なしで": {
+                    "meaning_ja": "追加料金なしで、無料で",
+                    "count": 1,
+                    "usage_hints": [
+                      "サービスなどが無料で提供される文脈"
+                    ]
+                  }
+                }
+              },
+              "good deal": {
+                "count": 1,
+                "meaning_counts": {
+                  "かなりの": {
+                    "meaning_ja": "かなりの、かなりの量の",
+                    "count": 1,
+                    "usage_hints": [
+                      "時間や量が多いことを示す"
+                    ]
+                  }
+                }
+              },
+              "tough": {
+                "count": 1,
+                "meaning_counts": {
+                  "硬い": {
+                    "meaning_ja": "（食べ物が）硬い、噛み切りにくい",
+                    "count": 1,
+                    "usage_hints": [
+                      "食感が硬いことを表す"
+                    ]
+                  }
+                }
+              },
+              "room for": {
+                "count": 1,
+                "meaning_counts": {
+                  "〜の余地": {
+                    "meaning_ja": "〜の余地、可能性",
+                    "count": 1,
+                    "usage_hints": [
+                      "交渉などの余地があるかないかを表す"
+                    ]
+                  }
+                }
+              },
+              "have a good taste in": {
+                "count": 1,
+                "meaning_counts": {
+                  "〜のセンスがある": {
+                    "meaning_ja": "〜のセンスがある、〜に対する審美眼がある",
+                    "count": 1,
+                    "usage_hints": [
+                      "ファッションや芸術などに対するセンスが良い文脈"
+                    ]
+                  }
+                }
+              },
+              "for the time being": {
+                "count": 1,
+                "meaning_counts": {
+                  "当分の間": {
+                    "meaning_ja": "当分の間、さしあたり",
+                    "count": 1,
+                    "usage_hints": [
+                      "一時的な状況を表す"
+                    ]
+                  }
+                }
+              },
+              "at will": {
+                "count": 1,
+                "meaning_counts": {
+                  "自由に": {
+                    "meaning_ja": "自由に、思いのままに",
+                    "count": 1,
+                    "usage_hints": [
+                      "自分の意思でいつでも変更できる文脈"
+                    ]
+                  }
+                }
+              },
+              "be at home in": {
+                "count": 1,
+                "meaning_counts": {
+                  "〜に精通している": {
+                    "meaning_ja": "〜に精通している、〜に慣れている",
+                    "count": 1,
+                    "usage_hints": [
+                      "ある分野や環境に詳しく、慣れ親しんでいる様子"
+                    ]
+                  }
+                }
+              },
+              "hold on": {
+                "count": 1,
+                "meaning_counts": {
+                  "待つ": {
+                    "meaning_ja": "（電話で）待つ、しばらく待つ",
+                    "count": 1,
+                    "usage_hints": [
+                      "相手に少し待ってもらうように頼む文脈"
+                    ]
+                  }
+                }
+              },
+              "make much of": {
+                "count": 1,
+                "meaning_counts": {
+                  "重視する": {
+                    "meaning_ja": "〜を重視する、〜を高く評価する",
+                    "count": 1,
+                    "usage_hints": [
+                      "何かを大切にしたり、重要視したりする文脈"
+                    ]
+                  }
+                }
+              },
+              "rule out": {
+                "count": 1,
+                "meaning_counts": {
+                  "除外する": {
+                    "meaning_ja": "〜を除外する、〜の可能性を否定する",
+                    "count": 1,
+                    "usage_hints": [
+                      "可能性などを考慮しない、除外する文脈"
+                    ]
+                  }
+                }
+              },
+              "continue to": {
+                "count": 1,
+                "meaning_counts": {
+                  "〜し続ける": {
+                    "meaning_ja": "〜し続ける",
+                    "count": 1,
+                    "usage_hints": [
+                      "ある行動や状態が続くことを示す"
+                    ]
+                  }
+                }
+              },
+              "when hungry": {
+                "count": 1,
+                "meaning_counts": {
+                  "空腹の時": {
+                    "meaning_ja": "空腹の時",
+                    "count": 1,
+                    "usage_hints": [
+                      "空腹を感じた時の状況を表す"
+                    ]
+                  }
+                }
+              },
+              "make money": {
+                "count": 1,
+                "meaning_counts": {
+                  "お金を稼ぐ": {
+                    "meaning_ja": "お金を稼ぐ、儲ける",
+                    "count": 1,
+                    "usage_hints": [
+                      "収入を得ることを表す"
+                    ]
+                  }
+                }
+              },
+              "have very little": {
+                "count": 1,
+                "meaning_counts": {
+                  "ほとんど持っていない": {
+                    "meaning_ja": "ほとんど持っていない",
+                    "count": 1,
+                    "usage_hints": [
+                      "所有物が非常に少ない状況"
+                    ]
+                  }
+                }
+              },
+              "in fact": {
+                "count": 1,
+                "meaning_counts": {
+                  "実際": {
+                    "meaning_ja": "実際、実は",
+                    "count": 1,
+                    "usage_hints": [
+                      "前の内容を補足・強調する際に使う"
+                    ]
+                  }
+                }
+              },
+              "spread": {
+                "count": 1,
+                "meaning_counts": {
+                  "広がる": {
+                    "meaning_ja": "（影響・現象などが）広がる",
+                    "count": 1,
+                    "usage_hints": [
+                      "現代農業が普及している文脈"
+                    ]
+                  }
+                }
+              },
+              "consequence for": {
+                "count": 1,
+                "meaning_counts": {
+                  "〜への結果": {
+                    "meaning_ja": "〜への影響、結果",
+                    "count": 1,
+                    "usage_hints": [
+                      "ある出来事が他者に与える影響"
+                    ]
+                  }
+                }
+              },
+              "come to an agreement": {
+                "count": 1,
+                "meaning_counts": {
+                  "合意する": {
+                    "meaning_ja": "合意に達する",
+                    "count": 1,
+                    "usage_hints": [
+                      "話し合いの結果、意見が一致する"
+                    ]
+                  }
+                }
+              },
+              "no matter what": {
+                "count": 1,
+                "meaning_counts": {
+                  "どんな〜でも": {
+                    "meaning_ja": "どんな状況であっても",
+                    "count": 1,
+                    "usage_hints": [
+                      "regardless of the circumstances"
+                    ]
+                  }
+                }
+              },
+              "made ... mad at": {
+                "count": 1,
+                "meaning_counts": {
+                  "〜を怒らせる": {
+                    "meaning_ja": "〜を怒らせる",
+                    "count": 1,
+                    "usage_hints": [
+                      "原因があって、相手が怒る"
+                    ]
+                  }
+                }
+              },
+              "half the size of": {
+                "count": 1,
+                "meaning_counts": {
+                  "〜の半分の大きさ": {
+                    "meaning_ja": "〜の半分の大きさ",
+                    "count": 1,
+                    "usage_hints": [
+                      "比較対象の大きさと比べて"
+                    ]
+                  }
+                }
+              },
+              "noticed ... were different from": {
+                "count": 1,
+                "meaning_counts": {
+                  "〜と違うことに気づく": {
+                    "meaning_ja": "〜と違うことに気づく",
+                    "count": 1,
+                    "usage_hints": [
+                      "以前と違う点や、比較対象との違いに気づく"
+                    ]
+                  }
+                }
+              },
+              "don't wait until": {
+                "count": 1,
+                "meaning_counts": {
+                  "〜まで待たない": {
+                    "meaning_ja": "〜まで待たない",
+                    "count": 1,
+                    "usage_hints": [
+                      "ギリギリまで行動しないことを避ける"
+                    ]
+                  }
+                }
+              },
+              "at the last minute": {
+                "count": 1,
+                "meaning_counts": {
+                  "土壇場で": {
+                    "meaning_ja": "土壇場で、ぎりぎりになって",
+                    "count": 1,
+                    "usage_hints": [
+                      "締め切りや期限の直前に"
+                    ]
+                  }
+                }
+              },
+              "it is reported that": {
+                "count": 1,
+                "meaning_counts": {
+                  "〜と報道されている": {
+                    "meaning_ja": "〜と報道されている",
+                    "count": 1,
+                    "usage_hints": [
+                      "ニュースや伝聞の情報源を示す"
+                    ]
+                  }
+                }
+              },
+              "robbed ... of": {
+                "count": 1,
+                "meaning_counts": {
+                  "〜を奪う": {
+                    "meaning_ja": "〜を奪う、強奪する",
+                    "count": 1,
+                    "usage_hints": [
+                      "人や場所から金品などを強奪する"
+                    ]
+                  }
+                }
+              },
+              "used not only ... but also": {
+                "count": 1,
+                "meaning_counts": {
+                  "〜だけでなく〜も": {
+                    "meaning_ja": "〜だけでなく〜も",
+                    "count": 1,
+                    "usage_hints": [
+                      "二つの用法や目的を並列して示す"
+                    ]
+                  }
+                }
+              },
+              "help ... fight": {
+                "count": 1,
+                "meaning_counts": {
+                  "〜と戦うのを助ける": {
+                    "meaning_ja": "〜と戦うのを助ける",
+                    "count": 1,
+                    "usage_hints": [
+                      "病気や困難などに対して"
+                    ]
+                  }
+                }
+              },
+              "feeling ... or": {
+                "count": 1,
+                "meaning_counts": {
+                  "〜または〜な気分": {
+                    "meaning_ja": "〜または〜な気分",
+                    "count": 1,
+                    "usage_hints": [
+                      "二つの状態や感情を並列して示す"
+                    ]
+                  }
+                }
+              },
+              "at least": {
+                "count": 1,
+                "meaning_counts": {
+                  "少なくとも": {
+                    "meaning_ja": "少なくとも",
+                    "count": 1,
+                    "usage_hints": [
+                      "最低限の数量や程度を示す"
+                    ]
+                  }
+                }
+              },
+              "be aware that": {
+                "count": 1,
+                "meaning_counts": {
+                  "気づいている": {
+                    "meaning_ja": "〜に気づいている、〜を知っている",
+                    "count": 1,
+                    "usage_hints": [
+                      "状況や事実を認識している文脈"
+                    ]
+                  }
+                }
+              },
+              "be suspicious about": {
+                "count": 1,
+                "meaning_counts": {
+                  "疑わしい": {
+                    "meaning_ja": "〜について疑わしく思っている",
+                    "count": 1,
+                    "usage_hints": [
+                      "〜に懐疑的である、信じられない文脈"
+                    ]
+                  }
+                }
+              },
+              "be careful about": {
+                "count": 1,
+                "meaning_counts": {
+                  "注意する": {
+                    "meaning_ja": "〜に注意する、〜に気をつける",
+                    "count": 1,
+                    "usage_hints": [
+                      "特定の事柄について警戒や配慮が必要な文脈"
+                    ]
+                  }
+                }
+              },
+              "lend itself to": {
+                "count": 1,
+                "meaning_counts": {
+                  "適している": {
+                    "meaning_ja": "〜に適している、〜に向いている",
+                    "count": 1,
+                    "usage_hints": [
+                      "ある目的や用途に合っている文脈"
+                    ]
+                  }
+                }
+              },
+              "give someone a break": {
+                "count": 1,
+                "meaning_counts": {
+                  "勘弁する": {
+                    "meaning_ja": "（人を）大目に見る、勘弁してやる",
+                    "count": 1,
+                    "usage_hints": [
+                      "相手の要求や主張に対して、現実的でない、あるいは無理だと感じたときに使う表現"
+                    ]
+                  }
+                }
+              },
+              "the fact of the matter is": {
+                "count": 1,
+                "meaning_counts": {
+                  "実情は〜だ": {
+                    "meaning_ja": "実情は〜である、実際のところは〜だ",
+                    "count": 1,
+                    "usage_hints": [
+                      "表面的なことではなく、本当の状況や本質を説明する文脈"
+                    ]
+                  }
+                }
+              },
+              "come without strings attached": {
+                "count": 1,
+                "meaning_counts": {
+                  "無条件である": {
+                    "meaning_ja": "（贈り物や申し出などが）何の条件もなく〜である",
+                    "count": 1,
+                    "usage_hints": [
+                      "見返りや義務を伴わない申し出ではない、という否定的な文脈"
+                    ]
+                  }
+                }
+              },
+              "on the condition that": {
+                "count": 1,
+                "meaning_counts": {
+                  "〜という条件で": {
+                    "meaning_ja": "〜という条件で",
+                    "count": 1,
+                    "usage_hints": [
+                      "ある行為や合意が成立するための前提条件を示す文脈"
+                    ]
+                  }
+                }
+              },
+              "don't get me wrong": {
+                "count": 1,
+                "meaning_counts": {
+                  "誤解しないで": {
+                    "meaning_ja": "誤解しないでほしいのですが",
+                    "count": 1,
+                    "usage_hints": [
+                      "これから述べる意見が、相手の意図とは異なる、あるいは誤解されやすい内容である場合に、前置きとして使う表現"
+                    ]
+                  }
+                }
+              },
+              "be surprised to hear": {
+                "count": 1,
+                "meaning_counts": {
+                  "聞いて驚く": {
+                    "meaning_ja": "〜と聞いて驚く",
+                    "count": 1,
+                    "usage_hints": [
+                      "予期せぬ情報に接して驚きを示す文脈"
+                    ]
+                  }
+                }
+              },
+              "would have to": {
+                "count": 1,
+                "meaning_counts": {
+                  "〜しなければならないだろう": {
+                    "meaning_ja": "〜しなければならないだろう（仮定・推量）",
+                    "count": 1,
+                    "usage_hints": [
+                      "仮定の話として、将来的に義務が生じる可能性について述べる文脈"
+                    ]
+                  }
+                }
+              },
+              "figure out": {
+                "count": 1,
+                "meaning_counts": {
+                  "理解する": {
+                    "meaning_ja": "〜を理解する、〜を突き止める",
+                    "count": 1,
+                    "usage_hints": [
+                      "複雑な問題や状況を理解したり、解決策を見つけたりする文脈"
+                    ]
+                  }
+                }
+              },
+              "express different views": {
+                "count": 1,
+                "meaning_counts": {
+                  "異なる見解を示す": {
+                    "meaning_ja": "異なる見解を示す、意見の相違を表明する",
+                    "count": 1,
+                    "usage_hints": [
+                      "議論において、互いに違う意見や考えを持っていることを示す文脈"
+                    ]
+                  }
+                }
+              }
             }
           }
         },
@@ -41843,236 +43205,7 @@
               "superior": 1,
               "cut": 1
             },
-            "idioms": {
-              "fit to": {
-                "count": 1
-              },
-              "test out": {
-                "count": 1
-              },
-              "set to": {
-                "count": 2
-              },
-              "recognize as": {
-                "count": 1
-              },
-              "turn into": {
-                "count": 1
-              },
-              "trace to": {
-                "count": 1
-              },
-              "The story goes that": {
-                "count": 1
-              },
-              "instead of": {
-                "count": 1
-              },
-              "all the time": {
-                "count": 1
-              },
-              "for instance": {
-                "count": 1
-              },
-              "claim to": {
-                "count": 1
-              },
-              "impact on": {
-                "count": 1
-              },
-              "extend beyond": {
-                "count": 1
-              },
-              "according to": {
-                "count": 2
-              },
-              "importance of": {
-                "count": 2
-              },
-              "focus on": {
-                "count": 2
-              },
-              "in addition to": {
-                "count": 1
-              },
-              "on the forefront": {
-                "count": 1
-              },
-              "serve as": {
-                "count": 2
-              },
-              "at the time": {
-                "count": 1
-              },
-              "dependent on": {
-                "count": 1
-              },
-              "seek to do": {
-                "count": 1
-              },
-              "collaborate on": {
-                "count": 1
-              },
-              "act as": {
-                "count": 1
-              },
-              "lead to do": {
-                "count": 1
-              },
-              "push for": {
-                "count": 1
-              },
-              "have influence on": {
-                "count": 1
-              },
-              "make an effort to": {
-                "count": 1
-              },
-              "ahead of time": {
-                "count": 1
-              },
-              "think about": {
-                "count": 1
-              },
-              "insight on": {
-                "count": 1
-              },
-              "in one's own words": {
-                "count": 1
-              },
-              "at length": {
-                "count": 1
-              },
-              "stand for": {
-                "count": 1
-              },
-              "depend on": {
-                "count": 1
-              },
-              "contact with": {
-                "count": 1
-              },
-              "grow out of": {
-                "count": 1
-              },
-              "rise to fame": {
-                "count": 1
-              },
-              "gain in": {
-                "count": 1
-              },
-              "push back against": {
-                "count": 1
-              },
-              "right to": {
-                "count": 1
-              },
-              "put in the public domain": {
-                "count": 1
-              },
-              "evolve into": {
-                "count": 1
-              },
-              "play a role in": {
-                "count": 1
-              },
-              "lack of": {
-                "count": 1
-              },
-              "no doubt that": {
-                "count": 1
-              },
-              "know as": {
-                "count": 1
-              },
-              "be around": {
-                "count": 1
-              },
-              "credit for": {
-                "count": 1
-              },
-              "collector of": {
-                "count": 1
-              },
-              "in order to": {
-                "count": 1
-              },
-              "pose a threat": {
-                "count": 1
-              },
-              "from A to B": {
-                "count": 2
-              },
-              "lead to": {
-                "count": 2
-              },
-              "for as long as": {
-                "count": 1
-              },
-              "in a way": {
-                "count": 1
-              },
-              "protest against": {
-                "count": 1
-              },
-              "put out of work": {
-                "count": 1
-              },
-              "make it C to do": {
-                "count": 1
-              },
-              "prevent from doing": {
-                "count": 1
-              },
-              "be linked to": {
-                "count": 1
-              },
-              "benefit from": {
-                "count": 1
-              },
-              "loss of": {
-                "count": 1
-              },
-              "center on": {
-                "count": 1
-              },
-              "at least": {
-                "count": 1
-              },
-              "in terms": {
-                "count": 1
-              },
-              "hover over": {
-                "count": 1
-              },
-              "in the past": {
-                "count": 1
-              },
-              "must have done": {
-                "count": 1
-              },
-              "provide to": {
-                "count": 1
-              },
-              "find it C to do": {
-                "count": 1
-              },
-              "bear resemblance to": {
-                "count": 1
-              },
-              "be cut out for": {
-                "count": 1
-              },
-              "be able to": {
-                "count": 1
-              },
-              "make into": {
-                "count": 1
-              },
-              "superior to": {
-                "count": 1
-              }
-            },
+            "idioms": {},
             "grammar_questions": [
               {
                 "question_type": "multiple_choice",

@@ -410,28 +410,64 @@ mode = st.sidebar.radio("モード", [
 
 
 # --- 3. AI呼び出し関数 ---
-def call_ai(prompt, sys_msg, use_pdf=False, is_json=False, model_name="gemini-2.5-pro"):
+GEMINI_MODEL_ALIASES = {
+    "gemini-3-flash": "gemini-2.5-flash",
+    "gemini-3.5-flash": "gemini-2.5-flash",
+    "gemini-3.1-flash-lite": "gemini-2.5-flash-lite",
+    "gemini-flash": "gemini-2.5-flash",
+    "gemini-flash-lite": "gemini-2.5-flash-lite",
+}
+
+def normalize_gemini_model_name(model_name):
+    model_name = (model_name or "gemini-2.5-flash").strip()
+    return GEMINI_MODEL_ALIASES.get(model_name, model_name)
+
+def get_gemini_model_chain(model_name):
+    model_name = normalize_gemini_model_name(model_name)
+    if model_name == "gemini-2.5-flash-lite":
+        return ["gemini-2.5-flash-lite", "gemini-2.5-flash"]
+    if model_name == "gemini-2.5-flash":
+        return ["gemini-2.5-flash", "gemini-2.5-flash-lite"]
+    return [model_name]
+
+def call_ai(prompt, sys_msg, use_pdf=False, is_json=False, model_name="gemini-2.5-pro", max_output_tokens=None, timeout_seconds=60):
     if not api_key:
         raise ValueError("Gemini API Keyが未入力です。左サイドバーにAPIキーを入力してから実行してください。")
     genai.configure(api_key=api_key)
-    
-    # モデルの指定（デフォルトは 2.5-pro、クイズ等で 3.1-flash-lite を渡せるようにする）
-    if is_json:
-        model = genai.GenerativeModel(model_name=model_name, system_instruction=sys_msg, generation_config={"response_mime_type": "application/json"})
-    else:
-        model = genai.GenerativeModel(model_name=model_name, system_instruction=sys_msg)
 
-    if use_pdf and uploaded_pdf:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-            tmp.write(uploaded_pdf.getvalue())
-            tmp_path = tmp.name
-        g_file = genai.upload_file(tmp_path)
-        res = model.generate_content([g_file, prompt])
-        os.remove(tmp_path)
-        return res.text
-    else:
-        res = model.generate_content(prompt)
-        return res.text
+    generation_config = {}
+    if is_json:
+        generation_config["response_mime_type"] = "application/json"
+    if max_output_tokens:
+        generation_config["max_output_tokens"] = int(max_output_tokens)
+
+    tmp_path = None
+    try:
+        content = prompt
+        if use_pdf and uploaded_pdf:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+                tmp.write(uploaded_pdf.getvalue())
+                tmp_path = tmp.name
+            g_file = genai.upload_file(tmp_path)
+            content = [g_file, prompt]
+
+        last_error = None
+        for candidate_model in get_gemini_model_chain(model_name):
+            try:
+                model = genai.GenerativeModel(
+                    model_name=candidate_model,
+                    system_instruction=sys_msg,
+                    generation_config=generation_config or None,
+                )
+                res = model.generate_content(content, request_options={"timeout": timeout_seconds})
+                return res.text
+            except Exception as e:
+                last_error = e
+
+        raise last_error
+    finally:
+        if tmp_path and os.path.exists(tmp_path):
+            os.remove(tmp_path)
 
 def split_reading_sentences(text):
     return [s.strip() for s in re.split(r'(?<=[.!?])\s+', str(text).replace('\n', ' ')) if s.strip()]
@@ -522,7 +558,14 @@ def render_close_reading_tab():
         if st.button("✨ ウォームアップ文を生成する", type="primary", key="close_read_generate_warmup"):
             with st.spinner("AIがウォームアップ用の英文を書いています..."):
                 sys_gen_read = "大学受験の長文読解に向けたウォームアップ用英文を180〜250語で作成してください。簡単すぎる文だけにせず、関係詞、分詞、不定詞、比較、接続、指示語が自然に含まれる英文にしてください。英文本文のみ出力してください。"
-                text = call_ai("テーマはランダムでよいので、構文練習になる英文を作成してください。", sys_gen_read, use_pdf=False, model_name="gemini-3.5-flash")
+                text = call_ai(
+                    "テーマはランダムでよいので、構文練習になる英文を作成してください。",
+                    sys_gen_read,
+                    use_pdf=False,
+                    model_name="gemini-2.5-flash-lite",
+                    max_output_tokens=450,
+                    timeout_seconds=35,
+                )
                 set_reading_text(text)
                 st.rerun()
 
@@ -588,7 +631,13 @@ def render_close_reading_tab():
                         sys_translation = "あなたは大学受験英語の講師です。英文を自然な日本語に訳してください。必要以上の解説はせず、訳だけを出力してください。"
                         if "reading_translations" not in st.session_state:
                             st.session_state.reading_translations = {}
-                        st.session_state.reading_translations[idx] = call_ai(current_sentence, sys_translation, model_name="gemini-3.5-flash").strip()
+                        st.session_state.reading_translations[idx] = call_ai(
+                            current_sentence,
+                            sys_translation,
+                            model_name="gemini-2.5-flash-lite",
+                            max_output_tokens=160,
+                            timeout_seconds=25,
+                        ).strip()
                         st.rerun()
                 if col_t2.button("🧩 構造を見る", use_container_width=True, key=f"show_structure_{idx}"):
                     with st.spinner("構文を分解中..."):
@@ -629,7 +678,13 @@ def render_close_reading_tab():
                         """
                         if "reading_structures" not in st.session_state:
                             st.session_state.reading_structures = {}
-                        st.session_state.reading_structures[idx] = call_ai(current_sentence, sys_structure, model_name="gemini-3.5-flash").strip()
+                        st.session_state.reading_structures[idx] = call_ai(
+                            current_sentence,
+                            sys_structure,
+                            model_name="gemini-2.5-flash-lite",
+                            max_output_tokens=650,
+                            timeout_seconds=35,
+                        ).strip()
                         st.rerun()
 
                 if idx in st.session_state.get("reading_translations", {}):
@@ -699,7 +754,14 @@ def render_close_reading_tab():
                         - 1回の返答で全文を分解し切ろうとすること
                         """
                         history_str = "\n".join([f"{m['role']}: {m['content']}" for m in st.session_state.reading_chat_logs[-4:]])
-                        ans = call_ai(f"直近の会話:\n{history_str}", sys_reading, use_pdf=False, model_name="gemini-3.5-flash")
+                        ans = call_ai(
+                            f"直近の会話:\n{history_str}",
+                            sys_reading,
+                            use_pdf=False,
+                            model_name="gemini-2.5-flash-lite",
+                            max_output_tokens=650,
+                            timeout_seconds=35,
+                        )
                         st.session_state.reading_chat_logs.append({"role": "assistant", "content": ans})
                         st.rerun()
 
@@ -723,7 +785,14 @@ def render_close_reading_tab():
                         if cols[i % 6].button(w, key=f"wbtn_{i}_{idx}"):
                             with st.spinner(f"「{w}」の意味を検索中..."):
                                 sys_dict = "あなたは辞書です。指定された単語の、この文脈における意味を簡潔に答えてください。"
-                                meaning = call_ai(f"文脈: {current_sentence}\n単語: {w}", sys_dict, use_pdf=False, model_name="gemini-3.5-flash")
+                                meaning = call_ai(
+                                    f"文脈: {current_sentence}\n単語: {w}",
+                                    sys_dict,
+                                    use_pdf=False,
+                                    model_name="gemini-2.5-flash-lite",
+                                    max_output_tokens=220,
+                                    timeout_seconds=25,
+                                )
                                 st.session_state.temp_memo.append({"word": w, "meaning": meaning.strip()})
                                 st.rerun()
 
@@ -733,7 +802,14 @@ def render_close_reading_tab():
                     if col_idiom2.button("🔍 検索", key=f"search_idiom_btn_{idx}", use_container_width=True) and search_idiom:
                         with st.spinner("検索中..."):
                             sys_dict = "あなたは辞書です。指定された熟語・フレーズの、この文脈における意味を簡潔に答えてください。"
-                            meaning = call_ai(f"文脈: {current_sentence}\n熟語: {search_idiom}", sys_dict, use_pdf=False, model_name="gemini-3.5-flash")
+                            meaning = call_ai(
+                                f"文脈: {current_sentence}\n熟語: {search_idiom}",
+                                sys_dict,
+                                use_pdf=False,
+                                model_name="gemini-2.5-flash-lite",
+                                max_output_tokens=220,
+                                timeout_seconds=25,
+                            )
                             st.session_state.temp_memo.append({"word": search_idiom, "meaning": meaning.strip()})
                             st.rerun()
 
@@ -2199,7 +2275,14 @@ elif mode == "🔗 志望校別熟語帳":
                         if st.button("✨ この熟語でクイズを生成する", key=f"idiom_quiz_btn_{i}"):
                             with st.spinner("AI講師が問題を自動生成中..."):
                                 try:
-                                    res_quiz = call_ai(f"対象の熟語: {word}", "英語講師として指定熟語の4択問題を作成せよ。JSON出力: {\"question\": \"...\", \"options\": [\"...\"], \"answer\": \"...\", \"translation\": \"...\"}", is_json=True, model_name="gemini-3.1-flash-lite")
+                                    res_quiz = call_ai(
+                                        f"対象の熟語: {word}",
+                                        "英語講師として指定熟語の4択問題を作成せよ。JSON出力: {\"question\": \"...\", \"options\": [\"...\"], \"answer\": \"...\", \"translation\": \"...\"}",
+                                        is_json=True,
+                                        model_name="gemini-2.5-flash-lite",
+                                        max_output_tokens=500,
+                                        timeout_seconds=30,
+                                    )
                                     st.session_state[f"active_idiom_quiz_{i}"] = json.loads(res_quiz)
                                     st.session_state[f"idiom_quiz_answered_{i}"] = False
                                 except Exception as e: st.error("生成に失敗しました。")
@@ -2294,8 +2377,14 @@ elif mode == "🔗 志望校別熟語帳":
                         }
                         """
                         try:
-                            # 🚀 モデルを最新の 3.5-flash に固定して高速・高精度化
-                            res_input = call_ai(f"対象熟語（必ずすべて解説すること）:\n{', '.join(target_idioms)}", sys_input, is_json=True, model_name="gemini-3.5-flash")
+                            res_input = call_ai(
+                                f"対象熟語（必ずすべて解説すること）:\n{', '.join(target_idioms)}",
+                                sys_input,
+                                is_json=True,
+                                model_name="gemini-2.5-flash-lite",
+                                max_output_tokens=1600,
+                                timeout_seconds=45,
+                            )
                             st.session_state.current_input_data = json.loads(res_input)
                         except Exception as e: 
                             st.error(f"生成失敗: {e}")
@@ -2378,7 +2467,14 @@ elif mode == "🔗 志望校別熟語帳":
                         """
                         try:
                             # 🚀 モデルを最新の 3.5-flash に固定
-                            res_output = call_ai(f"熟語リスト:\n{', '.join(target_idioms)}", sys_output, is_json=True, model_name="gemini-3.5-flash")
+                            res_output = call_ai(
+                                f"熟語リスト:\n{', '.join(target_idioms)}",
+                                sys_output,
+                                is_json=True,
+                                model_name="gemini-2.5-flash-lite",
+                                max_output_tokens=1800,
+                                timeout_seconds=45,
+                            )
                             st.session_state.current_test_drill = json.loads(res_output)
                             st.session_state.test_q_status = {}
                             st.session_state.current_q_index = 0
@@ -2460,7 +2556,14 @@ elif mode == "🔗 志望校別熟語帳":
                                         history_str = "\n".join([f"{m['role']}: {m['content']}" for m in st.session_state.quiz_chat_logs[chat_key][-4:]])
                                         
                                         # 🚀 モデルを最新の 3.5-flash に固定
-                                        ans = call_ai(f"会話:\n{history_str}", sys_chat, use_pdf=False, model_name="gemini-3.5-flash")
+                                        ans = call_ai(
+                                            f"会話:\n{history_str}",
+                                            sys_chat,
+                                            use_pdf=False,
+                                            model_name="gemini-2.5-flash-lite",
+                                            max_output_tokens=700,
+                                            timeout_seconds=35,
+                                        )
                                         st.session_state.quiz_chat_logs[chat_key].append({"role": "assistant", "content": ans}); st.rerun()
                                 st.markdown("---")
                                 if st.button("次の問題へ ▶", use_container_width=True): st.session_state.current_q_index += 1; st.rerun()
@@ -2894,7 +2997,14 @@ elif mode == "📝 志望校別文法・語法ノート":
                                 with st.spinner("AI講師が思考中..."):
                                     sys_chat = f"問題: {q.get('question', '')}\n和訳: {q.get('translation', '')}\n正解: {q.get('answer', '')}\n解説: {q.get('explanation', '')}\n生徒の質問に簡潔に答えてください。"
                                     history_str = "\n".join([f"{m['role']}: {m['content']}" for m in st.session_state.grammar_chat_logs[chat_key][-4:]])
-                                    ans = call_ai(f"会話:\n{history_str}", sys_chat, use_pdf=False, model_name="gemini-3.5-flash")
+                                    ans = call_ai(
+                                        f"会話:\n{history_str}",
+                                        sys_chat,
+                                        use_pdf=False,
+                                        model_name="gemini-2.5-flash-lite",
+                                        max_output_tokens=700,
+                                        timeout_seconds=35,
+                                    )
                                     st.session_state.grammar_chat_logs[chat_key].append({"role": "assistant", "content": ans})
                                     st.rerun()
 
@@ -3214,7 +3324,7 @@ elif mode == "🏆 過去問演習・合格分析":
             # --- 左側：AIとのディープチャット ---
             with col_chat:
                 st.markdown("##### 🗣️ AI講師との壁打ち")
-                chat_model_choice = st.radio("🧠 分析モデル", ["推論モデル (2.5 Pro) - 深掘り", "高速モデル (3.5 Flash)"], horizontal=True, label_visibility="collapsed")
+                chat_model_choice = st.radio("🧠 分析モデル", ["推論モデル (2.5 Pro) - 深掘り", "高速モデル (2.5 Flash Lite)"], horizontal=True, label_visibility="collapsed")
                 
                 with st.container(border=True, height=500):
                     for msg in st.session_state.exam_review_chat:
@@ -3224,7 +3334,7 @@ elif mode == "🏆 過去問演習・合格分析":
                 if user_req := st.chat_input("例：問1は②にした。なぜ他の選択肢がダメなの？", key="review_chat_in"):
                     st.session_state.exam_review_chat.append({"role": "user", "content": user_req})
                     with st.spinner("AI講師が分析中..."):
-                        selected_model_name = "gemini-2.5-pro" if "Pro" in chat_model_choice else "gemini-3.5-flash"
+                        selected_model_name = "gemini-2.5-pro" if "Pro" in chat_model_choice else "gemini-2.5-flash-lite"
                         
                         sys_review = f"""
                         あなたは生徒に寄り添う予備校講師です。以下の【過去問テキスト】を共有のコンテキストとして復習を行います。

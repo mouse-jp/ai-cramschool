@@ -1,0 +1,2105 @@
+{
+  "version": 1,
+  "idioms": {
+    "trickle down": {
+      "base_form": "trickle down",
+      "meanings": {
+        "浸透する": {
+          "meaning_ja": "（富や影響などが）下位に浸透する",
+          "usage_hints": [
+            "上位から下位へ徐々に広がる様子を表す。",
+            "上位から下位へ徐々に伝わる様子"
+          ]
+        },
+        "（影響などが）徐々に浸透する": {
+          "meaning_ja": "（影響などが）徐々に浸透する、広がる",
+          "usage_hints": [
+            "マーケティングから実態へ、影響が徐々に広がる様子を表す。"
+          ]
+        },
+        "徐々に浸透する": {
+          "meaning_ja": "（影響などが）徐々に浸透する、普及する",
+          "usage_hints": [
+            "上位から下位へ徐々に影響が広がる文脈"
+          ]
+        }
+      }
+    },
+    "draw carbon out of": {
+      "base_form": "draw carbon out of",
+      "meanings": {
+        "〜から炭素を吸収する": {
+          "meaning_ja": "〜から炭素を取り除く、吸収する",
+          "usage_hints": [
+            "大気中の二酸化炭素などを吸収する文脈。"
+          ]
+        }
+      }
+    },
+    "absorb carbon dioxide": {
+      "base_form": "absorb carbon dioxide",
+      "meanings": {
+        "二酸化炭素を吸収する": {
+          "meaning_ja": "二酸化炭素を吸収する",
+          "usage_hints": [
+            "植物や素材が大気中の二酸化炭素を取り込む様子。"
+          ]
+        }
+      }
+    },
+    "be made from": {
+      "base_form": "be made from",
+      "meanings": {
+        "〜から作られる": {
+          "meaning_ja": "〜を原料・材料として作られる",
+          "usage_hints": [
+            "素材や原料に着目して製造過程を説明する。",
+            "素材が何であるかを説明する文脈。",
+            "原材料が何であるかを示す文脈"
+          ]
+        }
+      }
+    },
+    "go from a to b": {
+      "base_form": "go from a to b",
+      "meanings": {
+        "AからBへ移行する": {
+          "meaning_ja": "Aの状態からBの状態へ移り変わる",
+          "usage_hints": [
+            "状況や役割の変化を表す。",
+            "ある状態から別の状態へと変化する"
+          ]
+        },
+        "AからBへと変化する": {
+          "meaning_ja": "AからBへと変化する、移行する",
+          "usage_hints": [
+            "ファッション産業が問題の一部から解決策の一部へと変化する可能性を表す。"
+          ]
+        },
+        "AからBに移行する": {
+          "meaning_ja": "AからBへ移行する、変化する",
+          "usage_hints": [
+            "状態や役割などが変化する文脈"
+          ]
+        }
+      }
+    },
+    "ticking in regard to": {
+      "base_form": "ticking in regard to",
+      "meanings": {
+        "〜に関して迫っている": {
+          "meaning_ja": "〜に関して（時間などが）迫っている、刻々と過ぎている",
+          "usage_hints": [
+            "時間的な切迫感を表す。"
+          ]
+        }
+      }
+    },
+    "give reasons to": {
+      "base_form": "give reasons to",
+      "meanings": {
+        "〜する理由を与える": {
+          "meaning_ja": "〜する原因・根拠となる",
+          "usage_hints": [
+            "〜するだけの十分な理由があることを示す。"
+          ]
+        }
+      }
+    },
+    "come up with": {
+      "base_form": "come up with",
+      "meanings": {
+        "思いつく": {
+          "meaning_ja": "（考えや解決策などを）思いつく、提案する",
+          "usage_hints": [
+            "新しいアイデアや解決策を考案する。",
+            "アイデアや解決策などを提案する文脈",
+            "新しいアイデアや解決策を提示する",
+            "アイデアや解決策などを思いつく文脈",
+            "新しいアイデアや解決策を提案する文脈",
+            "新しいアイデアや解決策を考案する文脈"
+          ]
+        },
+        "提案する": {
+          "meaning_ja": "〜を提案する、〜を考え出す",
+          "usage_hints": [
+            "解決策やアイデアを提案する文脈"
+          ]
+        },
+        "考案する": {
+          "meaning_ja": "（アイデアや解決策などを）考案する、考え出す",
+          "usage_hints": [
+            "新しいアイデアや解決策を提案する文脈"
+          ]
+        }
+      }
+    },
+    "be aware that": {
+      "base_form": "be aware that",
+      "meanings": {
+        "〜に気づいている": {
+          "meaning_ja": "〜を認識している、知っている",
+          "usage_hints": [
+            "事実や状況を理解していることを示す。"
+          ]
+        },
+        "気づいている": {
+          "meaning_ja": "〜に気づいている、〜を知っている",
+          "usage_hints": [
+            "状況や事実を認識している文脈"
+          ]
+        }
+      }
+    },
+    "be suspicious about": {
+      "base_form": "be suspicious about",
+      "meanings": {
+        "〜に疑いを持っている": {
+          "meaning_ja": "〜を怪しいと思っている、疑っている",
+          "usage_hints": [
+            "真実性や信頼性に疑問を感じている。"
+          ]
+        },
+        "疑っている": {
+          "meaning_ja": "〜を疑っている",
+          "usage_hints": [
+            "何かが真実かどうかを疑う文脈"
+          ]
+        },
+        "疑わしい": {
+          "meaning_ja": "〜について疑わしく思っている",
+          "usage_hints": [
+            "〜に懐疑的である、信じられない文脈"
+          ]
+        }
+      }
+    },
+    "come without strings attached": {
+      "base_form": "come without strings attached",
+      "meanings": {
+        "裏がある": {
+          "meaning_ja": "（贈り物や申し出などが）見返りや条件なしではない、裏がある",
+          "usage_hints": [
+            "無償のように見えても、実際には隠された条件や意図があることを示唆する。"
+          ]
+        },
+        "見返りなしに来る": {
+          "meaning_ja": "見返りなしに来る、何の条件もなく与えられる",
+          "usage_hints": [
+            "提供されるものには何らかの隠れた条件があることを示唆する文脈"
+          ]
+        },
+        "無条件である": {
+          "meaning_ja": "（贈り物や申し出などが）何の条件もなく〜である",
+          "usage_hints": [
+            "見返りや義務を伴わない申し出ではない、という否定的な文脈"
+          ]
+        }
+      }
+    },
+    "take advantage of": {
+      "base_form": "take advantage of",
+      "meanings": {
+        "利用する": {
+          "meaning_ja": "〜を利用する、活用する",
+          "usage_hints": [
+            "機会や制度を活用する文脈",
+            "自然な物質が薬の原料として使われている文脈"
+          ]
+        },
+        "つけこむ": {
+          "meaning_ja": "人の弱みなどにつけこむ",
+          "usage_hints": [
+            "相手の弱い立場を悪用する文脈"
+          ]
+        }
+      }
+    },
+    "don't get me wrong": {
+      "base_form": "don't get me wrong",
+      "meanings": {
+        "誤解しないで": {
+          "meaning_ja": "誤解しないでほしいのですが",
+          "usage_hints": [
+            "自分の発言の意図を補足する際に使う",
+            "自分の発言が誤解される可能性を懸念し、真意を伝えようとする文脈",
+            "これから述べる意見が、相手の意図とは異なる、あるいは誤解されやすい内容である場合に、前置きとして使う表現"
+          ]
+        }
+      }
+    },
+    "have a point": {
+      "base_form": "have a point",
+      "meanings": {
+        "一理ある": {
+          "meaning_ja": "（相手の意見などに）一理ある、もっともだ",
+          "usage_hints": [
+            "相手の意見に同意する際に使う",
+            "相手の意見に部分的に同意する、あるいはその意見に妥当性があると認める文脈"
+          ]
+        }
+      }
+    },
+    "be surprised if": {
+      "base_form": "be surprised if",
+      "meanings": {
+        "〜したら驚くだろう": {
+          "meaning_ja": "〜したら驚く（だろう）",
+          "usage_hints": [
+            "将来の出来事に対する驚きを表す"
+          ]
+        },
+        "〜なら驚くだろう": {
+          "meaning_ja": "もし〜なら驚くだろう",
+          "usage_hints": [
+            "仮定に対する驚きを表す文脈",
+            "予想される事柄に対して、驚くことではないと述べる文脈"
+          ]
+        }
+      }
+    },
+    "carry out": {
+      "base_form": "carry out",
+      "meanings": {
+        "実行する": {
+          "meaning_ja": "（計画・調査・研究などを）実行する、実施する",
+          "usage_hints": [
+            "計画や調査などを実施する文脈",
+            "計画や研究などを実行する文脈",
+            "計画や調査などを実行に移す文脈"
+          ]
+        }
+      }
+    },
+    "allow to": {
+      "base_form": "allow to",
+      "meanings": {
+        "〜させる": {
+          "meaning_ja": "〜させる、〜を許可する",
+          "usage_hints": [
+            "相手に何かをすることを許可する文脈"
+          ]
+        }
+      }
+    },
+    "hate to say": {
+      "base_form": "hate to say",
+      "meanings": {
+        "言いたくないが": {
+          "meaning_ja": "言いたくないが",
+          "usage_hints": [
+            "残念なことや不本意なことを言う前に使う",
+            "不本意なことを伝える際に使う表現",
+            "相手にとって好ましくない、あるいは自分自身も言いたくない事実を伝える際に、前置きとして使う表現"
+          ]
+        }
+      }
+    },
+    "state-of-the-art": {
+      "base_form": "state-of-the-art",
+      "meanings": {
+        "最先端の": {
+          "meaning_ja": "最先端の、最新式の",
+          "usage_hints": [
+            "技術や設備が最も進んでいる様子を表す"
+          ]
+        },
+        "最新式の": {
+          "meaning_ja": "最新式の、最先端の",
+          "usage_hints": [
+            "技術や設備などが最も進んでいることを示す文脈",
+            "技術や設備が現在の最高水準であることを表す文脈",
+            "技術や設備などが最も進んだ段階にあることを示す文脈"
+          ]
+        }
+      }
+    },
+    "under construction": {
+      "base_form": "under construction",
+      "meanings": {
+        "建設中": {
+          "meaning_ja": "建設中である",
+          "usage_hints": [
+            "建物などが建築されている状態を表す"
+          ]
+        }
+      }
+    },
+    "point out": {
+      "base_form": "point out",
+      "meanings": {
+        "指摘する": {
+          "meaning_ja": "〜を指摘する、〜を明らかにする",
+          "usage_hints": [
+            "事実や意見を具体的に示す文脈",
+            "事実や問題点を指摘する文脈"
+          ]
+        }
+      }
+    },
+    "work with": {
+      "base_form": "work with",
+      "meanings": {
+        "協力する": {
+          "meaning_ja": "〜と協力する、〜と共に働く",
+          "usage_hints": [
+            "共同で何かを行う文脈"
+          ]
+        }
+      }
+    },
+    "benefit themselves": {
+      "base_form": "benefit themselves",
+      "meanings": {
+        "自分たちの利益になる": {
+          "meaning_ja": "自分たちの利益になる",
+          "usage_hints": [
+            "行動の目的が自己の利益にあることを示す"
+          ]
+        }
+      }
+    },
+    "in case": {
+      "base_form": "in case",
+      "meanings": {
+        "念のため": {
+          "meaning_ja": "万一の場合に備えて、念のため",
+          "usage_hints": [
+            "不測の事態に備えることを示す"
+          ]
+        }
+      }
+    },
+    "wait until": {
+      "base_form": "wait until",
+      "meanings": {
+        "〜まで待つ": {
+          "meaning_ja": "〜まで待つ",
+          "usage_hints": [
+            "特定の時まで待機する文脈",
+            "ある時まで待機する文脈",
+            "特定の時まで行動を遅らせる文脈"
+          ]
+        }
+      }
+    },
+    "not only ... but also ...": {
+      "base_form": "not only ... but also ...",
+      "meanings": {
+        "〜だけでなく〜も": {
+          "meaning_ja": "〜だけでなく〜もまた",
+          "usage_hints": [
+            "二つの事柄を並列して強調する"
+          ]
+        }
+      }
+    },
+    "come from": {
+      "base_form": "come from",
+      "meanings": {
+        "〜から来る": {
+          "meaning_ja": "〜に由来する、〜から生じる",
+          "usage_hints": [
+            "起源や出所を示す"
+          ]
+        },
+        "〜由来である": {
+          "meaning_ja": "〜から来ている、〜に起源がある",
+          "usage_hints": [
+            "薬の成分が植物由来であることを示す文脈"
+          ]
+        },
+        "〜に由来する": {
+          "meaning_ja": "〜に由来する、〜から来る",
+          "usage_hints": [
+            "物事の起源や出所を示す文脈",
+            "薬の原料が植物に由来する文脈",
+            "廃棄物などがどこから生じるかを説明する文脈。",
+            "原因や発生源を示す文脈",
+            "起源や出所を示す"
+          ]
+        },
+        "〜から生じる": {
+          "meaning_ja": "〜に由来する、〜から作られる",
+          "usage_hints": [
+            "起源や製造元を示す文脈"
+          ]
+        }
+      }
+    },
+    "throughout the world": {
+      "base_form": "throughout the world",
+      "meanings": {
+        "世界中で": {
+          "meaning_ja": "世界中で、ทั่ว thế giới",
+          "usage_hints": [
+            "地理的な範囲が世界全体に及ぶことを示す"
+          ]
+        }
+      }
+    },
+    "make with": {
+      "base_form": "make with",
+      "meanings": {
+        "〜で作る": {
+          "meaning_ja": "〜で作られる、〜を用いて作られる",
+          "usage_hints": [
+            "材料や原料を示す"
+          ]
+        },
+        "〜で作られる": {
+          "meaning_ja": "〜で作られる、〜を材料とする",
+          "usage_hints": [
+            "製品の材料や構成要素を示す文脈"
+          ]
+        }
+      }
+    },
+    "such as": {
+      "base_form": "such as",
+      "meanings": {
+        "例えば": {
+          "meaning_ja": "例えば〜のような",
+          "usage_hints": [
+            "例を挙げて説明する"
+          ]
+        }
+      }
+    },
+    "prevent or treat": {
+      "base_form": "prevent or treat",
+      "meanings": {
+        "予防・治療する": {
+          "meaning_ja": "〜を予防する、または〜を治療する",
+          "usage_hints": [
+            "病気などに対する二つの対応を示す"
+          ]
+        }
+      }
+    },
+    "as many as": {
+      "base_form": "as many as",
+      "meanings": {
+        "〜もの（数）": {
+          "meaning_ja": "〜もの（数）、〜にも達する",
+          "usage_hints": [
+            "予想外に多い数や量を強調する"
+          ]
+        }
+      }
+    },
+    "out of": {
+      "base_form": "out of",
+      "meanings": {
+        "〜のうちの": {
+          "meaning_ja": "〜のうちの",
+          "usage_hints": [
+            "全体に対する割合や一部を示す",
+            "全体に対する部分の割合を示す文脈"
+          ]
+        },
+        "〜のうち": {
+          "meaning_ja": "〜のうちの、〜の中から",
+          "usage_hints": [
+            "集団や数の中から一部を取り出す文脈",
+            "全体に対する割合や数を示す"
+          ]
+        }
+      }
+    },
+    "help to": {
+      "base_form": "help to",
+      "meanings": {
+        "〜するのを助ける": {
+          "meaning_ja": "〜するのを助ける、〜するのに役立つ",
+          "usage_hints": [
+            "ある行為を補助したり促進したりする"
+          ]
+        }
+      }
+    },
+    "fight": {
+      "base_form": "fight",
+      "meanings": {
+        "〜と戦う": {
+          "meaning_ja": "〜と戦う、〜に対抗する",
+          "usage_hints": [
+            "病気や困難などに立ち向かう文脈"
+          ]
+        }
+      }
+    },
+    "used for": {
+      "base_form": "used for",
+      "meanings": {
+        "〜に使われる": {
+          "meaning_ja": "〜のために使われる、〜に用いられる",
+          "usage_hints": [
+            "物の用途や目的を示す"
+          ]
+        }
+      }
+    },
+    "thought to be": {
+      "base_form": "thought to be",
+      "meanings": {
+        "〜だと考えられている": {
+          "meaning_ja": "〜だと考えられている、〜だと見なされている",
+          "usage_hints": [
+            "一般的な見解や認識を示す"
+          ]
+        }
+      }
+    },
+    "make medicine": {
+      "base_form": "make medicine",
+      "meanings": {
+        "薬を作る": {
+          "meaning_ja": "薬を製造する",
+          "usage_hints": [
+            "科学者が植物由来の成分で薬を作る文脈"
+          ]
+        }
+      }
+    },
+    "help a person's whole body": {
+      "base_form": "help a person's whole body",
+      "meanings": {
+        "全身を助ける": {
+          "meaning_ja": "体の全体的な健康を助ける",
+          "usage_hints": [
+            "薬が体に全体的に作用する文脈"
+          ]
+        }
+      }
+    },
+    "cure a problem": {
+      "base_form": "cure a problem",
+      "meanings": {
+        "問題を治療する": {
+          "meaning_ja": "特定の問題や病気を治す",
+          "usage_hints": [
+            "病気や不調を治す文脈"
+          ]
+        }
+      }
+    },
+    "recognize the value of": {
+      "base_form": "recognize the value of",
+      "meanings": {
+        "価値を認識する": {
+          "meaning_ja": "〜の価値や重要性を理解する",
+          "usage_hints": [
+            "ハーブ医療の価値を人々が認識する文脈"
+          ]
+        }
+      }
+    },
+    "make up": {
+      "base_form": "make up",
+      "meanings": {
+        "〜を構成する": {
+          "meaning_ja": "〜を構成する、〜になっている",
+          "usage_hints": [
+            "〜から作られている、〜で構成されている"
+          ]
+        }
+      }
+    },
+    "draw out": {
+      "base_form": "draw out",
+      "meanings": {
+        "引き出す": {
+          "meaning_ja": "（炭素などを）吸収する、引き出す",
+          "usage_hints": [
+            "大気中から特定の物質を取り除く"
+          ]
+        },
+        "（気体などを）吸収する": {
+          "meaning_ja": "（気体などを）吸収する、引き出す",
+          "usage_hints": [
+            "藻類が大気中の炭素を吸収する文脈。"
+          ]
+        },
+        "〜を引き出す": {
+          "meaning_ja": "〜を引き出す、吸い出す",
+          "usage_hints": [
+            "物質を吸収したり、性質を引き出したりする文脈"
+          ]
+        }
+      }
+    },
+    "get trapped": {
+      "base_form": "get trapped",
+      "meanings": {
+        "閉じ込められる": {
+          "meaning_ja": "（ある状況・場所に）閉じ込められる、行き詰まる",
+          "usage_hints": [
+            "意図せずある状況に陥る"
+          ]
+        }
+      }
+    },
+    "be responsible for": {
+      "base_form": "be responsible for",
+      "meanings": {
+        "〜の原因である": {
+          "meaning_ja": "〜の原因である、〜に責任がある",
+          "usage_hints": [
+            "ある結果や状況を引き起こす原因となっている"
+          ]
+        }
+      }
+    },
+    "give reason to": {
+      "base_form": "give reason to",
+      "meanings": {
+        "〜の理由を与える": {
+          "meaning_ja": "〜の理由を与える、〜させる原因となる",
+          "usage_hints": [
+            "希望を持つことのできる根拠を与える",
+            "解決策が希望を持つ理由を与える文脈。"
+          ]
+        }
+      }
+    },
+    "not come without": {
+      "base_form": "not come without",
+      "meanings": {
+        "〜を伴う": {
+          "meaning_ja": "〜なしでは得られない、〜を伴う",
+          "usage_hints": [
+            "何かを受け取る代わりに、何らかの条件や義務が伴う"
+          ]
+        }
+      }
+    },
+    "get something wrong": {
+      "base_form": "get something wrong",
+      "meanings": {
+        "誤解する": {
+          "meaning_ja": "〜を誤解する、間違って理解する",
+          "usage_hints": [
+            "相手に誤解を与えないように訂正する文脈"
+          ]
+        }
+      }
+    },
+    "be benefit of": {
+      "base_form": "be benefit of",
+      "meanings": {
+        "〜の利益になる": {
+          "meaning_ja": "〜の利益になる、〜のためになる",
+          "usage_hints": [
+            "何かが誰かの利益になることを示す文脈"
+          ]
+        }
+      }
+    },
+    "be naive": {
+      "base_form": "be naive",
+      "meanings": {
+        "世間知らずだ": {
+          "meaning_ja": "世間知らずである、お人好しである",
+          "usage_hints": [
+            "物事を甘く見すぎている状況を表す文脈",
+            "物事の現実や複雑さを理解していない、あるいは楽観的すぎる様子を指す文脈"
+          ]
+        },
+        "世間知らず": {
+          "meaning_ja": "世間知らずである、純粋すぎる",
+          "usage_hints": [
+            "現実や危険性を理解せずに、物事を単純に捉えている様子を表す文脈"
+          ]
+        }
+      }
+    },
+    "look confident in": {
+      "base_form": "look confident in",
+      "meanings": {
+        "〜に自信があるように見える": {
+          "meaning_ja": "〜に自信があるように見える",
+          "usage_hints": [
+            "服装や状況に対して自信がある様子を表す文脈"
+          ]
+        }
+      }
+    },
+    "make someone mad": {
+      "base_form": "make someone mad",
+      "meanings": {
+        "〜を怒らせる": {
+          "meaning_ja": "〜を怒らせる",
+          "usage_hints": [
+            "何かが原因で相手を怒らせた文脈"
+          ]
+        }
+      }
+    },
+    "be about the size of": {
+      "base_form": "be about the size of",
+      "meanings": {
+        "〜くらいの大きさだ": {
+          "meaning_ja": "〜くらいの大きさである",
+          "usage_hints": [
+            "比較対象との大きさを述べる文脈"
+          ]
+        }
+      }
+    },
+    "differ from": {
+      "base_form": "differ from",
+      "meanings": {
+        "〜と異なる": {
+          "meaning_ja": "〜と異なる、〜と違う",
+          "usage_hints": [
+            "二つのものが互いに違うことを示す文脈"
+          ]
+        }
+      }
+    },
+    "just in case": {
+      "base_form": "just in case",
+      "meanings": {
+        "万一に備えて": {
+          "meaning_ja": "万一の場合に備えて、念のために",
+          "usage_hints": [
+            "不測の事態に備える文脈"
+          ]
+        }
+      }
+    },
+    "be reported that": {
+      "base_form": "be reported that",
+      "meanings": {
+        "〜と報道される": {
+          "meaning_ja": "〜と報道される、〜と伝えられている",
+          "usage_hints": [
+            "ニュースなどで報じられた内容を示す文脈"
+          ]
+        }
+      }
+    },
+    "rob of": {
+      "base_form": "rob of",
+      "meanings": {
+        "〜を奪う": {
+          "meaning_ja": "〜を奪う、〜から強奪する",
+          "usage_hints": [
+            "財産などを強奪された文脈"
+          ]
+        }
+      }
+    },
+    "used to": {
+      "base_form": "used to",
+      "meanings": {
+        "以前は〜だった": {
+          "meaning_ja": "以前は〜だった（が、今は違う）",
+          "usage_hints": [
+            "過去の習慣や状態を表す文脈"
+          ]
+        },
+        "〜するのに慣れている": {
+          "meaning_ja": "〜するのに慣れている",
+          "usage_hints": [
+            "経験によって身についた習慣や能力を表す文脈"
+          ]
+        },
+        "かつて〜した": {
+          "meaning_ja": "かつて〜したものだった（今はしない）",
+          "usage_hints": [
+            "過去の習慣や状態を表す文脈"
+          ]
+        }
+      }
+    },
+    "treat illness": {
+      "base_form": "treat illness",
+      "meanings": {
+        "病気を治療する": {
+          "meaning_ja": "病気を治療する、病気に対処する",
+          "usage_hints": [
+            "病気や疾患に対する処置や治療を示す文脈"
+          ]
+        }
+      }
+    },
+    "recognize as": {
+      "base_form": "recognize as",
+      "meanings": {
+        "〜として認識する": {
+          "meaning_ja": "〜として認識する、〜と認める",
+          "usage_hints": [
+            "あるものを特定のカテゴリーや地位に属すると認める文脈"
+          ]
+        }
+      }
+    },
+    "reduce blood pressure": {
+      "base_form": "reduce blood pressure",
+      "meanings": {
+        "血圧を下げる": {
+          "meaning_ja": "血圧を下げる",
+          "usage_hints": [
+            "健康効果として血圧が低下することを示す文脈"
+          ]
+        }
+      }
+    },
+    "fight disease": {
+      "base_form": "fight disease",
+      "meanings": {
+        "病気と闘う": {
+          "meaning_ja": "病気と闘う、病気の進行を抑える",
+          "usage_hints": [
+            "病気に対する抵抗力や治療効果を示す文脈"
+          ]
+        }
+      }
+    },
+    "prevent heart disease": {
+      "base_form": "prevent heart disease",
+      "meanings": {
+        "心臓病を防ぐ": {
+          "meaning_ja": "心臓病を防ぐ、心臓病を予防する",
+          "usage_hints": [
+            "健康効果として心臓病のリスクを低減することを示す文脈"
+          ]
+        }
+      }
+    },
+    "help cure": {
+      "base_form": "help cure",
+      "meanings": {
+        "〜の治癒を助ける": {
+          "meaning_ja": "〜の治癒を助ける、〜の回復を促進する",
+          "usage_hints": [
+            "症状の改善や回復を助ける効果を示す文脈"
+          ]
+        }
+      }
+    },
+    "arise": {
+      "base_form": "arise",
+      "meanings": {
+        "生じる": {
+          "meaning_ja": "（問題などが）生じる、起こる",
+          "usage_hints": [
+            "「将来的に問題が生じる」といった文脈で使われる。",
+            "問題や状況が自然に発生する文脈"
+          ]
+        }
+      }
+    },
+    "point towards": {
+      "base_form": "point towards",
+      "meanings": {
+        "〜を示唆する": {
+          "meaning_ja": "〜を示唆する、〜を指し示す",
+          "usage_hints": [
+            "証拠などが将来の危機を示唆する文脈。",
+            "証拠などが将来の状況を示唆する文脈"
+          ]
+        }
+      }
+    },
+    "curb": {
+      "base_form": "curb",
+      "meanings": {
+        "抑制する": {
+          "meaning_ja": "〜を抑制する、抑える",
+          "usage_hints": [
+            "排出量などを抑制する必要がある文脈。",
+            "排出量などを制限する文脈"
+          ]
+        }
+      }
+    },
+    "go beyond": {
+      "base_form": "go beyond",
+      "meanings": {
+        "〜を超える": {
+          "meaning_ja": "〜を超える、〜以上に進む",
+          "usage_hints": [
+            "単なる削減を超えて、より積極的な行動を目指す文脈。",
+            "通常の範囲や限界を超える文脈"
+          ]
+        }
+      }
+    },
+    "lack of": {
+      "base_form": "lack of",
+      "meanings": {
+        "〜の不足": {
+          "meaning_ja": "〜の不足、〜の欠如",
+          "usage_hints": [
+            "透明性などの不足を指摘する文脈。"
+          ]
+        }
+      }
+    },
+    "claim to be": {
+      "base_form": "claim to be",
+      "meanings": {
+        "〜であると主張する": {
+          "meaning_ja": "〜であると主張する",
+          "usage_hints": [
+            "持続可能であると企業が主張する文脈。"
+          ]
+        }
+      }
+    },
+    "based in": {
+      "base_form": "based in",
+      "meanings": {
+        "〜に拠点を置く": {
+          "meaning_ja": "〜に拠点を置く",
+          "usage_hints": [
+            "企業や組織の所在地を示す文脈。"
+          ]
+        }
+      }
+    },
+    "absorb": {
+      "base_form": "absorb",
+      "meanings": {
+        "吸収する": {
+          "meaning_ja": "〜を吸収する",
+          "usage_hints": [
+            "コーティングが二酸化炭素を吸収する文脈。"
+          ]
+        },
+        "〜を吸収する": {
+          "meaning_ja": "〜を吸収する",
+          "usage_hints": [
+            "気体や液体などを吸い込む文脈"
+          ]
+        }
+      }
+    },
+    "speculate that": {
+      "base_form": "speculate that",
+      "meanings": {
+        "〜だと推測する": {
+          "meaning_ja": "〜だと推測する、〜と見込まれる",
+          "usage_hints": [
+            "将来の可能性について推測する文脈。"
+          ]
+        }
+      }
+    },
+    "be used on": {
+      "base_form": "be used on",
+      "meanings": {
+        "〜に用いられる": {
+          "meaning_ja": "〜に用いられる、〜に使われる",
+          "usage_hints": [
+            "コーティングが様々な製品に適用される可能性を示す文脈。"
+          ]
+        }
+      }
+    },
+    "handwash": {
+      "base_form": "handwash",
+      "meanings": {
+        "手洗いする": {
+          "meaning_ja": "〜を手洗いする",
+          "usage_hints": [
+            "洗濯機ではなく手で洗う必要がある文脈。"
+          ]
+        }
+      }
+    },
+    "survive": {
+      "base_form": "survive",
+      "meanings": {
+        "生き残る": {
+          "meaning_ja": "生き残る、生存する",
+          "usage_hints": [
+            "藻類が生存するために必要な条件を説明する文脈。"
+          ]
+        }
+      }
+    },
+    "put in": {
+      "base_form": "put in",
+      "meanings": {
+        "（場所などに）置く": {
+          "meaning_ja": "（場所などに）置く、配置する",
+          "usage_hints": [
+            "衣類を日当たりの良い場所に置く必要がある文脈。"
+          ]
+        }
+      }
+    },
+    "strain on": {
+      "base_form": "strain on",
+      "meanings": {
+        "〜への負担": {
+          "meaning_ja": "〜への負担、〜への負荷",
+          "usage_hints": [
+            "皮革産業が環境に与える大きな負担を指す文脈。"
+          ]
+        }
+      }
+    },
+    "tick in regard to": {
+      "base_form": "tick in regard to",
+      "meanings": {
+        "〜に関して時間が迫っている": {
+          "meaning_ja": "〜に関して時間が迫っている、〜が差し迫っている",
+          "usage_hints": [
+            "気候変動への対策時間が限られている状況を表す。"
+          ]
+        }
+      }
+    },
+    "avert": {
+      "base_form": "avert",
+      "meanings": {
+        "（危険などを）回避する": {
+          "meaning_ja": "（危険などを）回避する、避ける",
+          "usage_hints": [
+            "気候変動という危機を回避する必要がある文脈。"
+          ]
+        }
+      }
+    },
+    "come across": {
+      "base_form": "come across",
+      "meanings": {
+        "偶然見つける": {
+          "meaning_ja": "偶然〜を見つける、〜に思いがけず出会う",
+          "usage_hints": [
+            "予期せず何かを発見する文脈",
+            "予期せず何かを見つける文脈"
+          ]
+        }
+      }
+    },
+    "make a decision to do": {
+      "base_form": "make a decision to do",
+      "meanings": {
+        "〜する決心をする": {
+          "meaning_ja": "〜する決心をする",
+          "usage_hints": [
+            "何かをするための決定を下す文脈"
+          ]
+        }
+      }
+    },
+    "turn off": {
+      "base_form": "turn off",
+      "meanings": {
+        "消す": {
+          "meaning_ja": "（明かりや電子機器などを）消す",
+          "usage_hints": [
+            "電子機器の電源を切る文脈",
+            "携帯電話などの電源を切る文脈"
+          ]
+        }
+      }
+    },
+    "piece of luggage": {
+      "base_form": "piece of luggage",
+      "meanings": {
+        "荷物（数えられない名詞）": {
+          "meaning_ja": "荷物（旅行用のカバンなど、数えられない名詞として使われる）",
+          "usage_hints": [
+            "数えられる形での「個数」を問う文脈"
+          ]
+        },
+        "荷物": {
+          "meaning_ja": "1つの荷物",
+          "usage_hints": [
+            "数えられる単位としての荷物"
+          ]
+        }
+      }
+    },
+    "the + 比較級": {
+      "base_form": "the + 比較級",
+      "meanings": {
+        "（〜の中で）より〜な方": {
+          "meaning_ja": "（二つのうち）より〜な方",
+          "usage_hints": [
+            "二者択一で比較し、どちらか一方を選ぶ文脈"
+          ]
+        }
+      }
+    },
+    "by the way": {
+      "base_form": "by the way",
+      "meanings": {
+        "ところで": {
+          "meaning_ja": "ところで、話変わるが",
+          "usage_hints": [
+            "話題を転換する際の接続詞",
+            "話題を変えるときや、付け加えることがあるとき"
+          ]
+        }
+      }
+    },
+    "spoil": {
+      "base_form": "spoil",
+      "meanings": {
+        "台無しにする": {
+          "meaning_ja": "〜を台無しにする、損なう",
+          "usage_hints": [
+            "景観や雰囲気を悪くする文脈",
+            "景観や機会などを悪くする文脈"
+          ]
+        }
+      }
+    },
+    "at no extra charge": {
+      "base_form": "at no extra charge",
+      "meanings": {
+        "追加料金なしで": {
+          "meaning_ja": "追加料金なしで、無料で",
+          "usage_hints": [
+            "サービスや施設利用に追加費用がかからない文脈",
+            "サービスなどが無料で提供される文脈"
+          ]
+        }
+      }
+    },
+    "a good + 時間": {
+      "base_form": "a good + 時間",
+      "meanings": {
+        "かなりの（時間）": {
+          "meaning_ja": "かなりの（時間・距離など）",
+          "usage_hints": [
+            "量や程度が大きいことを示す文脈"
+          ]
+        }
+      }
+    },
+    "tough": {
+      "base_form": "tough",
+      "meanings": {
+        "（食べ物が）かたい": {
+          "meaning_ja": "（食べ物が）かたい、歯ごたえがある",
+          "usage_hints": [
+            "食感が硬すぎて噛み切りにくい文脈"
+          ]
+        },
+        "硬い": {
+          "meaning_ja": "（食べ物が）硬い、噛み切りにくい",
+          "usage_hints": [
+            "食感が硬いことを表す"
+          ]
+        }
+      }
+    },
+    "room for": {
+      "base_form": "room for",
+      "meanings": {
+        "〜する余地": {
+          "meaning_ja": "〜する余地、〜できる可能性",
+          "usage_hints": [
+            "交渉や議論の余地がある文脈"
+          ]
+        },
+        "〜の余地": {
+          "meaning_ja": "〜の余地、可能性",
+          "usage_hints": [
+            "交渉などの余地があるかないかを表す"
+          ]
+        }
+      }
+    },
+    "have a good taste in": {
+      "base_form": "have a good taste in",
+      "meanings": {
+        "〜のセンスがある": {
+          "meaning_ja": "〜のセンスがある、〜に対する審美眼がある",
+          "usage_hints": [
+            "ファッションや芸術などに対する美的感覚が良い文脈",
+            "ファッションや芸術などに対するセンスが良い文脈"
+          ]
+        }
+      }
+    },
+    "for the time being": {
+      "base_form": "for the time being",
+      "meanings": {
+        "当分の間": {
+          "meaning_ja": "当分の間、さしあたり",
+          "usage_hints": [
+            "一時的な状況や措置を表す文脈",
+            "一時的な状況を表す"
+          ]
+        }
+      }
+    },
+    "at will": {
+      "base_form": "at will",
+      "meanings": {
+        "自由に": {
+          "meaning_ja": "自由に、思いのままに",
+          "usage_hints": [
+            "自分の意思で好きなようにできる文脈",
+            "自分の意思でいつでも変更できる文脈"
+          ]
+        }
+      }
+    },
+    "at home in": {
+      "base_form": "at home in",
+      "meanings": {
+        "〜に精通している": {
+          "meaning_ja": "〜に精通している、〜に慣れている",
+          "usage_hints": [
+            "ある分野や環境に詳しく、慣れ親しんでいる文脈"
+          ]
+        }
+      }
+    },
+    "hold on": {
+      "base_form": "hold on",
+      "meanings": {
+        "（電話を）保留する": {
+          "meaning_ja": "（電話を）保留する、待つ",
+          "usage_hints": [
+            "相手に電話を切らずに待つよう伝える文脈"
+          ]
+        },
+        "待つ": {
+          "meaning_ja": "（電話で）待つ、しばらく待つ",
+          "usage_hints": [
+            "相手に少し待ってもらうように頼む文脈"
+          ]
+        }
+      }
+    },
+    "make much of": {
+      "base_form": "make much of",
+      "meanings": {
+        "〜を重視する": {
+          "meaning_ja": "〜を重視する、〜を高く評価する",
+          "usage_hints": [
+            "ある事柄を重要視し、大切にする文脈"
+          ]
+        },
+        "重視する": {
+          "meaning_ja": "〜を重視する、〜を高く評価する",
+          "usage_hints": [
+            "何かを大切にしたり、重要視したりする文脈"
+          ]
+        }
+      }
+    },
+    "rule out": {
+      "base_form": "rule out",
+      "meanings": {
+        "除外する": {
+          "meaning_ja": "〜を除外する、〜の可能性を否定する",
+          "usage_hints": [
+            "可能性のある事柄を排除したり、ありえないと判断したりする文脈",
+            "可能性などを考慮しない、除外する文脈"
+          ]
+        }
+      }
+    },
+    "not farm": {
+      "base_form": "not farm",
+      "meanings": {
+        "農業をしない": {
+          "meaning_ja": "農業を営まない",
+          "usage_hints": [
+            "狩猟採集生活を続ける人々について述べる文脈"
+          ]
+        }
+      }
+    },
+    "what they need": {
+      "base_form": "what they need",
+      "meanings": {
+        "必要なもの": {
+          "meaning_ja": "彼らが必要なもの",
+          "usage_hints": [
+            "生存に必要なものを調達する文脈"
+          ]
+        }
+      }
+    },
+    "interesting fact": {
+      "base_form": "interesting fact",
+      "meanings": {
+        "興味深い事実": {
+          "meaning_ja": "興味深い事実",
+          "usage_hints": [
+            "驚くべき、または注目すべき事実を提示する文脈"
+          ]
+        }
+      }
+    },
+    "had an effect on": {
+      "base_form": "had an effect on",
+      "meanings": {
+        "〜に影響を与える": {
+          "meaning_ja": "〜に影響を与える、〜をもたらす",
+          "usage_hints": [
+            "ある事柄が他の事柄に影響を及ぼす文脈"
+          ]
+        }
+      }
+    },
+    "be careful about": {
+      "base_form": "be careful about",
+      "meanings": {
+        "注意する": {
+          "meaning_ja": "〜に注意する、〜に気をつける",
+          "usage_hints": [
+            "潜在的な問題やリスクに注意を払う文脈",
+            "特定の事柄について警戒や配慮が必要な文脈"
+          ]
+        }
+      }
+    },
+    "take time to": {
+      "base_form": "take time to",
+      "meanings": {
+        "時間がかかる": {
+          "meaning_ja": "〜するのに時間がかかる",
+          "usage_hints": [
+            "あるプロセスや状態が完了するのに必要な時間を表す文脈"
+          ]
+        }
+      }
+    },
+    "require for": {
+      "base_form": "require for",
+      "meanings": {
+        "必要とする": {
+          "meaning_ja": "〜に必要とされる",
+          "usage_hints": [
+            "生存や機能に必要な条件を表す文脈"
+          ]
+        }
+      }
+    },
+    "give a break": {
+      "base_form": "give a break",
+      "meanings": {
+        "勘弁して": {
+          "meaning_ja": "勘弁してくれ、もうやめてくれ",
+          "usage_hints": [
+            "相手の主張や行動に対して、うんざりしたり、信じられない気持ちを表す文脈"
+          ]
+        }
+      }
+    },
+    "the fact of the matter is": {
+      "base_form": "the fact of the matter is",
+      "meanings": {
+        "実情は": {
+          "meaning_ja": "実情は〜である、実際は〜である",
+          "usage_hints": [
+            "表面的なことではなく、本当の状況や真実を説明する文脈"
+          ]
+        },
+        "実情は〜だ": {
+          "meaning_ja": "実情は〜である、実際のところは〜だ",
+          "usage_hints": [
+            "表面的なことではなく、本当の状況や本質を説明する文脈"
+          ]
+        }
+      }
+    },
+    "sponsor": {
+      "base_form": "sponsor",
+      "meanings": {
+        "後援する": {
+          "meaning_ja": "〜を後援する、〜の資金を出す",
+          "usage_hints": [
+            "イベント、チーム、活動などに資金や支援を提供する文脈",
+            "学校のチームなどを企業が支援する文脈"
+          ]
+        }
+      }
+    },
+    "on the condition that": {
+      "base_form": "on the condition that",
+      "meanings": {
+        "〜という条件で": {
+          "meaning_ja": "〜という条件で",
+          "usage_hints": [
+            "ある行為や合意が成立するための特定の条件を示す文脈",
+            "ある行為や合意が成立するための前提条件を示す文脈"
+          ]
+        }
+      }
+    },
+    "lend itself to": {
+      "base_form": "lend itself to",
+      "meanings": {
+        "〜に適している": {
+          "meaning_ja": "〜に適している、〜に向いている",
+          "usage_hints": [
+            "ある物事が特定の目的や用途に適していることを表す文脈"
+          ]
+        },
+        "適している": {
+          "meaning_ja": "〜に適している、〜に向いている",
+          "usage_hints": [
+            "ある目的や用途に合っている文脈"
+          ]
+        }
+      }
+    },
+    "not all bad": {
+      "base_form": "not all bad",
+      "meanings": {
+        "全てが悪ではない": {
+          "meaning_ja": "全てが悪ではない、良い面もある",
+          "usage_hints": [
+            "ある事柄や集団に対して、否定的な側面だけでなく肯定的な側面もあることを示唆する文脈"
+          ]
+        }
+      }
+    },
+    "wonder why": {
+      "base_form": "wonder why",
+      "meanings": {
+        "なぜだろうと思う": {
+          "meaning_ja": "なぜ〜なのかと思う、〜する理由が気になる",
+          "usage_hints": [
+            "理由や動機について疑問に思う文脈"
+          ]
+        }
+      }
+    },
+    "payback": {
+      "base_form": "payback",
+      "meanings": {
+        "見返り": {
+          "meaning_ja": "見返り、利益",
+          "usage_hints": [
+            "投資や行動に対する見返りや利益を表す文脈"
+          ]
+        }
+      }
+    },
+    "for the benefit of": {
+      "base_form": "for the benefit of",
+      "meanings": {
+        "〜のために": {
+          "meaning_ja": "〜のために、〜の利益のために",
+          "usage_hints": [
+            "何かが特定の人々や組織の利益になることを表す文脈"
+          ]
+        }
+      }
+    },
+    "agree with": {
+      "base_form": "agree with",
+      "meanings": {
+        "〜に同意する": {
+          "meaning_ja": "〜に同意する、〜に賛成する",
+          "usage_hints": [
+            "相手の意見や提案に賛同する文脈"
+          ]
+        }
+      }
+    },
+    "be paranoid": {
+      "base_form": "be paranoid",
+      "meanings": {
+        "被害妄想": {
+          "meaning_ja": "被害妄想を抱いている、疑い深い",
+          "usage_hints": [
+            "過度に疑い深く、他者が自分に危害を加えるのではないかと心配する様子を表す文脈"
+          ]
+        }
+      }
+    },
+    "hate to say this": {
+      "base_form": "hate to say this",
+      "meanings": {
+        "言いたくないが": {
+          "meaning_ja": "言いたくないが、残念ながら〜",
+          "usage_hints": [
+            "相手に不快な真実や批判を伝えなければならない状況で、前置きとして使う表現"
+          ]
+        }
+      }
+    },
+    "figure out": {
+      "base_form": "figure out",
+      "meanings": {
+        "解決する": {
+          "meaning_ja": "〜を理解する、〜を解決する",
+          "usage_hints": [
+            "問題や状況を理解し、解決策を見つける文脈"
+          ]
+        },
+        "理解する": {
+          "meaning_ja": "〜を理解する、〜を突き止める",
+          "usage_hints": [
+            "複雑な問題や状況を理解したり、解決策を見つけたりする文脈"
+          ]
+        }
+      }
+    },
+    "express different views": {
+      "base_form": "express different views",
+      "meanings": {
+        "異なる見解を示す": {
+          "meaning_ja": "異なる見解を示す、意見の相違を表明する",
+          "usage_hints": [
+            "会話や議論の中で、互いに異なる意見を持っていることを示す文脈",
+            "議論において、互いに違う意見や考えを持っていることを示す文脈"
+          ]
+        }
+      }
+    },
+    "come to an agreement": {
+      "base_form": "come to an agreement",
+      "meanings": {
+        "合意する": {
+          "meaning_ja": "合意に達する",
+          "usage_hints": [
+            "意見が一致して合意に至る状況",
+            "話し合いの結果、意見が一致する"
+          ]
+        }
+      }
+    },
+    "no matter what": {
+      "base_form": "no matter what",
+      "meanings": {
+        "どんな〜でも": {
+          "meaning_ja": "どんな状況であっても",
+          "usage_hints": [
+            "状況に関係なく〜する、という文脈",
+            "regardless of the circumstances"
+          ]
+        }
+      }
+    },
+    "made ... mad": {
+      "base_form": "made ... mad",
+      "meanings": {
+        "〜を怒らせる": {
+          "meaning_ja": "〜を怒らせる",
+          "usage_hints": [
+            "原因が人を怒らせる状況"
+          ]
+        }
+      }
+    },
+    "about half": {
+      "base_form": "about half",
+      "meanings": {
+        "約半分": {
+          "meaning_ja": "約半分",
+          "usage_hints": [
+            "数量がおおよそ半分であることを示す文脈"
+          ]
+        }
+      }
+    },
+    "notice ... were different": {
+      "base_form": "notice ... were different",
+      "meanings": {
+        "〜が違うことに気づく": {
+          "meaning_ja": "〜が違うことに気づく",
+          "usage_hints": [
+            "以前と異なる点に気づく状況"
+          ]
+        }
+      }
+    },
+    "at the last minute": {
+      "base_form": "at the last minute",
+      "meanings": {
+        "土壇場で": {
+          "meaning_ja": "土壇場で、ぎりぎりになって",
+          "usage_hints": [
+            "締め切りや期限ぎりぎりに行動する状況",
+            "締め切りや期限の直前に"
+          ]
+        }
+      }
+    },
+    "it is reported that": {
+      "base_form": "it is reported that",
+      "meanings": {
+        "〜と報道されている": {
+          "meaning_ja": "〜と報道されている",
+          "usage_hints": [
+            "ニュースなどで伝えられている事実について述べる文脈",
+            "ニュースや伝聞の情報源を示す"
+          ]
+        }
+      }
+    },
+    "rob ... of": {
+      "base_form": "rob ... of",
+      "meanings": {
+        "〜を奪う": {
+          "meaning_ja": "〜から（金品などを）強奪する",
+          "usage_hints": [
+            "金銭や財産を力ずくで奪う犯罪の文脈"
+          ]
+        }
+      }
+    },
+    "not only ... but also": {
+      "base_form": "not only ... but also",
+      "meanings": {
+        "〜だけでなく…も": {
+          "meaning_ja": "〜だけでなく、〜もまた",
+          "usage_hints": [
+            "二つの事柄を並列して強調する文脈"
+          ]
+        }
+      }
+    },
+    "help ... fight": {
+      "base_form": "help ... fight",
+      "meanings": {
+        "〜と戦うのを助ける": {
+          "meaning_ja": "〜と戦うのを助ける",
+          "usage_hints": [
+            "病気や問題などに対抗するのを支援する文脈",
+            "病気や困難などに対して"
+          ]
+        }
+      }
+    },
+    "be having trouble": {
+      "base_form": "be having trouble",
+      "meanings": {
+        "〜で苦労している": {
+          "meaning_ja": "〜で苦労している、〜がうまくいかない",
+          "usage_hints": [
+            "困難な状況や問題を抱えている文脈"
+          ]
+        }
+      }
+    },
+    "at least": {
+      "base_form": "at least",
+      "meanings": {
+        "少なくとも": {
+          "meaning_ja": "少なくとも",
+          "usage_hints": [
+            "最低限の数量や程度を示す文脈",
+            "最低限の数量や程度を示す"
+          ]
+        }
+      }
+    },
+    "in vain": {
+      "base_form": "in vain",
+      "meanings": {
+        "無駄に": {
+          "meaning_ja": "無駄に、むなしく",
+          "usage_hints": [
+            "努力などが報われない文脈"
+          ]
+        }
+      }
+    },
+    "estimate": {
+      "base_form": "estimate",
+      "meanings": {
+        "〜と推定する": {
+          "meaning_ja": "〜と推定する、見積もる",
+          "usage_hints": [
+            "量や規模を概算する文脈"
+          ]
+        }
+      }
+    },
+    "reduce": {
+      "base_form": "reduce",
+      "meanings": {
+        "〜を削減する": {
+          "meaning_ja": "〜を削減する、減らす",
+          "usage_hints": [
+            "排出量やコストなどを減らす文脈"
+          ]
+        }
+      }
+    },
+    "eliminate": {
+      "base_form": "eliminate",
+      "meanings": {
+        "〜を除去する": {
+          "meaning_ja": "〜を除去する、取り除く",
+          "usage_hints": [
+            "不要なものや有害なものを完全になくす文脈"
+          ]
+        }
+      }
+    },
+    "introduce": {
+      "base_form": "introduce",
+      "meanings": {
+        "〜を導入する": {
+          "meaning_ja": "〜を導入する、紹介する",
+          "usage_hints": [
+            "新しい概念やシステムなどを導入する文脈"
+          ]
+        }
+      }
+    },
+    "perceive": {
+      "base_form": "perceive",
+      "meanings": {
+        "〜と認識する": {
+          "meaning_ja": "〜と認識する、〜だと感じる",
+          "usage_hints": [
+            "あるように感じられたり、認識されたりする文脈"
+          ]
+        }
+      }
+    },
+    "claim": {
+      "base_form": "claim",
+      "meanings": {
+        "〜だと主張する": {
+          "meaning_ja": "〜だと主張する、断言する",
+          "usage_hints": [
+            "事実かどうかに関わらず、あることを主張する文脈"
+          ]
+        }
+      }
+    },
+    "revolutionize": {
+      "base_form": "revolutionize",
+      "meanings": {
+        "〜に革命を起こす": {
+          "meaning_ja": "〜に革命を起こす、劇的に変える",
+          "usage_hints": [
+            "方法やシステムなどを根本的に変える文脈"
+          ]
+        }
+      }
+    },
+    "apply to": {
+      "base_form": "apply to",
+      "meanings": {
+        "〜に適用する": {
+          "meaning_ja": "〜に適用する、〜に塗布する",
+          "usage_hints": [
+            "物質を表面に塗る、または規則などを適用する文脈"
+          ]
+        }
+      }
+    },
+    "emit": {
+      "base_form": "emit",
+      "meanings": {
+        "〜を放出する": {
+          "meaning_ja": "〜を放出する、発する",
+          "usage_hints": [
+            "気体や光などを外に出す文脈"
+          ]
+        }
+      }
+    },
+    "speculate": {
+      "base_form": "speculate",
+      "meanings": {
+        "〜と推測する": {
+          "meaning_ja": "〜と推測する、憶測する",
+          "usage_hints": [
+            "確証はないが、〜だろうと推測する文脈"
+          ]
+        }
+      }
+    },
+    "put a strain on": {
+      "base_form": "put a strain on",
+      "meanings": {
+        "〜に負担をかける": {
+          "meaning_ja": "〜に負担をかける、〜を圧迫する",
+          "usage_hints": [
+            "環境や経済などに大きな負荷がかかる文脈"
+          ]
+        }
+      }
+    },
+    "be blamed for": {
+      "base_form": "be blamed for",
+      "meanings": {
+        "〜の責任を問われる": {
+          "meaning_ja": "〜の責任を問われる、〜のせいにされる",
+          "usage_hints": [
+            "ある問題や悪い出来事の原因として非難される文脈"
+          ]
+        }
+      }
+    },
+    "responsible for": {
+      "base_form": "responsible for",
+      "meanings": {
+        "〜の原因である": {
+          "meaning_ja": "〜の原因である、〜に責任がある",
+          "usage_hints": [
+            "ある結果や状況の原因となっている文脈"
+          ]
+        }
+      }
+    },
+    "ship": {
+      "base_form": "ship",
+      "meanings": {
+        "輸送する": {
+          "meaning_ja": "〜を輸送する",
+          "usage_hints": [
+            "商品を船や飛行機などで運ぶ文脈"
+          ]
+        }
+      }
+    },
+    "remove": {
+      "base_form": "remove",
+      "meanings": {
+        "〜を取り除く": {
+          "meaning_ja": "〜を取り除く、除去する",
+          "usage_hints": [
+            "不要なものや有害なものを除去する文脈"
+          ]
+        }
+      }
+    },
+    "benefit": {
+      "base_form": "benefit",
+      "meanings": {
+        "〜に利益をもたらす": {
+          "meaning_ja": "〜に利益をもたらす、〜に良い影響を与える",
+          "usage_hints": [
+            "ある行動や状況が〜にとって有益である文脈"
+          ]
+        }
+      }
+    },
+    "make a decision": {
+      "base_form": "make a decision",
+      "meanings": {
+        "決定する": {
+          "meaning_ja": "決定を下す",
+          "usage_hints": [
+            "何かを行うことを決める文脈"
+          ]
+        }
+      }
+    },
+    "good deal": {
+      "base_form": "good deal",
+      "meanings": {
+        "かなりの": {
+          "meaning_ja": "かなりの、かなりの量の",
+          "usage_hints": [
+            "時間や量が多いことを示す"
+          ]
+        }
+      }
+    },
+    "be at home in": {
+      "base_form": "be at home in",
+      "meanings": {
+        "〜に精通している": {
+          "meaning_ja": "〜に精通している、〜に慣れている",
+          "usage_hints": [
+            "ある分野や環境に詳しく、慣れ親しんでいる様子"
+          ]
+        }
+      }
+    },
+    "continue to": {
+      "base_form": "continue to",
+      "meanings": {
+        "〜し続ける": {
+          "meaning_ja": "〜し続ける",
+          "usage_hints": [
+            "ある行動や状態が続くことを示す"
+          ]
+        }
+      }
+    },
+    "when hungry": {
+      "base_form": "when hungry",
+      "meanings": {
+        "空腹の時": {
+          "meaning_ja": "空腹の時",
+          "usage_hints": [
+            "空腹を感じた時の状況を表す"
+          ]
+        }
+      }
+    },
+    "make money": {
+      "base_form": "make money",
+      "meanings": {
+        "お金を稼ぐ": {
+          "meaning_ja": "お金を稼ぐ、儲ける",
+          "usage_hints": [
+            "収入を得ることを表す"
+          ]
+        }
+      }
+    },
+    "have very little": {
+      "base_form": "have very little",
+      "meanings": {
+        "ほとんど持っていない": {
+          "meaning_ja": "ほとんど持っていない",
+          "usage_hints": [
+            "所有物が非常に少ない状況"
+          ]
+        }
+      }
+    },
+    "in fact": {
+      "base_form": "in fact",
+      "meanings": {
+        "実際": {
+          "meaning_ja": "実際、実は",
+          "usage_hints": [
+            "前の内容を補足・強調する際に使う"
+          ]
+        }
+      }
+    },
+    "spread": {
+      "base_form": "spread",
+      "meanings": {
+        "広がる": {
+          "meaning_ja": "（影響・現象などが）広がる",
+          "usage_hints": [
+            "現代農業が普及している文脈"
+          ]
+        }
+      }
+    },
+    "consequence for": {
+      "base_form": "consequence for",
+      "meanings": {
+        "〜への結果": {
+          "meaning_ja": "〜への影響、結果",
+          "usage_hints": [
+            "ある出来事が他者に与える影響"
+          ]
+        }
+      }
+    },
+    "made ... mad at": {
+      "base_form": "made ... mad at",
+      "meanings": {
+        "〜を怒らせる": {
+          "meaning_ja": "〜を怒らせる",
+          "usage_hints": [
+            "原因があって、相手が怒る"
+          ]
+        }
+      }
+    },
+    "half the size of": {
+      "base_form": "half the size of",
+      "meanings": {
+        "〜の半分の大きさ": {
+          "meaning_ja": "〜の半分の大きさ",
+          "usage_hints": [
+            "比較対象の大きさと比べて"
+          ]
+        }
+      }
+    },
+    "noticed ... were different from": {
+      "base_form": "noticed ... were different from",
+      "meanings": {
+        "〜と違うことに気づく": {
+          "meaning_ja": "〜と違うことに気づく",
+          "usage_hints": [
+            "以前と違う点や、比較対象との違いに気づく"
+          ]
+        }
+      }
+    },
+    "don't wait until": {
+      "base_form": "don't wait until",
+      "meanings": {
+        "〜まで待たない": {
+          "meaning_ja": "〜まで待たない",
+          "usage_hints": [
+            "ギリギリまで行動しないことを避ける"
+          ]
+        }
+      }
+    },
+    "robbed ... of": {
+      "base_form": "robbed ... of",
+      "meanings": {
+        "〜を奪う": {
+          "meaning_ja": "〜を奪う、強奪する",
+          "usage_hints": [
+            "人や場所から金品などを強奪する"
+          ]
+        }
+      }
+    },
+    "used not only ... but also": {
+      "base_form": "used not only ... but also",
+      "meanings": {
+        "〜だけでなく〜も": {
+          "meaning_ja": "〜だけでなく〜も",
+          "usage_hints": [
+            "二つの用法や目的を並列して示す"
+          ]
+        }
+      }
+    },
+    "feeling ... or": {
+      "base_form": "feeling ... or",
+      "meanings": {
+        "〜または〜な気分": {
+          "meaning_ja": "〜または〜な気分",
+          "usage_hints": [
+            "二つの状態や感情を並列して示す"
+          ]
+        }
+      }
+    },
+    "give someone a break": {
+      "base_form": "give someone a break",
+      "meanings": {
+        "勘弁する": {
+          "meaning_ja": "（人を）大目に見る、勘弁してやる",
+          "usage_hints": [
+            "相手の要求や主張に対して、現実的でない、あるいは無理だと感じたときに使う表現"
+          ]
+        }
+      }
+    },
+    "be surprised to hear": {
+      "base_form": "be surprised to hear",
+      "meanings": {
+        "聞いて驚く": {
+          "meaning_ja": "〜と聞いて驚く",
+          "usage_hints": [
+            "予期せぬ情報に接して驚きを示す文脈"
+          ]
+        }
+      }
+    },
+    "would have to": {
+      "base_form": "would have to",
+      "meanings": {
+        "〜しなければならないだろう": {
+          "meaning_ja": "〜しなければならないだろう（仮定・推量）",
+          "usage_hints": [
+            "仮定の話として、将来的に義務が生じる可能性について述べる文脈"
+          ]
+        }
+      }
+    }
+  }
+}

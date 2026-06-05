@@ -5,16 +5,28 @@ import tempfile
 import re
 import json
 import os
+import time
 from collections import Counter
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+LOCAL_NLTK_DATA = os.path.join(os.path.dirname(__file__), ".nltk_data")
+os.makedirs(LOCAL_NLTK_DATA, exist_ok=True)
+os.environ["NLTK_DATA"] = LOCAL_NLTK_DATA
 
 # --- 追加: NLTKのセットアップ ---
 import nltk
 from nltk.stem import WordNetLemmatizer
 
+if LOCAL_NLTK_DATA not in nltk.data.path:
+    nltk.data.path.insert(0, LOCAL_NLTK_DATA)
+
 try:
-    nltk.data.find('corpora/wordnet.zip')
+    try:
+        nltk.data.find('corpora/wordnet')
+    except LookupError:
+        nltk.data.find('corpora/wordnet.zip')
 except LookupError:
-    nltk.download('wordnet')
+    nltk.download('wordnet', download_dir=LOCAL_NLTK_DATA, quiet=True)
 
 lemmatizer = WordNetLemmatizer()
 # --------------------------------
@@ -23,13 +35,20 @@ lemmatizer = WordNetLemmatizer()
 DB_FILE = "past_exams_db.json"
 MY_DATA_FILE = "my_data.json"
 BASE_LEXICON_FILE = "base_lexicon.json"
+IDIOM_LEXICON_FILE = "idiom_lexicon.json"
 BASE_VOCAB_STATUSES = {"core_verified", "exam_format", "watch_known"}
 EXCLUDED_BASE_VOCAB_STATUSES = {"strict_excluded", "proper_noun_or_noise"}
 
-if "GEMINI_API_KEY" in st.secrets:
-    genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+gemini_api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+try:
+    gemini_api_key = gemini_api_key or st.secrets.get("GEMINI_API_KEY") or st.secrets.get("GOOGLE_API_KEY")
+except Exception:
+    pass
+
+if gemini_api_key:
+    genai.configure(api_key=gemini_api_key)
 else:
-    st.error("APIキーが見つかりません。.streamlit/secrets.toml を確認してください。")
+    st.warning("Gemini APIキーが見つかりません。PDF抽出・熟語/文法AI解析を使う場合は secrets または環境変数に設定してください。")
 
 # --- 修正: ストップワードの大幅拡充 ---
 STOP_WORDS = {
@@ -42,7 +61,7 @@ STOP_WORDS = {
 }
 def load_db():
     if os.path.exists(DB_FILE):
-        with open(DB_FILE, "r", encoding="utf-8") as f:
+        with open(DB_FILE, "r", encoding="utf-8-sig") as f:
             return json.load(f)
     return {}
 
@@ -52,7 +71,7 @@ def save_db(db):
 
 def load_json_file(path, default):
     if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, "r", encoding="utf-8-sig") as f:
             return json.load(f)
     return default
 
@@ -148,18 +167,193 @@ def summarize_words_without_frequency_strong(freqs):
         "meaning_registry": meaning_registry,
     }
 
-def extract_text_with_gemini(uploaded_file):
+def extract_text_with_pymupdf(uploaded_file):
+    try:
+        import fitz
+    except Exception:
+        return ""
+
+    doc = None
+    try:
+        doc = fitz.open(stream=uploaded_file.getvalue(), filetype="pdf")
+        pages = []
+        for page in doc:
+            pages.append(page.get_text("text"))
+        return "\n".join(pages).strip()
+    except Exception:
+        return ""
+    finally:
+        if doc is not None:
+            doc.close()
+
+
+def is_text_extraction_good_enough(text):
+    text = str(text or "")
+    english_chars = len(re.findall(r"[A-Za-z]", text))
+    words = len(re.findall(r"\b[A-Za-z]{2,}\b", text))
+    return english_chars >= 500 and words >= 80
+
+
+def wait_for_gemini_file(g_file, timeout_seconds=60):
+    start = time.time()
+    while True:
+        state = getattr(g_file, "state", None)
+        state_name = getattr(state, "name", str(state)).upper() if state is not None else ""
+        if "PROCESSING" not in state_name:
+            if "FAILED" in state_name:
+                raise RuntimeError("Gemini側でPDFファイル処理に失敗しました。")
+            return g_file
+        if time.time() - start > timeout_seconds:
+            raise TimeoutError(f"GeminiのPDF準備が{timeout_seconds}秒を超えました。")
+        time.sleep(2)
+        g_file = genai.get_file(g_file.name)
+
+
+def make_pdf_page_chunks(uploaded_file, pages_per_request=2):
+    pdf_bytes = uploaded_file.getvalue()
+    try:
+        import fitz
+    except Exception:
+        return [("全ページ", pdf_bytes)]
+
+    chunks = []
+    doc = None
+    try:
+        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+        page_count = doc.page_count
+        batch_size = max(1, int(pages_per_request))
+        for start_page in range(0, page_count, batch_size):
+            end_page = min(start_page + batch_size - 1, page_count - 1)
+            out_doc = fitz.open()
+            out_doc.insert_pdf(doc, from_page=start_page, to_page=end_page)
+            chunk_bytes = out_doc.tobytes()
+            out_doc.close()
+            if start_page == end_page:
+                label = f"{start_page + 1}ページ"
+            else:
+                label = f"{start_page + 1}-{end_page + 1}ページ"
+            chunks.append((label, chunk_bytes))
+        return chunks or [("全ページ", pdf_bytes)]
+    except Exception:
+        return [("全ページ", pdf_bytes)]
+    finally:
+        if doc is not None:
+            doc.close()
+
+
+def extract_pdf_bytes_with_gemini(pdf_bytes, prompt, model_name, timeout_seconds=180):
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-        tmp.write(uploaded_file.getvalue())
+        tmp.write(pdf_bytes)
         tmp_path = tmp.name
+    g_file = None
     try:
         g_file = genai.upload_file(tmp_path)
-        model = genai.GenerativeModel(model_name="gemini-2.5-pro")
-        prompt = "このPDFファイル（英語の試験問題）から、英語の文章をすべて書き起こしてください。余計な挨拶や説明は不要です。"
-        res = model.generate_content([g_file, prompt])
-        return res.text
+        g_file = wait_for_gemini_file(g_file, timeout_seconds=min(60, int(timeout_seconds)))
+        model = genai.GenerativeModel(model_name=model_name)
+        res = model.generate_content([g_file, prompt], request_options={"timeout": int(timeout_seconds)})
+        return str(getattr(res, "text", "") or "").strip()
     finally:
+        if g_file is not None:
+            try:
+                genai.delete_file(g_file.name)
+            except Exception:
+                pass
         os.remove(tmp_path)
+
+
+def extract_pdf_bytes_with_retry(pdf_bytes, prompt, model_name, timeout_seconds=180, attempts=2):
+    last_error = None
+    for attempt in range(max(1, int(attempts))):
+        try:
+            return extract_pdf_bytes_with_gemini(
+                pdf_bytes,
+                prompt,
+                model_name,
+                timeout_seconds=timeout_seconds,
+            )
+        except Exception as e:
+            last_error = e
+            if attempt + 1 < attempts:
+                time.sleep(3)
+    raise last_error
+
+
+def extract_text_with_gemini(
+    uploaded_file,
+    model_name="gemini-2.5-pro",
+    timeout_seconds=180,
+    allow_fallback=False,
+    pages_per_request=1,
+    max_workers=2,
+):
+    prompt = """
+このPDFファイルは英語の入試問題です。
+英語本文、設問、選択肢、並び替え用の語群をできるだけ漏らさず書き起こしてください。
+説明・挨拶・要約は不要です。抽出したテキストだけを返してください。
+"""
+    page_chunks = make_pdf_page_chunks(uploaded_file, pages_per_request=pages_per_request)
+    worker_count = max(1, min(int(max_workers), len(page_chunks)))
+    progress = st.progress(0, text=f"PDFをAIで読み取り中... 0/{len(page_chunks)}")
+
+    def read_one_chunk(index, label, pdf_bytes):
+        candidates = (
+            get_gemini_model_chain(model_name)
+            if allow_fallback
+            else [normalize_gemini_model_name(model_name)]
+        )
+        last_error = None
+        for candidate in candidates:
+            try:
+                text = extract_pdf_bytes_with_retry(
+                    pdf_bytes,
+                    prompt,
+                    candidate,
+                    timeout_seconds=timeout_seconds,
+                    attempts=2,
+                )
+                if text:
+                    return index, label, text, None
+                last_error = RuntimeError(f"{candidate} が空の応答を返しました。")
+            except Exception as e:
+                last_error = e
+        return index, label, "", last_error
+
+    results = [""] * len(page_chunks)
+    errors = []
+    done_count = 0
+
+    if worker_count == 1:
+        for index, (label, pdf_bytes) in enumerate(page_chunks):
+            result_index, result_label, text, error = read_one_chunk(index, label, pdf_bytes)
+            results[result_index] = text
+            if error:
+                errors.append(f"{result_label}: {error}")
+            done_count += 1
+            progress.progress(done_count / len(page_chunks), text=f"PDFをAIで読み取り中... {done_count}/{len(page_chunks)}")
+    else:
+        with ThreadPoolExecutor(max_workers=worker_count) as executor:
+            futures = [
+                executor.submit(read_one_chunk, index, label, pdf_bytes)
+                for index, (label, pdf_bytes) in enumerate(page_chunks)
+            ]
+            for future in as_completed(futures):
+                result_index, result_label, text, error = future.result()
+                results[result_index] = text
+                if error:
+                    errors.append(f"{result_label}: {error}")
+                done_count += 1
+                progress.progress(done_count / len(page_chunks), text=f"PDFをAIで読み取り中... {done_count}/{len(page_chunks)}")
+
+    progress.empty()
+    extracted_text = "\n\n".join(text for text in results if text.strip()).strip()
+    if errors:
+        st.warning(f"PDF読み取りの一部で失敗しました。成功したページだけ表示します。失敗: {len(errors)}件")
+        with st.expander("失敗したページを見る", expanded=False):
+            for error in errors[:20]:
+                st.write(error)
+    if not extracted_text:
+        raise RuntimeError("PDF読み取り結果が空でした。ページ分割を1にするか、待ち時間を長くして再試行してください。")
+    return extracted_text
 
 def extract_words_from_text(text):
     # アポストロフィを除外し、純粋なアルファベットのみを抽出
@@ -293,6 +487,366 @@ def extract_idioms_with_gemini(text):
         return {"idioms": []}
     
 
+GEMINI_MODEL_ALIASES = {
+    "3-flash": "gemini-2.5-flash",
+    "gemini-3-flash": "gemini-2.5-flash",
+    "gemini-3.5-flash": "gemini-2.5-flash",
+    "3-flash-lite": "gemini-2.5-flash-lite",
+    "gemini-3-flash-lite": "gemini-2.5-flash-lite",
+    "gemini-3.1-flash-lite": "gemini-2.5-flash-lite",
+    "gemini-flash-lite": "gemini-2.5-flash-lite",
+}
+
+
+def normalize_gemini_model_name(model_name):
+    model_name = str(model_name or "").strip()
+    return GEMINI_MODEL_ALIASES.get(model_name, model_name or "gemini-2.5-flash-lite")
+
+
+def get_gemini_model_chain(model_name):
+    primary = normalize_gemini_model_name(model_name)
+    chain = [primary]
+    for fallback in ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.5-pro"]:
+        if fallback not in chain:
+            chain.append(fallback)
+    return chain
+
+
+def parse_json_response(text):
+    text = str(text or "").strip()
+    text = re.sub(r"^```(?:json)?\s*", "", text)
+    text = re.sub(r"\s*```$", "", text)
+    return json.loads(text)
+
+
+def call_gemini_json(prompt, sys_prompt, model_name="gemini-2.5-flash-lite", max_output_tokens=3500, timeout_seconds=60):
+    last_error = None
+    for candidate in get_gemini_model_chain(model_name):
+        try:
+            model = genai.GenerativeModel(
+                model_name=candidate,
+                system_instruction=sys_prompt,
+                generation_config={
+                    "response_mime_type": "application/json",
+                    "max_output_tokens": max_output_tokens,
+                },
+            )
+            res = model.generate_content(prompt, request_options={"timeout": timeout_seconds})
+            return parse_json_response(res.text)
+        except Exception as e:
+            last_error = e
+    raise last_error
+
+
+def normalize_idiom_base(value):
+    return re.sub(r"\s+", " ", str(value or "").strip().lower())
+
+
+def normalize_meaning_key(value):
+    key = re.sub(r"\s+", " ", str(value or "").strip())
+    return key or "未分類"
+
+
+def safe_count(value, default=1):
+    try:
+        return max(0, int(value))
+    except Exception:
+        return default
+
+
+def split_text_for_ai(text, chunk_chars=4500):
+    text = re.sub(r"\s+", " ", str(text or "")).strip()
+    text = re.sub(r"([.!?])(?=[A-Z0-9(])", r"\1 ", text)
+    text = re.sub(r"(\))(?=[A-Z])", r"\1 ", text)
+    if not text:
+        return []
+    sentences = re.split(r"(?<=[.!?])\s+", text)
+    chunks = []
+    current = ""
+
+    def append_piece(piece):
+        piece = piece.strip()
+        while len(piece) > chunk_chars:
+            split_at = max(
+                piece.rfind(" ", 0, chunk_chars),
+                piece.rfind(",", 0, chunk_chars),
+                piece.rfind(";", 0, chunk_chars),
+            )
+            if split_at < max(200, chunk_chars // 3):
+                split_at = chunk_chars
+            chunks.append(piece[:split_at].strip())
+            piece = piece[split_at:].strip()
+        if piece:
+            chunks.append(piece)
+
+    for sentence in sentences:
+        sentence = sentence.strip()
+        if not sentence:
+            continue
+        if len(sentence) > chunk_chars:
+            if current:
+                chunks.append(current)
+                current = ""
+            append_piece(sentence)
+            continue
+        if len(current) + len(sentence) + 1 > chunk_chars and current:
+            chunks.append(current)
+            current = sentence
+        else:
+            current = f"{current} {sentence}".strip()
+    if current:
+        chunks.append(current)
+    return chunks
+
+
+def load_idiom_lexicon():
+    data = load_json_file(IDIOM_LEXICON_FILE, {"version": 1, "idioms": {}})
+    if not isinstance(data, dict):
+        data = {"version": 1, "idioms": {}}
+    data.setdefault("version", 1)
+    data.setdefault("idioms", {})
+    return data
+
+
+def save_idiom_lexicon(lexicon):
+    with open(IDIOM_LEXICON_FILE, "w", encoding="utf-8") as f:
+        json.dump(lexicon, f, ensure_ascii=False, indent=2)
+
+
+def normalize_idiom_items_with_lexicon(raw_items, lexicon):
+    normalized_items = []
+    idiom_dict = lexicon.setdefault("idioms", {})
+
+    for item in raw_items:
+        if not isinstance(item, dict):
+            continue
+
+        base_form = normalize_idiom_base(item.get("base_form"))
+        if not base_form:
+            continue
+
+        occurrences = item.get("occurrences")
+        if not isinstance(occurrences, list) or not occurrences:
+            occurrences = [{
+                "meaning_key": item.get("meaning_key") or item.get("meaning_ja") or "未分類",
+                "meaning_ja": item.get("meaning_ja") or item.get("meaning_key") or "意味未分類",
+                "usage_hint": item.get("usage_hint", ""),
+                "surface_form": item.get("surface_form", base_form),
+                "count": item.get("count", 1),
+            }]
+
+        lex_entry = idiom_dict.setdefault(base_form, {"base_form": base_form, "meanings": {}})
+        meanings = lex_entry.setdefault("meanings", {})
+        normalized_occurrences = []
+
+        for occurrence in occurrences:
+            if not isinstance(occurrence, dict):
+                continue
+
+            meaning_ja = normalize_meaning_key(occurrence.get("meaning_ja") or occurrence.get("meaning_key"))
+            meaning_key = normalize_meaning_key(occurrence.get("meaning_key") or meaning_ja)
+            count = safe_count(occurrence.get("count"), 1)
+            usage_hint = str(occurrence.get("usage_hint", "")).strip()
+            surface_form = normalize_idiom_base(occurrence.get("surface_form") or base_form)
+
+            meaning_entry = meanings.setdefault(meaning_key, {
+                "meaning_ja": meaning_ja,
+                "usage_hints": [],
+            })
+            if not meaning_entry.get("meaning_ja"):
+                meaning_entry["meaning_ja"] = meaning_ja
+            if usage_hint and usage_hint not in meaning_entry.setdefault("usage_hints", []) and len(meaning_entry["usage_hints"]) < 6:
+                meaning_entry["usage_hints"].append(usage_hint)
+
+            normalized_occurrences.append({
+                "meaning_key": meaning_key,
+                "meaning_ja": meaning_entry.get("meaning_ja", meaning_ja),
+                "usage_hint": usage_hint,
+                "surface_form": surface_form,
+                "count": count,
+            })
+
+        if normalized_occurrences:
+            normalized_items.append({
+                "base_form": base_form,
+                "count": sum(occ["count"] for occ in normalized_occurrences),
+                "occurrences": normalized_occurrences,
+            })
+
+    return normalized_items, lexicon
+
+
+def merge_idiom_items(existing_idioms, idiom_items):
+    merged = existing_idioms if isinstance(existing_idioms, dict) else {}
+
+    for item in idiom_items:
+        base_form = normalize_idiom_base(item.get("base_form"))
+        if not base_form:
+            continue
+
+        entry = merged.setdefault(base_form, {"count": 0, "meaning_counts": {}})
+        entry["count"] = safe_count(entry.get("count"), 0) + safe_count(item.get("count"), 0)
+        meaning_counts = entry.setdefault("meaning_counts", {})
+
+        for occurrence in item.get("occurrences", []):
+            meaning_key = normalize_meaning_key(occurrence.get("meaning_key"))
+            meaning_ja = normalize_meaning_key(occurrence.get("meaning_ja") or meaning_key)
+            count = safe_count(occurrence.get("count"), 1)
+            usage_hint = str(occurrence.get("usage_hint", "")).strip()
+
+            bucket = meaning_counts.setdefault(meaning_key, {
+                "meaning_ja": meaning_ja,
+                "count": 0,
+                "usage_hints": [],
+            })
+            bucket["meaning_ja"] = bucket.get("meaning_ja") or meaning_ja
+            bucket["count"] = safe_count(bucket.get("count"), 0) + count
+            if usage_hint and usage_hint not in bucket.setdefault("usage_hints", []) and len(bucket["usage_hints"]) < 5:
+                bucket["usage_hints"].append(usage_hint)
+
+    return dict(sorted(merged.items(), key=lambda x: safe_count(x[1].get("count"), 0), reverse=True))
+
+
+def format_idiom_meaning_counts(data):
+    meaning_counts = data.get("meaning_counts", {}) if isinstance(data, dict) else {}
+    if not meaning_counts:
+        return "未解析"
+    rows = sorted(
+        meaning_counts.items(),
+        key=lambda item: safe_count(item[1].get("count"), 0),
+        reverse=True,
+    )
+    return " / ".join(
+        f"{value.get('meaning_ja', key)}:{safe_count(value.get('count'), 0)}"
+        for key, value in rows
+    )
+
+
+def extract_idiom_chunk_with_gemini(text, model_name):
+    sys_prompt = """
+あなたは大学受験英語の熟語・語法を分析するAIです。
+目的は、熟語の総回数だけでなく、意味ごとの回数を保存することです。
+英文の長い引用は保存しません。
+JSON以外は出力しないでください。
+"""
+    prompt = f"""
+次の英語テキストから、大学受験で重要な熟語・イディオム・語法コロケーションを抽出してください。
+
+【出力ルール】
+- base_form は原形・基本形に統一してください。
+- 同じ熟語でも意味が違う場合は occurrences を分けてください。
+- meaning_key は短く安定した日本語ラベルにしてください。例: 利用する / つけこむ / 思いつく / 生じる
+- meaning_ja は生徒に見せる自然な日本語の意味にしてください。
+- usage_hint は本文の長い引用ではなく、日本語で短く文脈を説明してください。
+- surface_form は実際に使われた熟語部分だけにしてください。長い文を入れないでください。
+- count は同じ意味・同じ用法の出現数です。
+- 設問の選択肢や空所補充で完成する熟語も拾ってください。
+- global warming のような単なる複合名詞は除外してください。
+
+【JSON形式】
+{{
+  "idioms": [
+    {{
+      "base_form": "take advantage of",
+      "count": 2,
+      "occurrences": [
+        {{
+          "meaning_key": "利用する",
+          "meaning_ja": "〜を利用する、活用する",
+          "surface_form": "take advantage of",
+          "usage_hint": "機会や制度を活用する文脈",
+          "count": 1
+        }},
+        {{
+          "meaning_key": "つけこむ",
+          "meaning_ja": "人の弱みなどにつけこむ",
+          "surface_form": "take advantage of",
+          "usage_hint": "相手の弱い立場を悪用する文脈",
+          "count": 1
+        }}
+      ]
+    }}
+  ]
+}}
+
+【テキスト】
+{text}
+"""
+    parsed = call_gemini_json(
+        prompt,
+        sys_prompt,
+        model_name=model_name,
+        max_output_tokens=3500,
+        timeout_seconds=75,
+    )
+    if isinstance(parsed, list):
+        return parsed
+    if isinstance(parsed, dict):
+        return parsed.get("idioms", [])
+    return []
+
+
+def extract_idiom_chunk_with_retry(text, model_name, max_depth=2, depth=0):
+    try:
+        return extract_idiom_chunk_with_gemini(text, model_name), []
+    except Exception as e:
+        if depth >= max_depth or len(str(text)) < 1200:
+            return [], [str(e)]
+
+    smaller_chunks = split_text_for_ai(text, chunk_chars=max(1200, len(str(text)) // 2))
+    if len(smaller_chunks) <= 1:
+        mid = len(str(text)) // 2
+        split_at = str(text).rfind(" ", 0, mid)
+        if split_at < 400:
+            split_at = mid
+        smaller_chunks = [str(text)[:split_at], str(text)[split_at:]]
+
+    items = []
+    errors = []
+    for chunk in smaller_chunks:
+        chunk_items, chunk_errors = extract_idiom_chunk_with_retry(
+            chunk,
+            model_name,
+            max_depth=max_depth,
+            depth=depth + 1,
+        )
+        items.extend(chunk_items)
+        errors.extend(chunk_errors)
+    return items, errors
+
+
+def extract_idioms_with_gemini(text, model_name="gemini-2.5-flash-lite", max_workers=2, chunk_chars=4500):
+    chunks = split_text_for_ai(text, chunk_chars=chunk_chars)
+    if not chunks:
+        return {"idioms": []}
+
+    raw_items = []
+    errors = []
+    worker_count = max(1, min(int(max_workers), len(chunks)))
+
+    if worker_count == 1:
+        for chunk in chunks:
+            chunk_items, chunk_errors = extract_idiom_chunk_with_retry(chunk, model_name)
+            raw_items.extend(chunk_items)
+            errors.extend(chunk_errors)
+    else:
+        with ThreadPoolExecutor(max_workers=worker_count) as executor:
+            futures = [executor.submit(extract_idiom_chunk_with_retry, chunk, model_name) for chunk in chunks]
+            for future in as_completed(futures):
+                chunk_items, chunk_errors = future.result()
+                raw_items.extend(chunk_items)
+                errors.extend(chunk_errors)
+
+    lexicon = load_idiom_lexicon()
+    idiom_items, lexicon = normalize_idiom_items_with_lexicon(raw_items, lexicon)
+    save_idiom_lexicon(lexicon)
+
+    if errors:
+        st.warning(f"熟語解析の一部で失敗しました。成功分だけ保存します。失敗チャンク: {len(errors)}")
+
+    return {"idioms": idiom_items, "chunks": len(chunks), "errors": errors}
+
+
 def extract_grammar_with_gemini(text):
     sys_prompt = """
     あなたは大学受験英語の文法・語法問題を分析する予備校講師です。
@@ -424,10 +978,67 @@ with tab1:
     
     if input_method == "PDFをアップロード (AI抽出)":
         uploaded_pdf = st.file_uploader("過去問PDFをアップロード", type=["pdf"])
+        pdf_col1, pdf_col2 = st.columns([2, 1])
+        with pdf_col1:
+            pdf_extract_model = st.selectbox(
+                "PDF読み取りモデル",
+                ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.5-flash-lite"],
+                index=0,
+                key="pdf_extract_model",
+                help="見落としを減らしたい場合は Pro のままがおすすめです。軽いモデルは速い一方で読み落としが増える可能性があります。",
+            )
+        with pdf_col2:
+            pdf_extract_timeout = st.number_input(
+                "待ち時間上限（秒）",
+                min_value=60,
+                max_value=600,
+                value=180,
+                step=30,
+                key="pdf_extract_timeout",
+            )
+        pdf_detail_col1, pdf_detail_col2 = st.columns(2)
+        with pdf_detail_col1:
+            pdf_pages_per_request = st.number_input(
+                "一度に読むページ数",
+                min_value=1,
+                max_value=5,
+                value=1,
+                step=1,
+                key="pdf_pages_per_request",
+                help="1が最も安定します。増やすと速くなることがありますが、失敗しやすくなります。",
+            )
+        with pdf_detail_col2:
+            pdf_extract_workers = st.number_input(
+                "同時に読む数",
+                min_value=1,
+                max_value=4,
+                value=2,
+                step=1,
+                key="pdf_extract_workers",
+                help="2が安定寄りです。混雑時や失敗時は1に下げてください。",
+            )
+        pdf_allow_fallback = st.checkbox(
+            "失敗したときだけ軽いモデルでも試す（見落としの可能性あり）",
+            value=False,
+            key="pdf_extract_allow_fallback",
+        )
         if uploaded_pdf and st.button("🚀 1. AIでテキストを抽出する"):
-            with st.spinner("AIが解析中..."):
-                st.session_state.draft_text = extract_text_with_gemini(uploaded_pdf)
-                st.rerun()
+            with st.spinner(f"AIがPDFを読み取り中...（{pdf_extract_model} / 最大{int(pdf_extract_timeout)}秒）"):
+                try:
+                    st.session_state.draft_text = extract_text_with_gemini(
+                        uploaded_pdf,
+                        model_name=pdf_extract_model,
+                        timeout_seconds=int(pdf_extract_timeout),
+                        allow_fallback=pdf_allow_fallback,
+                        pages_per_request=int(pdf_pages_per_request),
+                        max_workers=int(pdf_extract_workers),
+                    )
+                    if st.session_state.draft_text:
+                        st.rerun()
+                    else:
+                        st.error("AI抽出結果が空でした。モデルや待ち時間を変えて再試行してください。")
+                except Exception as e:
+                    st.error(f"AI抽出に失敗しました: {e}")
     else:
         pasted_text = st.text_area("テキストを貼り付け", height=100)
         if st.button("📝 1. このテキストで確認へ進む"):
@@ -448,6 +1059,40 @@ with tab1:
         with col_opt3:
             ext_grammar = st.toggle("📖 文法・語法の抽出 (AI使用)", value=True)
         
+        idiom_model_name = "gemini-2.5-flash-lite"
+        idiom_workers = 2
+        idiom_chunk_chars = 4500
+        if ext_idioms:
+            with st.expander("🔗 熟語の全解析設定", expanded=False):
+                st.caption("意味別カウント用です。まずは並列2がおすすめです。詰まる場合は1、速くしたい場合は3〜4に上げます。")
+                col_idiom_ai1, col_idiom_ai2, col_idiom_ai3 = st.columns(3)
+                with col_idiom_ai1:
+                    idiom_model_name = st.selectbox(
+                        "熟語解析モデル",
+                        ["gemini-2.5-flash-lite", "gemini-2.5-flash", "gemini-2.5-pro"],
+                        index=0,
+                        key="idiom_analysis_model",
+                    )
+                with col_idiom_ai2:
+                    idiom_workers = st.number_input(
+                        "並列数",
+                        min_value=1,
+                        max_value=6,
+                        value=2,
+                        step=1,
+                        key="idiom_analysis_workers",
+                    )
+                with col_idiom_ai3:
+                    idiom_chunk_chars = st.number_input(
+                        "1回あたりの文字数",
+                        min_value=1500,
+                        max_value=8000,
+                        value=4500,
+                        step=500,
+                        key="idiom_analysis_chunk_chars",
+                    )
+                st.info("熟語は共通辞書 idiom_lexicon.json に意味を登録し、各過去問DBには意味別の回数だけを保存します。")
+
         col_save, col_cancel = st.columns(2)
         
         if col_save.button("💾 2. この内容でデータベースに登録", type="primary"):
@@ -496,10 +1141,18 @@ with tab1:
                     # ルートB: 熟語の抽出（AI処理）
                     # -----------------------------------------
                     if ext_idioms:
-                        extracted_idioms_data = extract_idioms_with_gemini(edited_text)
-                        merged_idioms = target_db.get("idioms", {})
+                        extracted_idioms_data = extract_idioms_with_gemini(
+                            edited_text,
+                            model_name=idiom_model_name,
+                            max_workers=int(idiom_workers),
+                            chunk_chars=int(idiom_chunk_chars),
+                        )
+                        merged_idioms = merge_idiom_items(
+                            target_db.get("idioms", {}),
+                            extracted_idioms_data.get("idioms", []),
+                        )
                         
-                        for item in extracted_idioms_data.get("idioms", []):
+                        for item in []:
                             base_form = item["base_form"]
                             if base_form in merged_idioms:
                                 merged_idioms[base_form]["count"] += item["count"]
@@ -509,6 +1162,10 @@ with tab1:
                                 # ▼ 著作権対策：ここでも quotes は辞書に入れない（捨てる）
                                 
                         target_db["idioms"] = merged_idioms
+                        st.info(
+                            f"熟語解析: {len(extracted_idioms_data.get('idioms', []))}件 / "
+                            f"{extracted_idioms_data.get('chunks', 1)}分割"
+                        )
 
                                        # -----------------------------------------
                     # ルートC: 文法・語法の抽出（AI処理）
@@ -806,10 +1463,15 @@ with tab2:
                         st.rerun()
 
                 st.markdown("#### 🏆 頻出熟語ランキング")
-                sorted_idioms = sorted(target_data["idioms"].items(), key=lambda x: x[1]["count"], reverse=True)
+                sorted_idioms = sorted(
+                    target_data["idioms"].items(),
+                    key=lambda x: safe_count(x[1].get("count"), 0),
+                    reverse=True,
+                )
                 idiom_display = []
                 for base_form, data in sorted_idioms:
                     idiom_display.append({
+                        "意味別回数": format_idiom_meaning_counts(data),
                         "熟語・構文": base_form,
                         "回数": data["count"],
                         # ▼ データに quotes が残っている場合は表示し、無い場合は「(著作権保護のため非表示)」とする

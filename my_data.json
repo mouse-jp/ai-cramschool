@@ -48653,6 +48653,14 @@
     "The new community library, (     ), offers a wide range of digital resources to the public.": {
       "correct": 1,
       "incorrect": 0
+    },
+    "The new regulation requires that every driver (      ) their seatbelt at all times.": {
+      "correct": 1,
+      "incorrect": 0
+    },
+    "It was difficult, but we finally (      ) him into joining our team.": {
+      "correct": 0,
+      "incorrect": 1
     }
   },
   "exam_records": [
