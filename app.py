@@ -998,12 +998,12 @@ def render_reading_structure_buttons(current_sentence, idx):
             or "今回扱う英文" in structure_text
             or len(structure_text) > 850
         )
-        with st.expander(f"🧩 この文の構造解説：{structure_label}", expanded=True):
-            if old_long_style:
-                st.info("長い形式の解説が残っています。上の構造ボタンを押すと、短い形式で作り直します。")
-            else:
-                with st.container(border=False, height=240):
-                    st.markdown(structure_text)
+        st.markdown(f"**🧩 構造解説：{structure_label}**")
+        if old_long_style:
+            st.info("長い形式の解説が残っています。上の構造ボタンを押すと、短い形式で作り直します。")
+        else:
+            with st.container(border=True, height=240):
+                st.markdown(structure_text)
 
 
 def render_reading_chat_panel(current_sentence, idx):
@@ -1112,22 +1112,36 @@ def render_reading_dictation_panel(current_sentence, idx):
 
 
 def render_reading_words_panel(current_sentence, idx):
-    st.caption("調べたい語を押すか、熟語を入力してください。")
-    words = [w for w in re.findall(r"\b[a-zA-Z\-']+\b", current_sentence)]
-    cols = st.columns(4)
-    for i, w in enumerate(words):
-        if cols[i % 4].button(w, key=f"wbtn_{i}_{idx}"):
-            with st.spinner(f"「{w}」の意味を検索中..."):
+    st.caption("調べたい語をタップ、または熟語を入力してください。")
+    seen = set()
+    words = []
+    for w in re.findall(r"\b[a-zA-Z\-']+\b", current_sentence):
+        low = w.lower()
+        if low not in seen:
+            seen.add(low)
+            words.append(w)
+    if words:
+        sel_word = st.pills(
+            "単語",
+            words,
+            selection_mode="single",
+            key=f"word_pills_{idx}",
+            label_visibility="collapsed",
+        )
+        done_key = f"word_pills_done_{idx}"
+        if sel_word and sel_word != st.session_state.get(done_key):
+            st.session_state[done_key] = sel_word
+            with st.spinner(f"「{sel_word}」の意味を検索中..."):
                 sys_dict = "あなたは辞書です。指定された単語の、この文脈における意味を簡潔に答えてください。"
                 meaning = call_ai(
-                    f"文脈: {current_sentence}\n単語: {w}",
+                    f"文脈: {current_sentence}\n単語: {sel_word}",
                     sys_dict,
                     use_pdf=False,
                     model_name="gemini-2.5-flash-lite",
                     max_output_tokens=220,
                     timeout_seconds=25,
                 )
-                st.session_state.temp_memo.append({"word": w, "meaning": meaning.strip()})
+                st.session_state.temp_memo.append({"word": sel_word, "meaning": meaning.strip()})
                 st.rerun()
 
     col_idiom1, col_idiom2 = st.columns([3, 1])
@@ -1289,8 +1303,13 @@ def render_close_reading_tab():
     )
 
     if tool == "🤖 解説・チャット":
-        render_reading_structure_buttons(current_sentence, idx)
-        with st.expander("✍️ 和訳前に構文ラベルも振る（任意）", expanded=False):
+        structures = st.session_state.get("reading_structures", {})
+        hint_open = (idx in st.session_state.get("reading_translations", {})) or any(
+            k in structures for k in (f"{idx}_intuitive", f"{idx}_theory", idx)
+        )
+        with st.expander("🔍 ヒント：訳・構造を見る（困ったら）", expanded=hint_open):
+            render_reading_structure_buttons(current_sentence, idx)
+        with st.expander("✍️ 構文ラベルを振る（任意）", expanded=False):
             render_inline_syntax_label_practice(current_sentence, idx)
         render_reading_chat_panel(current_sentence, idx)
     elif tool == "🎧 聞き取り":
