@@ -3,21 +3,35 @@ import google.generativeai as genai
 import tempfile
 import os
 import json
+import html
 import re
 import random
 import io
 import csv
+import streamlit.components.v1 as components
 from datetime import datetime
 from collections import Counter
+from difflib import SequenceMatcher
+
+LOCAL_NLTK_DATA = os.path.join(os.path.dirname(__file__), ".nltk_data")
+os.makedirs(LOCAL_NLTK_DATA, exist_ok=True)
+os.environ["NLTK_DATA"] = LOCAL_NLTK_DATA
+
 import nltk
 from nltk.stem import WordNetLemmatizer
 from collections import defaultdict
 
+if LOCAL_NLTK_DATA not in nltk.data.path:
+    nltk.data.path.insert(0, LOCAL_NLTK_DATA)
+
 # NLTKの辞書データをダウンロード（初回のみ裏で自動実行されます）
 try:
-    nltk.data.find('corpora/wordnet.zip')
+    try:
+        nltk.data.find('corpora/wordnet')
+    except LookupError:
+        nltk.data.find('corpora/wordnet.zip')
 except LookupError:
-    nltk.download('wordnet')
+    nltk.download('wordnet', download_dir=LOCAL_NLTK_DATA, quiet=True)
 
 lemmatizer = WordNetLemmatizer()
 
@@ -472,6 +486,34 @@ def call_ai(prompt, sys_msg, use_pdf=False, is_json=False, model_name="gemini-2.
 def split_reading_sentences(text):
     return [s.strip() for s in re.split(r'(?<=[.!?])\s+', str(text).replace('\n', ' ')) if s.strip()]
 
+def clean_reading_text(text):
+    raw = str(text or "").replace("\ufeff", "").strip()
+    if not raw:
+        return ""
+
+    raw = re.sub(r"```[a-zA-Z]*|```", "", raw).strip()
+    lines = [line.strip() for line in raw.splitlines() if line.strip()]
+    meta_patterns = [
+        r"^(title|passage|practice passage|reading passage)\s*[:：]",
+        r"^(here(?:'s| is)|below is|the following is|this is)\b.*\b(passage|text|paragraph|essay|warm-?up|exercise)\b",
+        r"^(以下|次の英文|今回扱う英文|英文本文|タイトル)\b",
+    ]
+    kept_lines = []
+    for line in lines:
+        check = line.strip(" -*#")
+        if any(re.match(pattern, check, flags=re.IGNORECASE) for pattern in meta_patterns):
+            continue
+        kept_lines.append(line)
+
+    cleaned = " ".join(kept_lines) if kept_lines else raw
+    leading_meta_sentence = (
+        r"^\s*(?:(?:Here(?:'s| is)|Below is|The following is|This is)\b"
+        r"[^.!?]*(?:passage|text|paragraph|essay|warm-?up|exercise)[^.!?]*[.!?]\s*)+"
+    )
+    cleaned = re.sub(leading_meta_sentence, "", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"\s+", " ", cleaned).strip()
+    return cleaned or raw
+
 def clear_reading_state(prefix="reading"):
     suffixes = [
         "target_text", "sentences", "current_idx", "chat_logs", "chat_sentence_idx",
@@ -487,6 +529,7 @@ def clear_reading_state(prefix="reading"):
             del st.session_state[key]
 
 def set_reading_text(text, prefix="reading"):
+    text = clean_reading_text(text)
     st.session_state[f"{prefix}_target_text"] = text
     st.session_state[f"{prefix}_sentences"] = split_reading_sentences(text)
     st.session_state[f"{prefix}_current_idx"] = 0
@@ -498,6 +541,302 @@ def set_reading_text(text, prefix="reading"):
     st.session_state[f"{prefix}_structures"] = {}
     st.session_state.temp_memo = []
     st.session_state.show_word_selector = False
+
+def extract_reading_text_from_uploaded_media(uploaded_file, model_name="gemini-2.5-pro"):
+    suffix = os.path.splitext(uploaded_file.name or "")[1].lower()
+    if suffix not in [".pdf", ".png", ".jpg", ".jpeg", ".webp"]:
+        suffix = ".pdf" if uploaded_file.type == "application/pdf" else ".png"
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+        tmp.write(uploaded_file.getvalue())
+        tmp_path = tmp.name
+    try:
+        try:
+            g_file = genai.upload_file(tmp_path, mime_type=uploaded_file.type)
+        except TypeError:
+            g_file = genai.upload_file(tmp_path)
+        model = genai.GenerativeModel(model_name=model_name)
+        prompt = """
+        この資料から英語の長文本文だけを抽出してください。
+        PDFでも写真でも、見えている英語本文を自然な段落に直してください。
+        設問、選択肢、解答番号、日本語の指示文、ページ番号、注釈、不要なレイアウト情報は除外してください。
+        日本語は出力に混ぜないでください。英語本文のみを出力してください。
+        前置き、説明、タイトル、箇条書きは不要です。1文字目から英語本文を始めてください。
+        OCRで読めない箇所は無理に補完せず、読める範囲を自然につないでください。
+        """
+        res = model.generate_content([g_file, prompt])
+        return res.text
+    finally:
+        os.remove(tmp_path)
+
+def render_reading_audio_controls(text, key, label="音声で聞く"):
+    text = str(text or "").strip()
+    if not text:
+        return
+    dom_id = re.sub(r"[^a-zA-Z0-9_-]", "_", str(key))
+    var_id = re.sub(r"[^a-zA-Z0-9_]", "_", dom_id)
+    if not re.match(r"^[a-zA-Z_]", var_id):
+        var_id = f"tts_{var_id}"
+    safe_text = json.dumps(text)
+    safe_label = html.escape(label)
+    components.html(f"""
+    <div class="tts-row">
+      <button id="play-{dom_id}" type="button">▶ {safe_label}</button>
+      <button id="pause-{dom_id}" type="button" title="一時停止/再開">⏯</button>
+      <button id="stop-{dom_id}" type="button" title="停止">■</button>
+      <label>速度 <input id="rate-{dom_id}" type="range" min="0.65" max="1.1" step="0.05" value="0.9"></label>
+    </div>
+    <script>
+      const text_{var_id} = {safe_text};
+      const play_{var_id} = document.getElementById("play-{dom_id}");
+      const pause_{var_id} = document.getElementById("pause-{dom_id}");
+      const stop_{var_id} = document.getElementById("stop-{dom_id}");
+      const rate_{var_id} = document.getElementById("rate-{dom_id}");
+      play_{var_id}.onclick = () => {{
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text_{var_id});
+        utterance.lang = "en-US";
+        utterance.rate = Number(rate_{var_id}.value || 0.9);
+        window.speechSynthesis.speak(utterance);
+      }};
+      pause_{var_id}.onclick = () => {{
+        if (window.speechSynthesis.paused) {{
+          window.speechSynthesis.resume();
+        }} else {{
+          window.speechSynthesis.pause();
+        }}
+      }};
+      stop_{var_id}.onclick = () => window.speechSynthesis.cancel();
+    </script>
+    <style>
+      .tts-row {{
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-family: sans-serif;
+      }}
+      .tts-row button {{
+        border: 1px solid #3b4454;
+        border-radius: 6px;
+        background: #121821;
+        color: #f5f7fb;
+        padding: 6px 10px;
+        cursor: pointer;
+        font-weight: 700;
+      }}
+      .tts-row label {{
+        color: #aeb7c5;
+        font-size: 12px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }}
+      .tts-row input {{
+        width: 84px;
+      }}
+    </style>
+    """, height=44)
+
+def normalize_dictation_text(text):
+    return re.findall(r"[a-zA-Z]+(?:'[a-zA-Z]+)?", str(text).lower())
+
+def compare_dictation_answer(target, answer):
+    target_words = normalize_dictation_text(target)
+    answer_words = normalize_dictation_text(answer)
+    if not target_words:
+        return {"score": 0, "missing": [], "extra": [], "target_count": 0, "answer_count": len(answer_words)}
+    score = round(SequenceMatcher(None, target_words, answer_words).ratio() * 100)
+    missing = []
+    temp_answer = answer_words.copy()
+    for word in target_words:
+        if word in temp_answer:
+            temp_answer.remove(word)
+        elif word not in missing:
+            missing.append(word)
+    extra = []
+    temp_target = target_words.copy()
+    for word in answer_words:
+        if word in temp_target:
+            temp_target.remove(word)
+        elif word not in extra:
+            extra.append(word)
+    return {
+        "score": score,
+        "missing": missing[:10],
+        "extra": extra[:10],
+        "target_count": len(target_words),
+        "answer_count": len(answer_words),
+    }
+
+def split_syntax_practice_chunks(sentence):
+    text = re.sub(r"\s+", " ", str(sentence)).strip()
+    chunks = [
+        part.strip(" ,;:")
+        for part in re.split(r"\s*,\s*|\s*;\s*|\s+\b(?:and|or|but|so|yet|nor)\b\s+", text, flags=re.IGNORECASE)
+        if part.strip(" ,;:")
+    ]
+    connectors = [
+        match.group(0)
+        for match in re.finditer(r"\b(and|or|but|so|yet|nor)\b", text, flags=re.IGNORECASE)
+    ]
+    return chunks[:8], connectors[:6]
+
+def split_syntax_label_tokens(sentence):
+    text = re.sub(r"\s+", " ", str(sentence)).strip()
+    return re.findall(r"[A-Za-z]+(?:'[A-Za-z]+)?|[.,;:!?()]", text)
+
+def render_inline_syntax_label_practice(sentence, idx):
+    tokens = split_syntax_label_tokens(sentence)
+    if not any(re.match(r"[A-Za-z]", token) for token in tokens):
+        st.info("この文ではラベルを振れる英単語が見つかりませんでした。")
+        return
+
+    role_options = [
+        ("", "⌄"),
+        ("S", "S"),
+        ("V", "V"),
+        ("O", "O"),
+        ("C", "C"),
+        ("M", "M"),
+        ("接", "接"),
+        ("句", "句"),
+        ("節", "節"),
+        ("?", "?"),
+    ]
+    option_html = "".join(
+        f"<option value='{html.escape(value)}'>{html.escape(label)}</option>"
+        for value, label in role_options
+    )
+    pieces = []
+    word_count = 0
+    for token_i, token in enumerate(tokens):
+        if re.match(r"[A-Za-z]", token):
+            word_count += 1
+            safe_token = html.escape(token)
+            pieces.append(
+                f"""
+                <span class="syntax-unit">
+                  <span class="syntax-word">{safe_token}</span>
+                  <select aria-label="{safe_token} の役割" data-token="{token_i}">
+                    {option_html}
+                  </select>
+                  <span class="syntax-label"></span>
+                </span>
+                """
+            )
+        else:
+            pieces.append(f"<span class='syntax-punct'>{html.escape(token)}</span>")
+
+    dom_id = f"syntax-inline-{idx}"
+    height = 150 if word_count <= 14 else 205 if word_count <= 30 else 270
+    components.html(
+        f"""
+        <div id="{dom_id}" class="syntax-inline-panel">
+          <div class="syntax-help">
+            単語の下の小さい欄を押して、S/V/O/C/M などを振ります。全部埋めなくて大丈夫です。
+          </div>
+          <div class="syntax-legend">
+            S 主語 / V 動詞 / O 目的語 / C 補語 / M 修飾 / 接 接続語 / 句 名詞句など / 節 関係詞節など
+          </div>
+          <div class="syntax-sentence">
+            {''.join(pieces)}
+          </div>
+        </div>
+        <script>
+          const root = document.getElementById("{dom_id}");
+          root.querySelectorAll("select").forEach((select) => {{
+            const label = select.parentElement.querySelector(".syntax-label");
+            const sync = () => {{
+              label.textContent = select.value || "";
+              select.classList.toggle("selected", Boolean(select.value));
+            }};
+            select.addEventListener("change", sync);
+            sync();
+          }});
+        </script>
+        <style>
+          .syntax-inline-panel {{
+            box-sizing: border-box;
+            width: 100%;
+            min-height: 100%;
+            padding: 10px 10px 12px;
+            background: #0f131b;
+            border: 1px solid #303846;
+            border-radius: 8px;
+            color: #f5f7fb;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+          }}
+          .syntax-help {{
+            font-size: 12px;
+            color: #d7dde8;
+            margin-bottom: 4px;
+          }}
+          .syntax-legend {{
+            font-size: 11px;
+            color: #9aa5b6;
+            margin-bottom: 10px;
+          }}
+          .syntax-sentence {{
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-end;
+            gap: 8px 9px;
+            line-height: 1.2;
+          }}
+          .syntax-unit {{
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 28px;
+            max-width: 122px;
+          }}
+          .syntax-word {{
+            border-bottom: 2px solid #5ea8ff;
+            padding: 0 2px 2px;
+            color: #f9fbff;
+            font-size: 13px;
+            font-weight: 700;
+            max-width: 122px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }}
+          .syntax-unit select {{
+            width: 36px;
+            height: 21px;
+            margin-top: 3px;
+            border: 1px solid #303846;
+            border-radius: 5px;
+            background: #1d2330;
+            color: #cbd5e1;
+            font-size: 11px;
+            font-weight: 800;
+            text-align: center;
+            cursor: pointer;
+          }}
+          .syntax-unit select.selected {{
+            border-color: #43d17a;
+            color: #43d17a;
+            background: #13251b;
+          }}
+          .syntax-label {{
+            height: 15px;
+            margin-top: 1px;
+            color: #43d17a;
+            font-size: 12px;
+            font-weight: 900;
+          }}
+          .syntax-punct {{
+            align-self: flex-start;
+            color: #aeb7c5;
+            font-size: 14px;
+            padding-top: 1px;
+            margin-left: -4px;
+          }}
+        </style>
+        """,
+        height=height,
+        scrolling=True,
+    )
 
 def save_reading_note(title, content, category="構文・文法", source="長文読解", also_grammar=False):
     if "reading_notes" not in my_data:
@@ -526,7 +865,7 @@ def render_close_reading_tab():
 
     read_method = st.radio(
         "題材となる長文の準備方法",
-        ["📝 自分でテキストを貼り付ける", "📄 過去問PDFから抽出する", "🤖 AIにウォームアップ文を作ってもらう"],
+        ["📝 自分でテキストを貼り付ける", "📄 PDF・写真から抽出する", "🤖 AIにウォームアップ文を作ってもらう"],
         horizontal=True,
         key="close_read_method",
     )
@@ -537,54 +876,124 @@ def render_close_reading_tab():
             set_reading_text(pasted)
             st.rerun()
 
-    elif read_method == "📄 過去問PDFから抽出する":
-        up_pdf = st.file_uploader("PDFをアップロード", type=["pdf"], key="close_read_pdf")
-        if st.button("🚀 PDFから長文を抽出する", type="primary", key="close_read_extract_pdf") and up_pdf:
-            with st.spinner("AIがPDFから長文部分だけを抽出しています..."):
-                with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-                    tmp.write(up_pdf.getvalue())
-                    tmp_path = tmp.name
-                try:
-                    g_file = genai.upload_file(tmp_path)
-                    model = genai.GenerativeModel(model_name="gemini-2.5-pro")
-                    res = model.generate_content([g_file, "このPDFから英語の長文本文だけを抽出してください。設問、選択肢、日本語の指示文、ページ番号、不要なレイアウト情報は除外してください。英文本文のみを自然な段落で出力してください。"])
-                    set_reading_text(res.text)
-                finally:
-                    os.remove(tmp_path)
+    elif read_method == "📄 PDF・写真から抽出する":
+        up_media = st.file_uploader(
+            "PDFまたは写真をアップロード",
+            type=["pdf", "png", "jpg", "jpeg", "webp"],
+            key="close_read_media",
+        )
+        if st.button("🚀 PDF・写真から長文を抽出する", type="primary", key="close_read_extract_media") and up_media:
+            with st.spinner("AIが英語の長文本文だけを抽出しています..."):
+                extracted_text = extract_reading_text_from_uploaded_media(up_media)
+                set_reading_text(extracted_text)
                 st.rerun()
 
     else:
         st.info("ウォームアップ用です。実力を伸ばす本番練習では、過去問PDFか実際の英文を使うのがおすすめです。")
         if st.button("✨ ウォームアップ文を生成する", type="primary", key="close_read_generate_warmup"):
             with st.spinner("AIがウォームアップ用の英文を書いています..."):
-                sys_gen_read = "大学受験の長文読解に向けたウォームアップ用英文を180〜250語で作成してください。簡単すぎる文だけにせず、関係詞、分詞、不定詞、比較、接続、指示語が自然に含まれる英文にしてください。英文本文のみ出力してください。"
+                sys_gen_read = """
+                あなたは大学受験用の英文作成者です。
+                180〜250語の英語長文を1つだけ作成してください。
+                出力は英語本文だけにしてください。
+                タイトル、前置き、説明、日本語、箇条書き、注釈は禁止です。
+                "Here is a passage..." や "This passage..." のような導入文も禁止です。
+                1文字目から本文の最初の文を始めてください。
+                関係詞、分詞、不定詞、比較、接続、指示語が自然に含まれる英文にしてください。
+                """
                 text = call_ai(
-                    "テーマはランダムでよいので、構文練習になる英文を作成してください。",
+                    "Create one original passage for reading practice. Output only the passage itself.",
                     sys_gen_read,
                     use_pdf=False,
                     model_name="gemini-2.5-flash-lite",
-                    max_output_tokens=450,
+                    max_output_tokens=650,
                     timeout_seconds=35,
                 )
                 set_reading_text(text)
                 st.rerun()
 
     if st.session_state.get("reading_target_text"):
+        stored_reading_text = st.session_state.get("reading_target_text", "")
+        cleaned_stored_text = clean_reading_text(stored_reading_text)
+        if cleaned_stored_text != stored_reading_text:
+            st.session_state["reading_target_text"] = cleaned_stored_text
+            st.session_state["reading_sentences"] = split_reading_sentences(cleaned_stored_text)
+            if st.session_state["reading_sentences"]:
+                st.session_state["reading_current_idx"] = 0
+            st.session_state["reading_chat_sentence_idx"] = -1
+            st.session_state["reading_translations"] = {}
+            st.session_state["reading_structures"] = {}
         st.markdown("---")
         st.markdown("""
         <style>
-        div[data-testid="column"]:has(.reading-sticky-anchor) {
+        .reading-map-box {
+            max-height: min(48vh, 500px);
+            overflow-y: auto;
+            line-height: 1.75;
+            font-size: 1.05rem;
+            padding: 0.35rem 0.45rem;
+        }
+        .reading-target-card {
+            background: #15344f;
+            border: 1px solid #245174;
+            border-radius: 7px;
+            color: #69b7ff;
+            font-weight: 700;
+            padding: 0.7rem 0.85rem;
+            margin-bottom: 0.55rem;
+        }
+        .reading-mini-space {
+            height: 0.35rem;
+        }
+        .syntax-token-word {
+            border-bottom: 2px solid #6aa9ff;
+            display: inline-block;
+            padding: 0 0.15rem 0.1rem;
+            margin-bottom: 0.2rem;
+            font-weight: 700;
+            color: #f4f7fb;
+            max-width: 100%;
+            overflow-wrap: anywhere;
+        }
+        div[data-testid="column"]:has(.reading-sticky-anchor),
+        div[data-testid="column"]:has(.reading-work-anchor) {
             position: sticky;
-            top: 0.75rem;
+            top: 0.55rem;
             align-self: flex-start;
             z-index: 2;
+            height: calc(100vh - 1.1rem);
+            overflow-y: auto;
+            overflow-x: hidden;
+            overscroll-behavior: contain;
+            padding-right: 0.35rem;
         }
-        div[data-testid="column"]:has(.reading-sticky-anchor) [data-testid="stVerticalBlock"] {
-            max-height: calc(100vh - 1.5rem);
+        div[data-testid="column"]:has(.reading-sticky-anchor)::-webkit-scrollbar,
+        div[data-testid="column"]:has(.reading-work-anchor)::-webkit-scrollbar {
+            width: 8px;
+        }
+        div[data-testid="column"]:has(.reading-sticky-anchor)::-webkit-scrollbar-thumb,
+        div[data-testid="column"]:has(.reading-work-anchor)::-webkit-scrollbar-thumb {
+            background: #3b4454;
+            border-radius: 999px;
         }
         @media (max-width: 900px) {
-            div[data-testid="column"]:has(.reading-sticky-anchor) {
+            div[data-testid="column"]:has(.reading-sticky-anchor),
+            div[data-testid="column"]:has(.reading-work-anchor) {
                 position: static;
+                height: auto;
+                overflow-y: visible;
+                padding-right: 0;
+            }
+            .reading-map-box {
+                max-height: 230px;
+                line-height: 1.55;
+                font-size: 0.96rem;
+                padding: 0.25rem 0.35rem;
+            }
+            .reading-target-card {
+                padding: 0.55rem 0.65rem;
+                margin-bottom: 0.35rem;
+                font-size: 0.95rem;
             }
         }
         </style>
@@ -592,30 +1001,42 @@ def render_close_reading_tab():
         col_read, col_chat = st.columns([1, 1])
         sentences = st.session_state.get("reading_sentences", [])
         idx = st.session_state.get("reading_current_idx", 0)
+        hide_current_sentence = st.session_state.get(f"dictation_hide_{idx}", False)
 
         with col_read:
             st.markdown('<div class="reading-sticky-anchor"></div>', unsafe_allow_html=True)
             st.markdown("##### 📄 全体マップ")
-            with st.container(border=True, height=500):
+            current_sentence_for_audio = sentences[idx] if idx < len(sentences) else ""
+            audio_col1, audio_col2 = st.columns(2)
+            with audio_col1:
+                render_reading_audio_controls(st.session_state.get("reading_target_text", ""), f"full_{idx}", "全文")
+            with audio_col2:
+                render_reading_audio_controls(current_sentence_for_audio, f"current_{idx}", "今の文")
+            with st.container(border=True):
                 display_html = ""
                 for i, s in enumerate(sentences):
+                    safe_sentence = html.escape(s)
                     if i == idx:
-                        display_html += f"<span style='background-color:#ffeb3b; color:black; font-weight:bold; padding:2px 4px; border-radius:3px;'>{s}</span> "
+                        shown_sentence = "音声書き起こし中：この文は隠しています" if hide_current_sentence else safe_sentence
+                        display_html += f"<span style='background-color:#ffeb3b; color:black; font-weight:bold; padding:2px 4px; border-radius:3px;'>{shown_sentence}</span> "
                     elif i in st.session_state.get("reading_translations", {}):
-                        display_html += f"<span style='color:#e7e7e7;'>{s}</span><br><span style='color:#8ab4ff;'>↳ {st.session_state['reading_translations'][i]}</span> "
+                        safe_translation = html.escape(st.session_state['reading_translations'][i])
+                        display_html += f"<span style='color:#e7e7e7;'>{safe_sentence}</span><br><span style='color:#8ab4ff;'>↳ {safe_translation}</span> "
                     else:
-                        display_html += f"<span style='color:gray;'>{s}</span> "
-                st.markdown(f"<div style='line-height:1.8; font-size:1.1em;'>{display_html}</div>", unsafe_allow_html=True)
+                        display_html += f"<span style='color:gray;'>{safe_sentence}</span> "
+                st.markdown(f"<div class='reading-map-box'>{display_html}</div>", unsafe_allow_html=True)
 
             if st.button("🗑️ 長文をクリアして別のものを読む", use_container_width=True, key="close_read_clear"):
                 clear_reading_state()
                 st.rerun()
 
         with col_chat:
+            st.markdown('<div class="reading-work-anchor"></div>', unsafe_allow_html=True)
             if idx < len(sentences):
                 current_sentence = sentences[idx]
                 st.markdown(f"##### 🎯 現在のターゲット ({idx + 1}/{len(sentences)})")
-                st.info(f"**{current_sentence}**")
+                target_card_text = "音声書き起こし中：英文を隠しています" if hide_current_sentence else html.escape(current_sentence)
+                st.markdown(f"<div class='reading-target-card'>{target_card_text}</div>", unsafe_allow_html=True)
 
                 if st.session_state.get("reading_chat_sentence_idx") != idx:
                     st.session_state.reading_chat_sentence_idx = idx
@@ -625,7 +1046,7 @@ def render_close_reading_tab():
                     st.session_state.show_word_selector = False
                     st.session_state.temp_memo = []
 
-                col_t1, col_t2 = st.columns(2)
+                col_t1, col_t2, col_t3 = st.columns(3)
                 if col_t1.button("🈁 この文の訳を見る", use_container_width=True, key=f"show_translation_{idx}"):
                     with st.spinner("自然な日本語訳を作成中..."):
                         sys_translation = "あなたは大学受験英語の講師です。英文を自然な日本語に訳してください。必要以上の解説はせず、訳だけを出力してください。"
@@ -639,69 +1060,116 @@ def render_close_reading_tab():
                             timeout_seconds=25,
                         ).strip()
                         st.rerun()
-                if col_t2.button("🧩 構造を見る", use_container_width=True, key=f"show_structure_{idx}"):
+                if col_t2.button("🧩 直感で構造", use_container_width=True, key=f"show_structure_intuitive_{idx}"):
                     with st.spinner("構文を分解中..."):
                         sys_structure = """
-                        あなたは大学受験英語の構文解説者です。英文を読むために必要な文法だけを、結論から、短く説明してください。
+                        あなたは大学受験英語の構文解説者です。英文を読むために必要な形だけを、短く説明してください。
 
                         【文体ルール】
                         - 「受験生の皆さん、こんにちは」「今日の一文」などの定型あいさつは禁止。
-                        - 励ましは必要なときだけ短く入れてよい。ただし本文解説と関係ない締めメッセージは不要。
-                        - 「超重要」「良問」「どこよりも詳しく」「ギュッと詰まった」などの誇張表現は禁止。
-                        - 雑談、長いテーマ紹介、まとめメッセージは不要。
-                        - 口調は丁寧でよいが、予備校の解答解説、または参考書の欄外メモのように短く書く。
+                        - 励まし、雑談、長いテーマ紹介、まとめメッセージは禁止。
+                        - 「超重要」「良問」「どこよりも詳しく」などの誇張表現は禁止。
+                        - 参考書の欄外メモのように短く書く。
                         - 英文全体を再掲しない。必要な語句だけ引用する。
-                        - 初回表示で読む量を増やしすぎない。原則250〜450字以内。
-                        - 説明は「結論 → 形で読む → 訳」の順にする。
+                        - 220〜360字以内。
+                        - 説明は「結論 → 形 → 訳」の順にする。
                         - 文法名から説明を始めない。まず「この形はこう読めばよい」という直観的な型に落とし込む。
-                        - 初学者が見てすぐ使える説明にする。S/V/O/C、関係副詞、関係代名詞、修飾節、分詞構文などの文法名は原則出さない。
-                        - 文法名が必要な場合も、最後に「文法名でいうと〜」と1行だけ補足する。
-                        - 例: "the way + S + V" は、まず「SがVする方法・やり方」と説明する。必要な場合だけ「関係副詞 how が省略された形と考えられる」のように補足する。
-                        - 文法用語は補足として使ってよいが、長く説明しない。読めるようになるための最小限にする。
+                        - 文法用語は必要な場合だけ、最後に1行で補足する。
 
                         【必ず含める項目】
-                        1. まずこう読む: この文の大まかな意味を1文で言う
-                        2. 形のヒント: 覚えるべき形を「形 = 意味」で示す
-                        3. どこで切るか: 文を読む順番で2〜3か所に区切る
-                        4. 自然な訳: 入試答案として使える自然な日本語訳
-                        5. 注意: 誤読しやすい点があれば1点だけ
+                        1. 結論: この文の大まかな意味を1文
+                        2. 形: 覚えるべき形を「形 = 意味」で1〜2個
+                        3. 切り方: 2〜3区切り
+                        4. 訳: 自然な日本語訳
 
                         【出力形式】
-                        見出しは「まずこう読む」「形のヒント」「どこで切るか」「自然な訳」「注意」の5つだけにしてください。
-                        各見出しは1行まで。箇条書きは最大3つまで。
-                        詳しい派生説明は書かず、生徒が質問したら追加で説明する前提にしてください。
+                        見出しは「結論」「形」「切り方」「訳」だけ。
+                        各見出しは1〜2行まで。
 
                         【禁止】
                         「今回扱う英文」「ステップ」「まとめ」「講師から」などの長い教材風構成は禁止。
                         S/V/O/C の記号をメインにした説明は禁止。
-                        「関係副詞が省略された修飾節」のような文法名中心の説明は禁止。
                         """
                         if "reading_structures" not in st.session_state:
                             st.session_state.reading_structures = {}
-                        st.session_state.reading_structures[idx] = call_ai(
+                        st.session_state[f"reading_structure_mode_{idx}"] = "intuitive"
+                        st.session_state.reading_structures[f"{idx}_intuitive"] = call_ai(
                             current_sentence,
                             sys_structure,
                             model_name="gemini-2.5-flash-lite",
-                            max_output_tokens=650,
+                            max_output_tokens=460,
                             timeout_seconds=35,
+                        ).strip()
+                        st.rerun()
+                if col_t3.button("📐 S/V/O/Cで整理", use_container_width=True, key=f"show_structure_theory_{idx}"):
+                    with st.spinner("文型と修飾関係を整理中..."):
+                        sys_structure_theory = """
+                        あなたは大学受験英語の構文解説者です。英文をS/V/O/C・句・節ラベルで整理してください。
+
+                        【文体】
+                        - あいさつ、励まし、長い前置きは禁止。
+                        - 参考書の解答欄のように短く正確に書く。
+                        - 220〜420字以内。
+                        - 文法名を使ってよいが、解説は最小限にする。
+                        - 長い修飾説明は禁止。ラベルを振ってから、必要な注意だけ書く。
+
+                        【必ず含める項目】
+                        1. 文型: 第何文型かを1行
+                        2. 骨格: S / V / O / C を1行
+                        3. ラベル: 関係詞節・名詞句・動詞句・前置詞句・分詞句などを最大4つ
+                        4. 接続: and / or / but が何をつなぐか。なければ「目立つ接続なし」
+                        5. 訳: 自然な日本語訳を1文
+
+                        【出力形式】
+                        見出しは「文型」「骨格」「ラベル」「接続」「訳」だけ。
+                        各見出しは最大2行。長い講義にしない。
+                        """
+                        if "reading_structures" not in st.session_state:
+                            st.session_state.reading_structures = {}
+                        st.session_state[f"reading_structure_mode_{idx}"] = "theory"
+                        st.session_state.reading_structures[f"{idx}_theory"] = call_ai(
+                            current_sentence,
+                            sys_structure_theory,
+                            model_name="gemini-2.5-flash-lite",
+                            max_output_tokens=520,
+                            timeout_seconds=40,
                         ).strip()
                         st.rerun()
 
                 if idx in st.session_state.get("reading_translations", {}):
                     st.success(f"日本語訳: {st.session_state['reading_translations'][idx]}")
-                if idx in st.session_state.get("reading_structures", {}):
-                    structure_text = st.session_state["reading_structures"][idx]
+                structures = st.session_state.get("reading_structures", {})
+                active_structure_mode = st.session_state.get(f"reading_structure_mode_{idx}", "intuitive")
+                active_structure_key = f"{idx}_{active_structure_mode}"
+                if active_structure_key in structures or idx in structures:
+                    structure_text = structures.get(active_structure_key, structures.get(idx, ""))
+                    structure_label = "S/V/O/C整理" if active_structure_mode == "theory" else "直感で読む構造"
                     old_long_style = (
                         "受験生の皆さん" in structure_text
                         or "今日の一文" in structure_text
                         or "今回扱う英文" in structure_text
-                        or len(structure_text) > 1400
+                        or len(structure_text) > 850
                     )
-                    with st.expander("🧩 この文の構造解説", expanded=True):
+                    with st.expander(f"🧩 この文の構造解説：{structure_label}", expanded=True):
                         if old_long_style:
-                            st.info("古い長文形式の解説が残っています。もう一度「構造を見る」を押すと、短い形式で作り直します。")
+                            st.info("長い形式の解説が残っています。上の構造ボタンを押すと、短い形式で作り直します。")
                         else:
-                            st.markdown(structure_text)
+                            with st.container(border=False, height=240):
+                                st.markdown(structure_text)
+
+                with st.expander("✍️ 和訳前に構文ラベルも振る（任意）", expanded=False):
+                    render_inline_syntax_label_practice(current_sentence, idx)
+
+                col_btn1, col_btn2 = st.columns(2)
+                if col_btn1.button("🧰 練習ツールを開く", use_container_width=True, key=f"toggle_words_{idx}"):
+                    st.session_state.show_word_selector = not st.session_state.get("show_word_selector", False)
+                    st.rerun()
+
+                if col_btn2.button("⏭️ 完璧！スキップして次へ", use_container_width=True, type="primary", key=f"next_sentence_{idx}"):
+                    current_chat = "\n".join([f"{m['role']}: {m['content']}" for m in st.session_state.reading_chat_logs if m['role'] in ["user", "assistant"]])
+                    st.session_state.reading_global_memory += f"\n【文 {idx + 1}: {current_sentence} の対話】\n{current_chat}\n"
+                    st.session_state.reading_current_idx += 1
+                    st.rerun()
 
                 col_chat_title, col_chat_reset = st.columns([3, 1])
                 with col_chat_title:
@@ -711,7 +1179,8 @@ def render_close_reading_tab():
                         {"role": "assistant", "content": "まずはこの文を一緒に短くほどきます。和訳でも質問でも大丈夫です。"}
                     ]
                     st.rerun()
-                with st.container(border=True, height=450):
+                chat_height = 175 if len(st.session_state.reading_chat_logs) <= 1 else 290
+                with st.container(border=True, height=chat_height):
                     for msg in st.session_state.reading_chat_logs:
                         with st.chat_message(msg["role"]):
                             st.markdown(msg["content"])
@@ -765,73 +1234,95 @@ def render_close_reading_tab():
                         st.session_state.reading_chat_logs.append({"role": "assistant", "content": ans})
                         st.rerun()
 
-                st.markdown("---")
-                col_btn1, col_btn2 = st.columns(2)
-                if col_btn1.button("❓ わからない単語・熟語がある", use_container_width=True, key=f"toggle_words_{idx}"):
-                    st.session_state.show_word_selector = not st.session_state.get("show_word_selector", False)
-                    st.rerun()
+                with st.expander("🧰 必要な時だけ開く練習ツール", expanded=st.session_state.get("show_word_selector", False)):
+                    tab_dictation, tab_words, tab_save = st.tabs([
+                        "🎧 聞き取り",
+                        "🔎 単語・熟語",
+                        "💡 保存",
+                    ])
 
-                if col_btn2.button("⏭️ 完璧！スキップして次へ", use_container_width=True, type="primary", key=f"next_sentence_{idx}"):
-                    current_chat = "\n".join([f"{m['role']}: {m['content']}" for m in st.session_state.reading_chat_logs if m['role'] in ["user", "assistant"]])
-                    st.session_state.reading_global_memory += f"\n【文 {idx + 1}: {current_sentence} の対話】\n{current_chat}\n"
-                    st.session_state.reading_current_idx += 1
-                    st.rerun()
+                    with tab_dictation:
+                        hide_key = f"dictation_hide_{idx}"
+                        if hide_key not in st.session_state:
+                            st.session_state[hide_key] = False
+                        st.checkbox("英文を隠して、音声だけで書き起こす", key=hide_key)
+                        render_reading_audio_controls(current_sentence, f"dictation_practice_{idx}", "この文を聞く")
+                        dictation_answer = st.text_area(
+                            "聞こえた英文を書いてください",
+                            height=90,
+                            key=f"dictation_answer_{idx}",
+                            placeholder="The old bookstore, which ...",
+                        )
+                        result_key = f"dictation_result_{idx}"
+                        if st.button("照合する", use_container_width=True, key=f"dictation_check_{idx}"):
+                            st.session_state[result_key] = compare_dictation_answer(current_sentence, dictation_answer)
+                        if result_key in st.session_state:
+                            result = st.session_state[result_key]
+                            score = result["score"]
+                            if score >= 90:
+                                st.success(f"一致度 {score}%：かなり聞き取れています。")
+                            elif score >= 70:
+                                st.warning(f"一致度 {score}%：大筋は取れています。抜けた語を確認しましょう。")
+                            else:
+                                st.info(f"一致度 {score}%：まず短いかたまりごとに聞くのがよさそうです。")
+                            st.progress(min(score, 100) / 100)
+                            if result["missing"]:
+                                st.caption("抜けやすかった語: " + ", ".join(result["missing"]))
+                            if result["extra"]:
+                                st.caption("余分に入った語: " + ", ".join(result["extra"]))
 
-                if st.session_state.get("show_word_selector"):
-                    st.markdown("###### 👆 調べたい単語をクリック、または熟語を検索！")
-                    words = [w for w in re.findall(r"\b[a-zA-Z\-']+\b", current_sentence)]
-                    cols = st.columns(6)
-                    for i, w in enumerate(words):
-                        if cols[i % 6].button(w, key=f"wbtn_{i}_{idx}"):
-                            with st.spinner(f"「{w}」の意味を検索中..."):
-                                sys_dict = "あなたは辞書です。指定された単語の、この文脈における意味を簡潔に答えてください。"
+                    with tab_words:
+                        st.caption("調べたい語を押すか、熟語を入力してください。")
+                        words = [w for w in re.findall(r"\b[a-zA-Z\-']+\b", current_sentence)]
+                        cols = st.columns(6)
+                        for i, w in enumerate(words):
+                            if cols[i % 6].button(w, key=f"wbtn_{i}_{idx}"):
+                                with st.spinner(f"「{w}」の意味を検索中..."):
+                                    sys_dict = "あなたは辞書です。指定された単語の、この文脈における意味を簡潔に答えてください。"
+                                    meaning = call_ai(
+                                        f"文脈: {current_sentence}\n単語: {w}",
+                                        sys_dict,
+                                        use_pdf=False,
+                                        model_name="gemini-2.5-flash-lite",
+                                        max_output_tokens=220,
+                                        timeout_seconds=25,
+                                    )
+                                    st.session_state.temp_memo.append({"word": w, "meaning": meaning.strip()})
+                                    st.rerun()
+
+                        col_idiom1, col_idiom2 = st.columns([3, 1])
+                        search_idiom = col_idiom1.text_input("熟語・フレーズの検索", label_visibility="collapsed", placeholder="調べたい熟語を入力 (例: take care of)", key=f"search_idiom_{idx}")
+                        if col_idiom2.button("🔍 検索", key=f"search_idiom_btn_{idx}", use_container_width=True) and search_idiom:
+                            with st.spinner("検索中..."):
+                                sys_dict = "あなたは辞書です。指定された熟語・フレーズの、この文脈における意味を簡潔に答えてください。"
                                 meaning = call_ai(
-                                    f"文脈: {current_sentence}\n単語: {w}",
+                                    f"文脈: {current_sentence}\n熟語: {search_idiom}",
                                     sys_dict,
                                     use_pdf=False,
                                     model_name="gemini-2.5-flash-lite",
                                     max_output_tokens=220,
                                     timeout_seconds=25,
                                 )
-                                st.session_state.temp_memo.append({"word": w, "meaning": meaning.strip()})
+                                st.session_state.temp_memo.append({"word": search_idiom, "meaning": meaning.strip()})
                                 st.rerun()
 
-                    st.markdown("<br>", unsafe_allow_html=True)
-                    col_idiom1, col_idiom2 = st.columns([3, 1])
-                    search_idiom = col_idiom1.text_input("熟語・フレーズの検索", label_visibility="collapsed", placeholder="調べたい熟語を入力 (例: take care of)", key=f"search_idiom_{idx}")
-                    if col_idiom2.button("🔍 検索", key=f"search_idiom_btn_{idx}", use_container_width=True) and search_idiom:
-                        with st.spinner("検索中..."):
-                            sys_dict = "あなたは辞書です。指定された熟語・フレーズの、この文脈における意味を簡潔に答えてください。"
-                            meaning = call_ai(
-                                f"文脈: {current_sentence}\n熟語: {search_idiom}",
-                                sys_dict,
-                                use_pdf=False,
-                                model_name="gemini-2.5-flash-lite",
-                                max_output_tokens=220,
-                                timeout_seconds=25,
-                            )
-                            st.session_state.temp_memo.append({"word": search_idiom, "meaning": meaning.strip()})
-                            st.rerun()
+                        if st.session_state.get("temp_memo"):
+                            st.markdown("###### 一時メモ")
+                            for m in st.session_state.temp_memo[-6:]:
+                                st.markdown(f"- **{m['word']}**: {m['meaning']}")
 
-                if st.session_state.get("temp_memo"):
-                    st.markdown("###### 📝 単語・熟語の一時メモ")
-                    with st.container(border=True):
-                        for m in st.session_state.temp_memo:
-                            st.markdown(f"- **{m['word']}**: {m['meaning']}")
-
-                st.markdown("---")
-                st.markdown("##### 💡 学びをストック")
-                with st.form("reading_memo_form", clear_on_submit=True):
-                    note_title = st.text_input("📝 項目名（例：関係副詞whereの非制限用法）", key="close_read_note_title")
-                    note_category = st.selectbox("分類", ["構文・文法", "単語", "熟語", "指示語", "論理展開", "和訳", "設問根拠", "その他"], key="close_read_note_category")
-                    note_content = st.text_area("意味・ルール（AIの解説や単語メモを保存）", height=80, key="close_read_note_content")
-                    also_grammar = st.checkbox("文法・語法ノートにも保存する", value=(note_category == "構文・文法"), key="close_read_note_also_grammar")
-                    if st.form_submit_button("🏠 読解メモに保存", type="primary"):
-                        if note_title and note_content:
-                            save_reading_note(note_title, note_content, note_category, "精読・構文・和訳", also_grammar)
-                            st.success("読解メモに保存しました！")
-                        else:
-                            st.error("項目名と内容の両方を入力してください。")
+                    with tab_save:
+                        with st.form("reading_memo_form", clear_on_submit=True):
+                            note_title = st.text_input("📝 項目名（例：関係副詞whereの非制限用法）", key="close_read_note_title")
+                            note_category = st.selectbox("分類", ["構文・文法", "単語", "熟語", "指示語", "論理展開", "和訳", "設問根拠", "その他"], key="close_read_note_category")
+                            note_content = st.text_area("意味・ルール（AIの解説や単語メモを保存）", height=80, key="close_read_note_content")
+                            also_grammar = st.checkbox("文法・語法ノートにも保存する", value=(note_category == "構文・文法"), key="close_read_note_also_grammar")
+                            if st.form_submit_button("🏠 読解メモに保存", type="primary"):
+                                if note_title and note_content:
+                                    save_reading_note(note_title, note_content, note_category, "精読・構文・和訳", also_grammar)
+                                    st.success("読解メモに保存しました！")
+                                else:
+                                    st.error("項目名と内容の両方を入力してください。")
 
             else:
                 st.success("🎉 全ての文の精読が完了しました。")
