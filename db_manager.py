@@ -1523,6 +1523,769 @@ def extract_word_meanings_with_gemini(text, model_name="gemini-2.5-pro", max_wor
     return {"words": word_items, "chunks": len(chunks), "errors": errors}
 
 
+# ==========================================
+# 意味別頻度・全解析 v2（軽量・決定論カウント方式）
+#
+# 設計思想（旧方式の失敗への対策）:
+#   1. 数えるのは100% Python。extract_words_from_text と同一ロジックなので
+#      合計が frequencies と必ず一致する（AIは回数に一切関与しない）
+#   2. 意味ラベルは共通辞書 word_meaning_lexicon.json に単語ごとに一度だけ
+#      生成・キャッシュ → 呼び出しごとに意味がブレて重複することが構造上ない
+#   3. AIの仕事は「この文のこの単語は ①…②…のどれ？」と番号を選ぶだけ
+#      → 出力が極小でタイムアウトしにくく、コストは旧方式の数分の1
+#   4. 意味が1つしかない単語はAPI不要で自動割当
+#   5. API失敗時は第1義（最頻出の意味）に自動割当 → 合計は絶対に崩れない
+# ==========================================
+
+WSD_INVENTORY_BATCH_SIZE = 40   # 意味メニュー生成: 1回のAPIで処理する単語数
+WSD_CLASSIFY_BATCH_SIZE = 50    # 意味分類: 1回のAPIで処理する出現数
+WSD_CONTEXT_WINDOW = 110        # 文脈として単語の前後に付ける文字数
+
+
+def extract_word_occurrences(text):
+    """extract_words_from_text と完全に同じ基準でトークンを抽出しつつ、
+    各出現に「その単語が出た文（文脈）」を添えて返す。
+    Counter([o["lemma"] for o in 結果]) は extract_words_from_text の結果と必ず一致する。"""
+    lowered = str(text or "").lower()
+
+    # 文の区切り位置を先に計算（オフセット保持のため置換はしない）
+    sentence_spans = []
+    start = 0
+    for m in re.finditer(r"[.!?]+[\s\"')\]]*|\n{2,}", lowered):
+        end = m.end()
+        if end > start:
+            sentence_spans.append((start, end))
+            start = end
+    if start < len(lowered):
+        sentence_spans.append((start, len(lowered)))
+    if not sentence_spans:
+        sentence_spans = [(0, len(lowered))]
+
+    occurrences = []
+    span_idx = 0
+    for m in re.finditer(r"\b[a-z]+\b", lowered):
+        w = m.group(0)
+        if len(w) <= 1 or w in STOP_WORDS:
+            continue
+        lemma = lemmatizer.lemmatize(w, pos='v')
+        lemma = lemmatizer.lemmatize(lemma, pos='n')
+
+        while span_idx < len(sentence_spans) - 1 and m.start() >= sentence_spans[span_idx][1]:
+            span_idx += 1
+        s_start, s_end = sentence_spans[span_idx]
+        ctx_start = max(s_start, m.start() - WSD_CONTEXT_WINDOW)
+        ctx_end = min(s_end, m.end() + WSD_CONTEXT_WINDOW)
+        sentence = re.sub(r"\s+", " ", lowered[ctx_start:ctx_end]).strip()
+
+        occurrences.append({"lemma": lemma, "surface": w, "sentence": sentence})
+    return occurrences
+
+
+def word_sense_menu(lex_entry):
+    """辞書エントリから意味メニュー [(meaning_id, meaning_ja)] を登録順で返す。
+    先頭が第1義（最頻出の意味）。"""
+    meanings = lex_entry.get("meanings", {}) if isinstance(lex_entry, dict) else {}
+    menu = []
+    for mid, data in meanings.items():
+        if isinstance(data, dict):
+            ja = normalize_meaning_key(data.get("meaning_ja") or data.get("meaning_key") or mid)
+        else:
+            ja = normalize_meaning_key(data or mid)
+        menu.append((mid, ja))
+    return menu
+
+
+def sense_components(sense):
+    """意味ラベルを「成分」に分解する。
+    例: 「会社、企業」→ {会社, 企業} / 「〜から来る」→ {来る} / 「〜に由来する」→ {由来する}"""
+    text = normalize_meaning_key(sense)
+    parts = re.split(r"[、，,／/・;；]", text)
+    comps = set()
+    for p in parts:
+        p = p.strip()
+        if not p:
+            continue
+        p = re.sub(r"^[〜~]\s*", "", p)
+        p = re.sub(r"^(を|に|が|と|の|へ|で|から|まで|より)", "", p)
+        p = re.sub(r"[〜~\s（）()「」]", "", p)
+        if p:
+            comps.add(p.lower())
+    return comps
+
+
+def senses_overlap(a, b):
+    """2つの意味ラベルが同一意味とみなせるか。
+    成分が1つでも共通すれば統合（「会社、企業」と「会社」、「〜になる」と「〜に至る、〜になる」など）。"""
+    ca, cb = sense_components(a), sense_components(b)
+    if ca and cb and (ca & cb):
+        return True
+    return should_merge_idiom_meanings(a, a, b, b)
+
+
+def group_senses(labels):
+    """意味ラベルのリストを、同一意味のグループ（インデックスのリスト）に分ける。"""
+    groups = []
+    for i, label in enumerate(labels):
+        placed = False
+        for g in groups:
+            if any(senses_overlap(label, labels[j]) for j in g):
+                g.append(i)
+                placed = True
+                break
+        if not placed:
+            groups.append([i])
+    return groups
+
+
+def consolidate_sense_list(senses):
+    """重複する意味を統合し、各グループから最も情報量の多いラベルを残す。順序は元の順を維持。"""
+    senses = [normalize_meaning_key(s) for s in senses if normalize_meaning_key(s)]
+    groups = group_senses(senses)
+    out = []
+    for g in groups:
+        rep = max((senses[j] for j in g), key=len)
+        out.append(rep)
+    return out
+
+
+def review_sense_groups_batch(batch, model_name):
+    """AI審査: 意味リストの中で「同じ意味として統合すべき番号の組」だけを答えさせる。
+    AIは新しいラベルを作れない（番号を選ぶだけ）ので、ここでも重複や暴走は構造上発生しない。
+    batch: [(word, [labels])] / 戻り値: {word: [[1,2],[3]] のような統合グループ（1始まり）}"""
+    lines = []
+    for word, labels in batch:
+        opts = " ".join(f"①②③④⑤⑥⑦⑧⑨"[i] + lab for i, lab in enumerate(labels[:9]))
+        lines.append(f"{word}: {opts}")
+
+    sys_prompt = "あなたは大学受験の単語帳を監修する編集者です。JSON以外は出力しないでください。"
+    prompt = f"""各単語の意味リストについて、「受験生が単語帳で区別して覚える価値がない（実質同じ・言い換えにすぎない）」意味の組があれば、統合すべき番号のグループを答えてください。
+
+【ルール】
+- 番号で答えるだけ。新しい意味を書いてはいけない
+- 「会社」「企業」のような言い換えは統合する
+- 「作る」と「間に合う」のような明確に別の意味は統合しない
+- 統合すべき組がない単語は merge を空配列 [] にする
+
+【出力JSON】
+{{"words": [{{"word": "use", "merge": [[1, 2]]}}, {{"word": "make", "merge": []}}]}}
+
+【意味リスト】
+{chr(10).join(lines)}
+"""
+    parsed = call_gemini_json(
+        prompt,
+        sys_prompt,
+        model_name=model_name,
+        max_output_tokens=3000,
+        timeout_seconds=90,
+    )
+    result = {}
+    items = parsed.get("words", []) if isinstance(parsed, dict) else (parsed if isinstance(parsed, list) else [])
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        w = normalize_vocab_word(item.get("word", ""))
+        merge_groups = []
+        for group in (item.get("merge") or []):
+            if isinstance(group, list):
+                idxs = sorted({int(i) for i in group if isinstance(i, (int, float, str)) and str(i).isdigit()})
+                if len(idxs) >= 2:
+                    merge_groups.append(idxs)
+        if w:
+            result[w] = merge_groups
+    return result
+
+
+def apply_merge_groups(labels, merge_groups):
+    """AI審査の統合指示（1始まりの番号グループ）をラベルリストに適用する。
+    無効な番号は無視。各グループは最初の位置に統合し、最も情報量の多いラベルを残す。"""
+    n = len(labels)
+    parent = list(range(n))
+
+    def find(x):
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    for group in merge_groups:
+        idxs = [i - 1 for i in group if isinstance(i, int) and 1 <= i <= n]
+        for a, b in zip(idxs, idxs[1:]):
+            ra, rb = find(a), find(b)
+            if ra != rb:
+                parent[max(ra, rb)] = min(ra, rb)
+
+    buckets = {}
+    order = []
+    for i in range(n):
+        r = find(i)
+        if r not in buckets:
+            buckets[r] = []
+            order.append(r)
+        buckets[r].append(labels[i])
+    return [max(buckets[r], key=len) for r in order]
+
+
+def generate_sense_inventory_batch(batch, model_name):
+    """batch: [(lemma, [本文の例文]), ...] をまとめて1回のAPIで意味メニュー化する。"""
+    lines = []
+    for i, (lemma, examples) in enumerate(batch, 1):
+        ex = " / ".join(str(e)[:160] for e in examples[:2])
+        lines.append(f"{i}. {lemma} （本文例: {ex}）")
+
+    sys_prompt = "あなたは大学受験の単語帳を作る編集者AIです。JSON以外は出力しないでください。"
+    prompt = f"""次の英単語それぞれについて、単語帳の見出しとして載せる意味を日本語で1〜3個挙げてください。
+
+【最重要ルール: 増やしすぎない】
+- 「別の意味として覚えないと長文を誤読する」場合だけ意味を分ける
+- 言い換え・類義語は絶対に分けない（×「会社」と「企業」を別にする ×「使用する」と「利用する」を別にする）
+- 連語・熟語的な用法は中心の意味に含める（× make a decision のために「決定をする」を立てる）
+- 大半の単語は意味1個で十分。3個はmake/take/runクラスの真の多義語だけ
+- 最初に挙げる意味を、入試で最も頻出の意味にする
+- 意味は短い自然な日本語（例: 「〜を作る」「間に合う・たどり着く」）
+- リストにある単語はすべて出力に含めること
+
+【出力JSON】
+{{"words": [{{"word": "make", "senses": ["〜を作る・生み出す", "AをBにする・〜させる", "間に合う・たどり着く"]}}]}}
+
+【単語リスト】
+{chr(10).join(lines)}
+"""
+    parsed = call_gemini_json(
+        prompt,
+        sys_prompt,
+        model_name=model_name,
+        max_output_tokens=6000,
+        timeout_seconds=90,
+    )
+    result = {}
+    items = parsed.get("words", []) if isinstance(parsed, dict) else (parsed if isinstance(parsed, list) else [])
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        w = normalize_vocab_word(item.get("word", ""))
+        senses = []
+        for s in (item.get("senses") or []):
+            s_norm = normalize_meaning_key(s)
+            if s_norm and s_norm != "未分類" and s_norm not in senses:
+                senses.append(s_norm)
+        if w and senses:
+            # 決定論的な重複統合（「会社、企業」と「会社」など）をかけてから採用
+            result[w] = consolidate_sense_list(senses)[:3]
+    return result
+
+
+def ensure_word_sense_inventory(lemma_examples, lexicon, model_name, max_workers=2, progress_cb=None):
+    """辞書に意味メニューがない単語だけ、バッチでAI生成してキャッシュする。
+    一度生成された単語は senses_ready が立ち、二度とAPIを使わない。
+    戻り値: (APIコール数, エラーリスト)"""
+    word_dict = lexicon.setdefault("words", {})
+    missing = []
+    for lemma, examples in lemma_examples.items():
+        entry = word_dict.get(lemma)
+        if isinstance(entry, dict) and entry.get("senses_ready") and entry.get("meanings"):
+            continue
+        missing.append((lemma, examples))
+
+    if not missing:
+        return 0, []
+
+    batches = [missing[i:i + WSD_INVENTORY_BATCH_SIZE] for i in range(0, len(missing), WSD_INVENTORY_BATCH_SIZE)]
+    errors = []
+    results = {}
+    done = 0
+    worker_count = max(1, min(int(max_workers), len(batches)))
+
+    def run_batch(batch):
+        return generate_sense_inventory_batch(batch, model_name)
+
+    if worker_count == 1:
+        for batch in batches:
+            try:
+                results.update(run_batch(batch))
+            except Exception as e:
+                errors.append(f"意味メニュー生成失敗: {e}")
+            done += 1
+            if progress_cb:
+                progress_cb(done, len(batches))
+    else:
+        with ThreadPoolExecutor(max_workers=worker_count) as executor:
+            futures = [executor.submit(run_batch, batch) for batch in batches]
+            for future in as_completed(futures):
+                try:
+                    results.update(future.result())
+                except Exception as e:
+                    errors.append(f"意味メニュー生成失敗: {e}")
+                done += 1
+                if progress_cb:
+                    progress_cb(done, len(batches))
+
+    # --- AI審査パス: 多義語だけ「同じ意味の番号の組」を統合させる（番号回答のみ） ---
+    review_calls = 0
+    multi = [(lemma, senses) for lemma, senses in results.items() if len(senses) >= 2]
+    if multi:
+        review_batches = [multi[i:i + WSD_INVENTORY_BATCH_SIZE] for i in range(0, len(multi), WSD_INVENTORY_BATCH_SIZE)]
+        for review_batch in review_batches:
+            review_calls += 1
+            try:
+                merge_map = review_sense_groups_batch(review_batch, model_name)
+            except Exception as e:
+                errors.append(f"意味の重複審査失敗（統合なしで続行）: {e}")
+                continue
+            for lemma, labels in review_batch:
+                groups = merge_map.get(lemma)
+                if groups:
+                    merged = apply_merge_groups(labels, groups)
+                    results[lemma] = consolidate_sense_list(merged)
+
+    for lemma, senses in results.items():
+        entry = word_dict.setdefault(lemma, {"word": lemma, "meanings": {}})
+        entry["word"] = lemma
+        meanings = migrate_lexicon_meanings(entry, "word", lemma)
+        for ja in senses:
+            find_or_create_meaning_id(meanings, "word", lemma, ja, ja)
+        entry["meanings"] = meanings
+        entry["senses_ready"] = True
+
+    # 取得できなかった単語: 今回だけ「未分類」1義で処理（フラグは立てず次回再挑戦）
+    for lemma, _ in missing:
+        if lemma in results:
+            continue
+        entry = word_dict.setdefault(lemma, {"word": lemma, "meanings": {}})
+        entry["word"] = lemma
+        meanings = migrate_lexicon_meanings(entry, "word", lemma)
+        if not meanings:
+            find_or_create_meaning_id(meanings, "word", lemma, "未分類", "意味未分類")
+        entry["meanings"] = meanings
+
+    return len(batches) + review_calls, errors
+
+
+def classify_sense_batch(items, model_name):
+    """items: [{"id": int, "word": str, "options": [ja...], "sentence": str}]
+    AIは各IDについて選択肢の番号を1つ選ぶだけ。戻り値: {id: choice(1始まり)}"""
+    lines = []
+    for it in items:
+        opts = " / ".join(f"{i + 1}:{ja}" for i, ja in enumerate(it["options"]))
+        lines.append(f"ID{it['id']} 単語:{it['word']} 選択肢[{opts}] 文: {it['sentence']}")
+
+    sys_prompt = "あなたは英文中の単語の意味を選択肢から選ぶAIです。JSON以外は出力しないでください。"
+    prompt = f"""各IDについて、文中でのその単語の意味として最も近い選択肢の番号を1つだけ選んでください。
+- 新しい意味を作ってはいけません。必ず提示された番号から選ぶこと
+- 迷った場合は 1 を選ぶこと
+- すべてのIDについて答えること
+
+【出力JSON】
+{{"answers": [{{"id": 12, "choice": 2}}]}}
+
+【問題リスト】
+{chr(10).join(lines)}
+"""
+    parsed = call_gemini_json(
+        prompt,
+        sys_prompt,
+        model_name=model_name,
+        max_output_tokens=4000,
+        timeout_seconds=90,
+    )
+    answers = {}
+    raw = parsed.get("answers", []) if isinstance(parsed, dict) else (parsed if isinstance(parsed, list) else [])
+    for a in raw:
+        if not isinstance(a, dict):
+            continue
+        try:
+            answers[int(a.get("id"))] = int(a.get("choice"))
+        except Exception:
+            continue
+    return answers
+
+
+def pick_audit_model(model_name):
+    """二重判定に使う「別のモデル」を選ぶ。"""
+    primary = normalize_gemini_model_name(model_name)
+    return "gemini-2.5-flash" if "lite" in primary else "gemini-2.5-flash-lite"
+
+
+def analyze_word_meanings_v2(text, model_name="gemini-2.5-flash", max_workers=3, verify_sample=40):
+    """意味別頻度の全解析（軽量版）。
+    戻り値は旧 extract_word_meanings_with_gemini と互換:
+    {"words": [...], "chunks": APIコール数, "errors": [...], "stats": {...}}"""
+    occurrences = extract_word_occurrences(text)
+
+    # --- 検証: Python集計と完全一致するか（同一ロジックなので必ず一致するはず） ---
+    python_counts = Counter(extract_words_from_text(text))
+    occurrence_counts = Counter(o["lemma"] for o in occurrences)
+    count_match = (python_counts == occurrence_counts)
+
+    if not occurrences:
+        return {"words": [], "chunks": 0, "errors": [], "stats": {"tokens": 0, "count_match": count_match}}
+
+    # 単語ごとに出現をまとめる
+    lemma_occurrences = {}
+    for o in occurrences:
+        lemma_occurrences.setdefault(o["lemma"], []).append(o)
+    lemma_examples = {
+        lemma: [occ["sentence"] for occ in occs[:2]]
+        for lemma, occs in lemma_occurrences.items()
+    }
+
+    errors = []
+    progress = st.progress(0, text="意味メニューを準備中...")
+
+    # --- ステップ1: 意味メニューの準備（未登録の単語だけAPI） ---
+    lexicon = load_word_meaning_lexicon()
+    inventory_calls, inv_errors = ensure_word_sense_inventory(
+        lemma_examples,
+        lexicon,
+        model_name,
+        max_workers=max_workers,
+        progress_cb=lambda done, total: progress.progress(
+            min(0.3, 0.3 * done / max(1, total)),
+            text=f"意味メニューを生成中... {done}/{total}",
+        ),
+    )
+    errors.extend(inv_errors)
+    save_word_meaning_lexicon(lexicon)
+
+    word_dict = lexicon.get("words", {})
+    menus = {lemma: word_sense_menu(word_dict.get(lemma, {})) for lemma in lemma_occurrences}
+
+    # --- ステップ2: 分類タスクの作成（多義語のみ。同じ文×同じ単語は1問に圧縮） ---
+    assignments = {}      # lemma -> {meaning_id: count}
+    classify_items = []   # AIに渡す問題
+    item_weights = {}     # item_id -> (lemma, 出現数)
+    auto_assigned = 0
+
+    item_id = 0
+    for lemma, occs in lemma_occurrences.items():
+        menu = menus.get(lemma) or [("", "意味未分類")]
+        if len(menu) == 1:
+            mid = menu[0][0]
+            assignments.setdefault(lemma, {})
+            assignments[lemma][mid] = assignments[lemma].get(mid, 0) + len(occs)
+            auto_assigned += len(occs)
+            continue
+
+        dedup = {}
+        for occ in occs:
+            dedup[occ["sentence"]] = dedup.get(occ["sentence"], 0) + 1
+        for sentence, weight in dedup.items():
+            item_id += 1
+            classify_items.append({
+                "id": item_id,
+                "word": lemma,
+                "options": [ja for _, ja in menu],
+                "sentence": sentence,
+            })
+            item_weights[item_id] = (lemma, weight)
+
+    # --- ステップ3: 選択式の意味分類（バッチ・並列） ---
+    classify_batches = [
+        classify_items[i:i + WSD_CLASSIFY_BATCH_SIZE]
+        for i in range(0, len(classify_items), WSD_CLASSIFY_BATCH_SIZE)
+    ]
+    all_answers = {}
+    fallback_tokens = 0
+    done = 0
+    worker_count = max(1, min(int(max_workers), max(1, len(classify_batches))))
+
+    def run_classify(batch):
+        try:
+            return classify_sense_batch(batch, model_name), None
+        except Exception as e:
+            return {}, str(e)
+
+    if classify_batches:
+        if worker_count == 1:
+            batch_results = [run_classify(b) for b in classify_batches]
+        else:
+            batch_results = []
+            with ThreadPoolExecutor(max_workers=worker_count) as executor:
+                futures = [executor.submit(run_classify, b) for b in classify_batches]
+                for future in as_completed(futures):
+                    batch_results.append(future.result())
+                    done += 1
+                    progress.progress(
+                        0.3 + 0.7 * done / len(classify_batches),
+                        text=f"文脈の意味を分類中... {done}/{len(classify_batches)}",
+                    )
+        for answers, err in batch_results:
+            all_answers.update(answers)
+            if err:
+                errors.append(f"意味分類失敗（第1義に自動割当）: {err}")
+
+    # --- ステップ4: 割当の確定（無効・欠落は第1義へ → 合計は絶対に崩れない） ---
+    fallback_details = []
+    valid_items = []
+    for item in classify_items:
+        lemma, weight = item_weights[item["id"]]
+        menu = menus.get(lemma) or [("", "意味未分類")]
+        choice = all_answers.get(item["id"])
+        if not isinstance(choice, int) or not (1 <= choice <= len(menu)):
+            choice = 1
+            fallback_tokens += weight
+            if len(fallback_details) < 20:
+                fallback_details.append({
+                    "単語": lemma,
+                    "文脈": item["sentence"][:90],
+                    "自動割当した意味": menu[0][1],
+                })
+        else:
+            valid_items.append(item)
+        mid = menu[choice - 1][0]
+        assignments.setdefault(lemma, {})
+        assignments[lemma][mid] = assignments[lemma].get(mid, 0) + weight
+
+    # --- ステップ4b: 監査サンプル（目視確認用。DBには保存しない） ---
+    import random as _random
+    audit_pool = list(valid_items)
+    _random.shuffle(audit_pool)
+    audit_sample = []
+    for item in audit_pool[:30]:
+        lemma = item["word"]
+        choice = all_answers[item["id"]]
+        audit_sample.append({
+            "単語": lemma,
+            "AIが選んだ意味": item["options"][choice - 1],
+            "文脈": item["sentence"][:120],
+            "他の選択肢": " / ".join(o for i, o in enumerate(item["options"]) if i != choice - 1),
+        })
+
+    # --- ステップ4c: 二重判定（別モデルで同じサンプルを再分類し、一致率を測る） ---
+    agreement_rate = None
+    agreement_n = 0
+    audit_model = pick_audit_model(model_name)
+    if verify_sample and audit_pool:
+        progress.progress(1.0, text="二重判定で一致率を検証中...")
+        sample_items = audit_pool[:int(verify_sample)]
+        try:
+            second = {}
+            for i in range(0, len(sample_items), WSD_CLASSIFY_BATCH_SIZE):
+                second.update(classify_sense_batch(sample_items[i:i + WSD_CLASSIFY_BATCH_SIZE], audit_model))
+            same = 0
+            compared = 0
+            for item in sample_items:
+                c2 = second.get(item["id"])
+                if isinstance(c2, int) and 1 <= c2 <= len(item["options"]):
+                    compared += 1
+                    if c2 == all_answers[item["id"]]:
+                        same += 1
+            if compared:
+                agreement_rate = same / compared
+                agreement_n = compared
+        except Exception as e:
+            errors.append(f"二重判定に失敗（解析結果には影響なし）: {e}")
+
+    progress.empty()
+
+    # --- ステップ5: DB保存形式（merge_word_meaning_items互換）に変換 ---
+    menu_labels = {
+        lemma: {mid: ja for mid, ja in (menus.get(lemma) or [])}
+        for lemma in lemma_occurrences
+    }
+    surface_by_lemma = {
+        lemma: Counter(o["surface"] for o in occs).most_common(1)[0][0]
+        for lemma, occs in lemma_occurrences.items()
+    }
+
+    word_items = []
+    assigned_total = 0
+    for lemma, meaning_counts in assignments.items():
+        occ_list = []
+        for mid, count in meaning_counts.items():
+            ja = menu_labels.get(lemma, {}).get(mid, "意味未分類")
+            occ_list.append({
+                "meaning_id": mid,
+                "meaning_key": ja,
+                "meaning_ja": ja,
+                "usage_hint": "",
+                "surface_form": surface_by_lemma.get(lemma, lemma),
+                "count": count,
+            })
+            assigned_total += count
+        word_items.append({
+            "word": lemma,
+            "count": sum(meaning_counts.values()),
+            "occurrences": occ_list,
+        })
+
+    stats = {
+        "tokens": len(occurrences),
+        "assigned_tokens": assigned_total,
+        "count_match": count_match and (assigned_total == len(occurrences)),
+        "unique_words": len(lemma_occurrences),
+        "monosemous_tokens": auto_assigned,
+        "classified_items": len(classify_items),
+        "fallback_tokens": fallback_tokens,
+        "fallback_details": fallback_details,
+        "api_calls_inventory": inventory_calls,
+        "api_calls_classify": len(classify_batches),
+        "agreement_rate": agreement_rate,
+        "agreement_n": agreement_n,
+        "agreement_model": audit_model,
+    }
+
+    return {
+        "words": word_items,
+        "chunks": inventory_calls + len(classify_batches),
+        "errors": errors,
+        "stats": stats,
+        "audit_sample": audit_sample,
+    }
+
+
+def consolidate_word_meaning_data(db, model_name=None, progress_cb=None):
+    """共通辞書とDBの両方から、重複した意味を一括統合するメンテナンス処理。
+    1) 決定論的統合（成分分解: 「会社、企業」と「会社」など）
+    2) model_name 指定時はAI審査（「同じ意味の番号の組」を答えるだけ。新ラベルは作れない）
+    3) 全過去問DBの meaning_counts を旧ID→新IDで合算（回数の合計は1トークンも変わらない）"""
+    lexicon = load_word_meaning_lexicon()
+    word_dict = lexicon.get("words", {})
+    remap = {}
+    merged_meanings = 0
+    api_calls = 0
+    errors = []
+
+    def entry_label(data, mid):
+        if isinstance(data, dict):
+            return normalize_meaning_key(data.get("meaning_ja") or data.get("meaning_key") or mid)
+        return normalize_meaning_key(data or mid)
+
+    def merge_into(meanings, keep_id, drop_id):
+        nonlocal merged_meanings
+        target = normalize_meaning_entry(keep_id, meanings.get(keep_id, {}))
+        src = normalize_meaning_entry(drop_id, meanings.pop(drop_id, {}))
+        if len(src.get("meaning_ja", "")) > len(target.get("meaning_ja", "")):
+            target["meaning_ja"] = src["meaning_ja"]
+        add_unique_alias(target, src.get("meaning_key"))
+        add_unique_alias(target, src.get("meaning_ja"))
+        for a in src.get("aliases", []):
+            add_unique_alias(target, a)
+        for h in src.get("usage_hints", []):
+            if h and h not in target.setdefault("usage_hints", []) and len(target["usage_hints"]) < 6:
+                target["usage_hints"].append(h)
+        meanings[keep_id] = target
+        remap[drop_id] = keep_id
+        merged_meanings += 1
+
+    # --- フェーズ1: 決定論的統合 ---
+    for word, entry in word_dict.items():
+        if not isinstance(entry, dict):
+            continue
+        meanings = entry.get("meanings", {})
+        if not isinstance(meanings, dict) or len(meanings) < 2:
+            continue
+        mids = list(meanings.keys())
+        labels = [entry_label(meanings[m], m) for m in mids]
+        for group in group_senses(labels):
+            if len(group) < 2:
+                continue
+            keep = mids[group[0]]
+            for j in group[1:]:
+                merge_into(meanings, keep, mids[j])
+        entry["meanings"] = meanings
+
+    # --- フェーズ2: AI審査（番号回答のみ） ---
+    if model_name:
+        targets = []
+        for word, entry in word_dict.items():
+            if not isinstance(entry, dict):
+                continue
+            meanings = entry.get("meanings", {})
+            if isinstance(meanings, dict) and len(meanings) >= 2:
+                mids = list(meanings.keys())
+                labels = [entry_label(meanings[m], m) for m in mids]
+                targets.append((word, mids, labels))
+        review_batches = [targets[i:i + WSD_INVENTORY_BATCH_SIZE] for i in range(0, len(targets), WSD_INVENTORY_BATCH_SIZE)]
+        for bi, review_batch in enumerate(review_batches):
+            api_calls += 1
+            try:
+                merge_map = review_sense_groups_batch(
+                    [(w, labels) for w, mids, labels in review_batch],
+                    model_name,
+                )
+            except Exception as e:
+                errors.append(f"AI審査失敗（このバッチは統合なしで続行）: {e}")
+                continue
+            for word, mids, labels in review_batch:
+                meanings = word_dict[word]["meanings"]
+                for group in merge_map.get(word) or []:
+                    idxs = [i - 1 for i in group if isinstance(i, int) and 1 <= i <= len(mids)]
+                    live = [i for i in idxs if mids[i] in meanings]
+                    if len(live) < 2:
+                        continue
+                    keep = mids[live[0]]
+                    for j in live[1:]:
+                        merge_into(meanings, keep, mids[j])
+            if progress_cb:
+                progress_cb(bi + 1, len(review_batches))
+
+    save_word_meaning_lexicon(lexicon)
+
+    # --- フェーズ3: 全過去問DBに反映 ---
+    def resolve(mid):
+        seen = set()
+        while mid in remap and mid not in seen:
+            seen.add(mid)
+            mid = remap[mid]
+        return mid
+
+    updated_words = 0
+
+    def walk(node):
+        nonlocal updated_words
+        if not isinstance(node, dict):
+            return
+        if isinstance(node.get("word_meanings"), dict):
+            for word, w_entry in node["word_meanings"].items():
+                if not isinstance(w_entry, dict):
+                    continue
+                mcounts = w_entry.get("meaning_counts")
+                if not isinstance(mcounts, dict):
+                    continue
+                lex_entry = word_dict.get(word)
+                lex_meanings = lex_entry.get("meanings", {}) if isinstance(lex_entry, dict) else {}
+                new_counts = {}
+                changed = False
+                for mid, bucket in mcounts.items():
+                    nm = resolve(mid)
+                    if nm != mid:
+                        changed = True
+                    b = bucket if isinstance(bucket, dict) else {}
+                    tgt = new_counts.setdefault(nm, {
+                        "meaning_id": nm if is_meaning_id(nm) else "",
+                        "meaning_key": "",
+                        "meaning_ja": "",
+                        "count": 0,
+                        "usage_hints": [],
+                    })
+                    tgt["count"] = safe_count(tgt.get("count"), 0) + safe_count(b.get("count"), 0)
+                    hints = b.get("usage_hints") if isinstance(b.get("usage_hints"), list) else []
+                    for h in hints:
+                        if h and h not in tgt["usage_hints"] and len(tgt["usage_hints"]) < 5:
+                            tgt["usage_hints"].append(h)
+                    lex_m = lex_meanings.get(nm)
+                    label = entry_label(lex_m, nm) if lex_m else normalize_meaning_key(b.get("meaning_ja") or tgt["meaning_ja"] or nm)
+                    tgt["meaning_ja"] = label
+                    tgt["meaning_key"] = tgt["meaning_key"] or normalize_meaning_key(b.get("meaning_key") or label)
+                w_entry["meaning_counts"] = new_counts
+                if changed:
+                    updated_words += 1
+        else:
+            for v in node.values():
+                walk(v)
+
+    walk(db)
+
+    return {
+        "merged_meanings": merged_meanings,
+        "updated_words": updated_words,
+        "api_calls": api_calls,
+        "errors": errors,
+        "remapped_ids": len(remap),
+    }
+
+
 def extract_grammar_with_gemini(text):
     sys_prompt = """
     あなたは大学受験英語の文法・語法問題を分析する予備校講師です。
@@ -1737,39 +2500,40 @@ with tab1:
         with col_opt4:
             ext_grammar = st.toggle("📖 文法・語法の抽出 (AI使用)", value=True)
         
-        word_meaning_model_name = "gemini-2.5-pro"
-        word_meaning_workers = 2
-        word_meaning_chunk_chars = 2000
+        word_meaning_model_name = "gemini-2.5-flash"
+        word_meaning_workers = 3
+        word_meaning_verify = True
         if ext_word_meanings:
-            with st.expander("🧠 単語の意味別解析設定", expanded=False):
-                st.caption("単語を文脈ごとの意味で数えます。重い処理なので、まずは並列2がおすすめです。")
-                col_word_ai1, col_word_ai2, col_word_ai3 = st.columns(3)
+            with st.expander("🧠 単語の意味別解析設定（v2: 軽量版）", expanded=False):
+                st.caption(
+                    "回数を数えるのはPythonで、AIは「文中の意味を選択肢から番号で選ぶ」だけです。"
+                    "合計は単語頻度（AIなし集計）と必ず一致します。"
+                    "意味メニューは word_meaning_lexicon.json に蓄積されるため、過去問を登録するほどAPIコストが下がります。"
+                )
+                col_word_ai1, col_word_ai2 = st.columns(2)
                 with col_word_ai1:
                     word_meaning_model_name = st.selectbox(
                         "単語意味解析モデル",
-                        ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.5-flash-lite"],
+                        ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.5-pro"],
                         index=0,
-                        key="word_meaning_analysis_model",
+                        key="word_meaning_analysis_model_v2",
+                        help="選択式の分類なので flash で十分です。コスト最優先なら flash-lite。",
                     )
                 with col_word_ai2:
                     word_meaning_workers = st.number_input(
-                        "単語解析の並列数",
+                        "並列数",
                         min_value=1,
                         max_value=6,
-                        value=2,
+                        value=3,
                         step=1,
-                        key="word_meaning_analysis_workers",
+                        key="word_meaning_analysis_workers_v2",
                     )
-                with col_word_ai3:
-                    word_meaning_chunk_chars = st.number_input(
-                        "単語解析の1回あたり文字数",
-                        min_value=1200,
-                        max_value=7000,
-                        value=2000,
-                        step=500,
-                        key="word_meaning_analysis_chunk_chars_v2",
-                    )
-                st.info("単語の意味は word_meaning_lexicon.json に蓄積し、各過去問DBには意味別の回数を保存します。")
+                word_meaning_verify = st.checkbox(
+                    "🤝 二重判定で一致率を検証する（推奨・追加+1〜2コール）",
+                    value=True,
+                    key="word_meaning_verify_v2",
+                    help="分類サンプルを別のモデルでもう一度分類し、答えの一致率を％で表示します。一致率が高ければ「でたらめな分類ではない」ことを定量的に確認できます。",
+                )
 
         idiom_model_name = "gemini-2.5-pro"
         idiom_workers = 2
@@ -1854,21 +2618,62 @@ with tab1:
                     # ルートA2: 単語の意味別解析（AI処理）
                     # -----------------------------------------
                     if ext_word_meanings:
-                        extracted_word_meaning_data = extract_word_meanings_with_gemini(
+                        extracted_word_meaning_data = analyze_word_meanings_v2(
                             edited_text,
                             model_name=word_meaning_model_name,
                             max_workers=int(word_meaning_workers),
-                            chunk_chars=int(word_meaning_chunk_chars),
+                            verify_sample=40 if word_meaning_verify else 0,
                         )
                         target_db["word_meanings"] = merge_word_meaning_items(
                             target_db.get("word_meanings", {}),
                             extracted_word_meaning_data.get("words", []),
                         )
                         save_db(db)
+                        wm_stats = extracted_word_meaning_data.get("stats", {})
                         st.info(
-                            f"単語意味解析: {len(extracted_word_meaning_data.get('words', []))}件 / "
-                            f"{extracted_word_meaning_data.get('chunks', 1)}分割"
+                            f"🧠 単語意味解析(v2): {wm_stats.get('tokens', 0)}トークン / "
+                            f"{wm_stats.get('unique_words', 0)}単語 / "
+                            f"APIコール {wm_stats.get('api_calls_inventory', 0) + wm_stats.get('api_calls_classify', 0)}回 "
+                            f"(意味メニュー{wm_stats.get('api_calls_inventory', 0)}+分類{wm_stats.get('api_calls_classify', 0)})"
                         )
+                        if wm_stats.get("count_match"):
+                            st.success(
+                                f"✅ 整合性チェックOK: 意味割当の合計（{wm_stats.get('assigned_tokens', 0)}）が"
+                                f"Python集計（{wm_stats.get('tokens', 0)}）と完全一致しました。"
+                            )
+                        else:
+                            st.error(
+                                f"⚠️ 整合性チェックNG: 意味割当の合計（{wm_stats.get('assigned_tokens', 0)}）と"
+                                f"Python集計（{wm_stats.get('tokens', 0)}）が一致しません。報告してください。"
+                            )
+                        agreement_rate = wm_stats.get("agreement_rate")
+                        if agreement_rate is not None:
+                            agreement_pct = agreement_rate * 100
+                            agreement_msg = (
+                                f"🤝 二重判定: 別モデル（{wm_stats.get('agreement_model')}）と "
+                                f"**{agreement_pct:.0f}%** 一致（サンプル{wm_stats.get('agreement_n')}件）"
+                            )
+                            if agreement_pct >= 90:
+                                st.success(agreement_msg + " — 分類は安定しています。")
+                            elif agreement_pct >= 75:
+                                st.warning(agreement_msg + " — おおむね安定。下の監査サンプルで不一致の傾向を確認してください。")
+                            else:
+                                st.error(agreement_msg + " — 不安定です。モデルをproに上げて再解析を検討してください。")
+                        if wm_stats.get("fallback_tokens"):
+                            st.warning(
+                                f"AI分類に失敗した {wm_stats['fallback_tokens']}トークンは第1義に自動割当しました（合計は維持）。"
+                            )
+                            fallback_details = wm_stats.get("fallback_details") or []
+                            if fallback_details:
+                                with st.expander("⚠️ 自動割当の内訳（どの単語・どの文か）", expanded=False):
+                                    st.dataframe(fallback_details, use_container_width=True)
+                        audit_sample = extracted_word_meaning_data.get("audit_sample") or []
+                        if audit_sample:
+                            with st.expander(f"🔍 分類の監査サンプル（ランダム{len(audit_sample)}件・目視確認用）", expanded=False):
+                                st.caption("AIの分類が妥当か、文脈と選んだ意味を見比べてください。この表はDBには保存されません。")
+                                st.dataframe(audit_sample, use_container_width=True)
+                        for wm_err in extracted_word_meaning_data.get("errors", [])[:5]:
+                            st.caption(f"・{wm_err}")
                     
                     # -----------------------------------------
                     # ルートB: 熟語の抽出（AI処理）
@@ -2143,6 +2948,47 @@ with tab2:
                 for k, v in list(frequencies.items())[:200]
             ]
             st.dataframe(pd.DataFrame(top_words), use_container_width=True)
+
+            # =========================================================
+            # 🧹 意味データのメンテナンス（重複意味の一括統合）
+            # =========================================================
+            with st.expander("🧹 意味の重複を一括統合（辞書＋全過去問DB・再解析不要）", expanded=False):
+                st.caption(
+                    "「会社、企業」と「会社」のように分かれてしまった意味を統合します。"
+                    "回数は合算されるだけで、合計は1トークンも変わりません。"
+                    "ここで選択中の過去問だけでなく、全過去問と共通辞書に一括適用されます。"
+                )
+                col_cons1, col_cons2 = st.columns(2)
+                with col_cons1:
+                    cons_use_ai = st.checkbox(
+                        "AI審査も行う（番号回答のみ・推奨）",
+                        value=True,
+                        key="cons_use_ai",
+                        help="AIは「①と②は同じ意味か」を番号で答えるだけです。新しい意味ラベルは作れません。",
+                    )
+                with col_cons2:
+                    cons_model = st.selectbox(
+                        "審査モデル",
+                        ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.5-pro"],
+                        index=0,
+                        key="cons_model",
+                    )
+                if st.button("🧹 重複意味を統合する", type="primary", key="btn_consolidate_meanings"):
+                    with st.spinner("意味の重複を統合中...（辞書→全過去問DBの順に処理）"):
+                        cons_stats = consolidate_word_meaning_data(
+                            db,
+                            model_name=cons_model if cons_use_ai else None,
+                        )
+                        save_db(db)
+                    st.session_state["cons_result_msg"] = (
+                        f"✅ 統合した意味: {cons_stats['merged_meanings']}件 / "
+                        f"意味データを更新した単語: {cons_stats['updated_words']}語 / "
+                        f"APIコール: {cons_stats['api_calls']}回"
+                        + (f" / エラー{len(cons_stats['errors'])}件（成功分のみ適用）" if cons_stats["errors"] else "")
+                    )
+                    st.rerun()
+                if st.session_state.get("cons_result_msg"):
+                    st.success(st.session_state.pop("cons_result_msg"))
 
             with st.expander("💪 頻度つよつよ単語3000を外した意味カウント", expanded=False):
                 strong_summary = summarize_words_without_frequency_strong(target_data.get("frequencies", {}))

@@ -3080,6 +3080,149 @@ if mode == "📖 志望校別単語帳":
                         if "analysis_result" in st.session_state:
                             st.info(st.session_state.analysis_result)
 
+            # ------------------------------------------
+            # 🧠 意味別カバー率（意味単位のバックテスト）
+            # ------------------------------------------
+            st.markdown("---")
+            st.markdown("### 🧠 意味別カバー率（意味単位のバックテスト）")
+            st.info(
+                "「学習済み」とみなす過去問群に出てきた（単語 × 意味）の組を武器に、"
+                "ターゲット過去問を**意味のレベルまで**カバーできているかを計算します。"
+                "単語は知っていても文中の意味が未学習なら「意味抜け」として検出されます。"
+                "※ db_manager の「🧠 単語の意味別解析」を済ませた過去問だけが対象です。"
+            )
+
+            meaning_cov_options = {}
+            for cat, unis in exam_db.items():
+                for uni, facs in unis.items():
+                    for fac, years in facs.items():
+                        for year, methods in years.items():
+                            for method, data in methods.items():
+                                wm = data.get("word_meanings")
+                                if isinstance(wm, dict) and wm:
+                                    label = f"[{cat}] {uni} {fac} ({year}年 {method})"
+                                    meaning_cov_options[label] = wm
+
+            if len(meaning_cov_options) < 2:
+                st.warning("意味別データを持つ過去問が2件以上必要です。db_manager.py の「🧠 単語の意味別解析」で過去問を登録してください。")
+            else:
+                col_mcov_w, col_mcov_t = st.columns(2)
+                with col_mcov_w:
+                    mcov_learned_labels = st.multiselect(
+                        "⚔️ 学習済みとみなす過去問（複数選択）",
+                        list(meaning_cov_options.keys()),
+                        key="meaning_cov_learned",
+                    )
+                with col_mcov_t:
+                    mcov_target_label = st.selectbox(
+                        "🎯 ターゲット過去問（未知の敵）",
+                        ["-- 選択 --"] + list(meaning_cov_options.keys()),
+                        key="meaning_cov_target",
+                    )
+
+                if st.button("🧠 意味別カバー率を計算する", type="primary", use_container_width=True, key="meaning_cov_btn"):
+                    if not mcov_learned_labels or mcov_target_label == "-- 選択 --":
+                        st.error("学習済み過去問とターゲットを両方選択してください。")
+                    elif mcov_target_label in mcov_learned_labels:
+                        st.error("ターゲットの過去問は「学習済み」から外してください（自分自身とは比較できません）。")
+                    else:
+                        learned_pairs = set()
+                        learned_words = set()
+                        for mcov_label in mcov_learned_labels:
+                            for w, w_entry in meaning_cov_options[mcov_label].items():
+                                if not isinstance(w_entry, dict):
+                                    continue
+                                w_norm = normalize_vocab_word(w)
+                                if not w_norm or w_norm in frequency_excluded_words:
+                                    continue
+                                learned_words.add(w_norm)
+                                for mid in (w_entry.get("meaning_counts") or {}).keys():
+                                    learned_pairs.add((w_norm, mid))
+
+                        mcov_total = 0
+                        mcov_word_covered = 0
+                        mcov_meaning_covered = 0
+                        mcov_sense_gap = {}      # 単語は知っているのに意味が未学習
+                        mcov_unknown_words = {}  # 単語ごと未知
+                        for w, w_entry in meaning_cov_options[mcov_target_label].items():
+                            if not isinstance(w_entry, dict):
+                                continue
+                            w_norm = normalize_vocab_word(w)
+                            if not w_norm or w_norm in frequency_excluded_words:
+                                continue
+                            for mid, bucket in (w_entry.get("meaning_counts") or {}).items():
+                                if not isinstance(bucket, dict):
+                                    continue
+                                cnt = bucket.get("count", 0)
+                                try:
+                                    cnt = int(cnt)
+                                except Exception:
+                                    cnt = 0
+                                if cnt <= 0:
+                                    continue
+                                ja = str(bucket.get("meaning_ja") or mid)
+                                mcov_total += cnt
+                                if w_norm in learned_words:
+                                    mcov_word_covered += cnt
+                                    if (w_norm, mid) in learned_pairs:
+                                        mcov_meaning_covered += cnt
+                                    else:
+                                        gap_key = (w_norm, ja)
+                                        mcov_sense_gap[gap_key] = mcov_sense_gap.get(gap_key, 0) + cnt
+                                else:
+                                    mcov_unknown_words[w_norm] = mcov_unknown_words.get(w_norm, 0) + cnt
+
+                        st.session_state.meaning_cov_result = {
+                            "target_name": mcov_target_label,
+                            "learned_names": mcov_learned_labels,
+                            "total_tokens": mcov_total,
+                            "word_covered": mcov_word_covered,
+                            "meaning_covered": mcov_meaning_covered,
+                            "sense_gap": [
+                                {"単語": k[0], "未学習の意味": k[1], "出現回数": v}
+                                for k, v in sorted(mcov_sense_gap.items(), key=lambda x: x[1], reverse=True)
+                            ],
+                            "unknown_words": [
+                                {"未知の単語": k, "出現回数": v}
+                                for k, v in sorted(mcov_unknown_words.items(), key=lambda x: x[1], reverse=True)
+                            ],
+                        }
+                        st.rerun()
+
+                if "meaning_cov_result" in st.session_state:
+                    mres = st.session_state.meaning_cov_result
+                    m_total = mres["total_tokens"]
+                    word_rate = (mres["word_covered"] / m_total * 100) if m_total else 0
+                    meaning_rate = (mres["meaning_covered"] / m_total * 100) if m_total else 0
+                    gap_tokens = mres["word_covered"] - mres["meaning_covered"]
+
+                    st.markdown("---")
+                    st.markdown(
+                        f"## 🧠 意味別カバー率: **{meaning_rate:.1f}%** "
+                        f"<span style='font-size:0.5em; color:gray;'>(単語のみなら {word_rate:.1f}%) — {mres['target_name']}</span>",
+                        unsafe_allow_html=True,
+                    )
+                    col_mm1, col_mm2, col_mm3, col_mm4 = st.columns(4)
+                    col_mm1.metric("ターゲット総トークン", f"{m_total}語")
+                    col_mm2.metric("意味までカバー", f"{mres['meaning_covered']}語")
+                    col_mm3.metric("意味抜け（単語は既知）", f"{gap_tokens}語")
+                    col_mm4.metric("単語ごと未知", f"{m_total - mres['word_covered']}語")
+
+                    if word_rate - meaning_rate >= 0.05:
+                        st.warning(
+                            f"⚠️ 単語カバー率と意味別カバー率の差は **{word_rate - meaning_rate:.1f}ポイント** です。"
+                            "この差が「単語は知っているのに文中の意味が取れない」リスクの大きさです。"
+                        )
+                    else:
+                        st.success("単語カバー率と意味別カバー率がほぼ一致しています。多義語の意味抜けはわずかです。")
+
+                    if mres["sense_gap"]:
+                        with st.expander(f"🕳️ 意味抜けリスト（{len(mres['sense_gap'])}件）— 単語は学習済みなのに、この意味が未学習", expanded=True):
+                            st.dataframe(mres["sense_gap"], use_container_width=True)
+                    if mres["unknown_words"]:
+                        with st.expander(f"❓ 単語ごと未知のリスト（{len(mres['unknown_words'])}件）", expanded=False):
+                            st.dataframe(mres["unknown_words"], use_container_width=True)
+
 # ==========================================
 # モードE: 志望校別熟語帳（★シミュレーター搭載版）
 # ==========================================

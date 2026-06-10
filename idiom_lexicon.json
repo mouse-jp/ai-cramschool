@@ -9,7 +9,10 @@
           "meaning_key": "浸透する",
           "meaning_ja": "徐々に浸透する、普及する",
           "aliases": [
-            "（考えなどが）下位の層まで徐々に浸透する"
+            "（考えなどが）下位の層まで徐々に浸透する",
+            "未分類",
+            "徐々に浸透する",
+            "（考えや影響などが）徐々に下位に浸透する、普及する"
           ],
           "usage_hints": [
             "上位から下位へ徐々に広がる様子を表す。",
@@ -69,7 +72,8 @@
           "meaning_key": "AからBへ移行する",
           "meaning_ja": "AからBへ移行する、変化する",
           "aliases": [
-            "Aの状態からBの状態へ移行する、変化する"
+            "Aの状態からBの状態へ移行する、変化する",
+            "未分類"
           ],
           "usage_hints": [
             "状況や役割の変化を表す。",
@@ -115,7 +119,8 @@
             "（考え・解決策などを）思いつく、考案する",
             "未分類",
             "思いつく、考案する",
-            "〜を思いつく、考案する"
+            "〜を思いつく、考案する",
+            "〜を思いつく、考え出す"
           ],
           "usage_hints": [
             "新しいアイデアや解決策を考案する。",
@@ -131,14 +136,22 @@
     "be aware that": {
       "base_form": "be aware that",
       "meanings": {
-        "〜に気づいている": {
+        "idm_be_aware_that_001": {
+          "meaning_id": "idm_be_aware_that_001",
+          "meaning_key": "〜に気づいている",
           "meaning_ja": "〜を認識している、知っている",
+          "aliases": [],
           "usage_hints": [
             "事実や状況を理解していることを示す。"
           ]
         },
-        "気づいている": {
-          "meaning_ja": "〜に気づいている、〜を知っている",
+        "idm_be_aware_that_002": {
+          "meaning_id": "idm_be_aware_that_002",
+          "meaning_key": "気づいている",
+          "meaning_ja": "〜に気づいている、〜であることを知っている",
+          "aliases": [
+            "〜に気づいている"
+          ],
           "usage_hints": [
             "状況や事実を認識している文脈"
           ]
@@ -148,22 +161,42 @@
     "be suspicious about": {
       "base_form": "be suspicious about",
       "meanings": {
-        "〜に疑いを持っている": {
+        "idm_be_suspicious_about_001": {
+          "meaning_id": "idm_be_suspicious_about_001",
+          "meaning_key": "〜に疑いを持っている",
           "meaning_ja": "〜を怪しいと思っている、疑っている",
+          "aliases": [],
           "usage_hints": [
             "真実性や信頼性に疑問を感じている。"
           ]
         },
-        "疑っている": {
+        "idm_be_suspicious_about_002": {
+          "meaning_id": "idm_be_suspicious_about_002",
+          "meaning_key": "疑っている",
           "meaning_ja": "〜を疑っている",
+          "aliases": [],
           "usage_hints": [
             "何かが真実かどうかを疑う文脈"
           ]
         },
-        "疑わしい": {
+        "idm_be_suspicious_about_003": {
+          "meaning_id": "idm_be_suspicious_about_003",
+          "meaning_key": "疑わしい",
           "meaning_ja": "〜について疑わしく思っている",
+          "aliases": [],
           "usage_hints": [
             "〜に懐疑的である、信じられない文脈"
+          ]
+        },
+        "idm_be_suspicious_about_004": {
+          "meaning_id": "idm_be_suspicious_about_004",
+          "meaning_key": "〜を疑っている",
+          "meaning_ja": "〜について疑っている、怪しんでいる",
+          "aliases": [
+            "未分類"
+          ],
+          "usage_hints": [
+            "信頼性や真実性を疑う文脈"
           ]
         }
       }
@@ -175,7 +208,9 @@
           "meaning_id": "idm_come_without_strings_attached_001",
           "meaning_key": "裏がある",
           "meaning_ja": "（贈り物や申し出などが）見返りや条件なしではない、裏がある",
-          "aliases": [],
+          "aliases": [
+            "未分類"
+          ],
           "usage_hints": [
             "無償のように見えても、実際には隠された条件や意図があることを示唆する。"
           ]
@@ -184,7 +219,9 @@
           "meaning_id": "idm_come_without_strings_attached_002",
           "meaning_key": "見返りなしに来る",
           "meaning_ja": "見返りなしに来る、何の条件もなく与えられる",
-          "aliases": [],
+          "aliases": [
+            "未分類"
+          ],
           "usage_hints": [
             "提供されるものには何らかの隠れた条件があることを示唆する文脈"
           ]
@@ -193,7 +230,9 @@
           "meaning_id": "idm_come_without_strings_attached_003",
           "meaning_key": "無条件である",
           "meaning_ja": "（贈り物や申し出などが）何の条件もなく〜である",
-          "aliases": [],
+          "aliases": [
+            "未分類"
+          ],
           "usage_hints": [
             "見返りや義務を伴わない申し出ではない、という否定的な文脈"
           ]
@@ -202,7 +241,9 @@
           "meaning_id": "idm_come_without_strings_attached_004",
           "meaning_key": "条件なしで",
           "meaning_ja": "（贈り物や協力などが）何の条件もつけずに",
-          "aliases": [],
+          "aliases": [
+            "未分類"
+          ],
           "usage_hints": [
             "見返りや隠された条件がないことを示す表現"
           ]
@@ -217,22 +258,39 @@
           "usage_hints": [
             "見返りや義務なしで提供されること"
           ]
+        },
+        "idm_come_without_strings_attached_006": {
+          "meaning_id": "idm_come_without_strings_attached_006",
+          "meaning_key": "条件なしで",
+          "meaning_ja": "何の条件もつけずに",
+          "aliases": [
+            "未分類"
+          ],
+          "usage_hints": [
+            "贈与や提供に隠された義務や条件がないことを示す文脈"
+          ]
         }
       }
     },
     "take advantage of": {
       "base_form": "take advantage of",
       "meanings": {
-        "利用する": {
+        "idm_take_advantage_of_001": {
+          "meaning_id": "idm_take_advantage_of_001",
+          "meaning_key": "利用する",
           "meaning_ja": "〜を利用する、活用する",
+          "aliases": [],
           "usage_hints": [
             "機会や制度を活用する文脈",
             "自然な物質が薬の原料として使われている文脈",
             "機会や制度などをうまく活用する文脈。"
           ]
         },
-        "つけこむ": {
-          "meaning_ja": "人の弱みなどにつけこむ",
+        "idm_take_advantage_of_002": {
+          "meaning_id": "idm_take_advantage_of_002",
+          "meaning_key": "つけこむ",
+          "meaning_ja": "人の弱みなどにつけこむ、悪用する",
+          "aliases": [],
           "usage_hints": [
             "相手の弱い立場を悪用する文脈"
           ]
@@ -246,13 +304,26 @@
           "meaning_id": "idm_don_t_get_me_wrong_001",
           "meaning_key": "誤解しないで",
           "meaning_ja": "私の言うことを誤解しないでください",
-          "aliases": [],
+          "aliases": [
+            "未分類"
+          ],
           "usage_hints": [
             "自分の発言の意図を補足する際に使う",
             "自分の発言が誤解される可能性を懸念し、真意を伝えようとする文脈",
             "これから述べる意見が、相手の意図とは異なる、あるいは誤解されやすい内容である場合に、前置きとして使う表現",
             "自分の発言が誤解されることを避けるために前置きとして使う表現",
             "自分の意図が誤解されることを避けるために前置きする文脈"
+          ]
+        },
+        "idm_don_t_get_me_wrong_002": {
+          "meaning_id": "idm_don_t_get_me_wrong_002",
+          "meaning_key": "誤解しないで",
+          "meaning_ja": "私の言っていることを誤解しないで",
+          "aliases": [
+            "未分類"
+          ],
+          "usage_hints": [
+            "自分の発言の意図が誤解されることを防ぐための前置き"
           ]
         }
       }
@@ -302,13 +373,16 @@
           "meaning_key": "実行する",
           "meaning_ja": "実行する、実施する",
           "aliases": [
-            "（計画・調査・実験などを）実行する、実施する"
+            "（計画・調査・実験などを）実行する、実施する",
+            "未分類",
+            "（計画・任務などを）実行する、実施する"
           ],
           "usage_hints": [
             "計画や調査などを実施する文脈",
             "計画や研究などを実行する文脈",
             "計画や調査などを実行に移す文脈",
-            "研究や調査を実施する文脈"
+            "研究や調査を実施する文脈",
+            "研究や調査などを実行する文脈"
           ]
         }
       }
@@ -376,11 +450,24 @@
           "meaning_id": "idm_point_out_001",
           "meaning_key": "指摘する",
           "meaning_ja": "〜を指摘する、〜を明らかにする",
-          "aliases": [],
+          "aliases": [
+            "未分類"
+          ],
           "usage_hints": [
             "事実や意見を具体的に示す文脈",
             "事実や問題点を指摘する文脈",
             "事実や意見を明示する文脈"
+          ]
+        },
+        "idm_point_out_002": {
+          "meaning_id": "idm_point_out_002",
+          "meaning_key": "指摘する",
+          "meaning_ja": "〜を指摘する、言及する",
+          "aliases": [
+            "未分類"
+          ],
+          "usage_hints": [
+            "ある事実や意見を明示的に述べる文脈"
           ]
         }
       }
@@ -451,7 +538,13 @@
           "meaning_key": "〜から来る",
           "meaning_ja": "〜に由来する、〜から来る",
           "aliases": [
-            "〜に由来する"
+            "〜に由来する",
+            "未分類",
+            "〜から生じる",
+            "〜から生じる、〜に由来する",
+            "由来する",
+            "〜に由来する、〜から来ている",
+            "（物・事が）〜に由来する、〜から生じる"
           ],
           "usage_hints": [
             "起源や出所を示す",
@@ -538,19 +631,25 @@
           "meaning_id": "idm_out_of_001",
           "meaning_key": "〜のうちの",
           "meaning_ja": "〜のうちの",
-          "aliases": [],
+          "aliases": [
+            "未分類",
+            "〜のうち"
+          ],
           "usage_hints": [
             "全体に対する割合や一部を示す",
             "全体に対する部分の割合を示す文脈",
             "全体の中の割合を示す。",
-            "全体の中から一部を取り出す、または割合を示す。"
+            "全体の中から一部を取り出す、または割合を示す。",
+            "集合体から一部を取り出す"
           ]
         },
         "idm_out_of_002": {
           "meaning_id": "idm_out_of_002",
           "meaning_key": "〜のうち",
           "meaning_ja": "〜のうちの、〜の中から",
-          "aliases": [],
+          "aliases": [
+            "未分類"
+          ],
           "usage_hints": [
             "集団や数の中から一部を取り出す文脈",
             "全体に対する割合や数を示す"
@@ -680,13 +779,17 @@
           "meaning_id": "idm_draw_out_001",
           "meaning_key": "引き出す",
           "meaning_ja": "〜を引き出す、吸い出す",
-          "aliases": [],
+          "aliases": [
+            "未分類",
+            "〜を引き出す、抜き取る"
+          ],
           "usage_hints": [
             "大気中から特定の物質を取り除く",
             "物質や成分などを外部に取り出す文脈。",
             "藻類が大気中の炭素を吸収する文脈。",
             "物質を吸収したり、性質を引き出したりする文脈",
-            "藻類が大気中から炭素を吸収する能力を説明する文脈"
+            "藻類が大気中から炭素を吸収する能力を説明する文脈",
+            "藻類が炭素を大気中から吸収するという文脈"
           ]
         }
       }
@@ -705,10 +808,14 @@
     "be responsible for": {
       "base_form": "be responsible for",
       "meanings": {
-        "〜の原因である": {
-          "meaning_ja": "〜の原因である、〜に責任がある",
+        "idm_be_responsible_for_001": {
+          "meaning_id": "idm_be_responsible_for_001",
+          "meaning_key": "〜の原因である",
+          "meaning_ja": "〜の原因となっている、〜に責任がある",
+          "aliases": [],
           "usage_hints": [
-            "ある結果や状況を引き起こす原因となっている"
+            "ある結果や状況を引き起こす原因となっている",
+            "皮革産業が環境に大きな負荷をかけているという文脈"
           ]
         }
       }
@@ -796,10 +903,14 @@
     "make someone mad": {
       "base_form": "make someone mad",
       "meanings": {
-        "〜を怒らせる": {
+        "idm_make_someone_mad_001": {
+          "meaning_id": "idm_make_someone_mad_001",
+          "meaning_key": "〜を怒らせる",
           "meaning_ja": "〜を怒らせる",
+          "aliases": [],
           "usage_hints": [
-            "何かが原因で相手を怒らせた文脈"
+            "何かが原因で相手を怒らせた文脈",
+            "何かが誰かを怒らせる原因となる文脈"
           ]
         }
       }
@@ -829,10 +940,24 @@
     "just in case": {
       "base_form": "just in case",
       "meanings": {
-        "万一に備えて": {
+        "idm_just_in_case_001": {
+          "meaning_id": "idm_just_in_case_001",
+          "meaning_key": "万一に備えて",
           "meaning_ja": "万一の場合に備えて、念のために",
+          "aliases": [],
           "usage_hints": [
             "不測の事態に備える文脈"
+          ]
+        },
+        "idm_just_in_case_002": {
+          "meaning_id": "idm_just_in_case_002",
+          "meaning_key": "念のため",
+          "meaning_ja": "万一に備えて、念のため",
+          "aliases": [
+            "未分類"
+          ],
+          "usage_hints": [
+            "起こるかもしれない不都合な事態に備える文脈"
           ]
         }
       }
@@ -851,10 +976,24 @@
     "rob of": {
       "base_form": "rob of",
       "meanings": {
-        "〜を奪う": {
+        "idm_rob_of_001": {
+          "meaning_id": "idm_rob_of_001",
+          "meaning_key": "〜を奪う",
           "meaning_ja": "〜を奪う、〜から強奪する",
+          "aliases": [],
           "usage_hints": [
             "財産などを強奪された文脈"
+          ]
+        },
+        "idm_rob_of_002": {
+          "meaning_id": "idm_rob_of_002",
+          "meaning_key": "奪う",
+          "meaning_ja": "〜から〜を奪う",
+          "aliases": [
+            "未分類"
+          ],
+          "usage_hints": [
+            "（人）から（物）を奪う"
           ]
         }
       }
@@ -1007,7 +1146,9 @@
           "meaning_id": "idm_go_beyond_001",
           "meaning_key": "〜を超える",
           "meaning_ja": "〜を（範囲・程度などが）超える",
-          "aliases": [],
+          "aliases": [
+            "未分類"
+          ],
           "usage_hints": [
             "単なる削減を超えて、より積極的な行動を目指す文脈。",
             "通常の範囲や限界を超える文脈",
@@ -1023,6 +1164,17 @@
           ],
           "usage_hints": [
             "従来の範囲や限界を超えて進むことを示す。"
+          ]
+        },
+        "idm_go_beyond_003": {
+          "meaning_id": "idm_go_beyond_003",
+          "meaning_key": "〜を超える",
+          "meaning_ja": "〜を超える、〜を越えていく",
+          "aliases": [
+            "未分類"
+          ],
+          "usage_hints": [
+            "限界や範囲を超える文脈"
           ]
         }
       }
@@ -1181,7 +1333,9 @@
           "meaning_id": "idm_come_across_001",
           "meaning_key": "偶然見つける",
           "meaning_ja": "偶然〜を見つける、〜に思いがけず出会う",
-          "aliases": [],
+          "aliases": [
+            "未分類"
+          ],
           "usage_hints": [
             "予期せず何かを発見する文脈",
             "予期せず何かを見つける文脈",
@@ -1197,6 +1351,17 @@
           ],
           "usage_hints": [
             "予期せず物や人に遭遇する文脈"
+          ]
+        },
+        "idm_come_across_003": {
+          "meaning_id": "idm_come_across_003",
+          "meaning_key": "偶然見つける",
+          "meaning_ja": "〜を偶然見つける、〜に偶然出くわす",
+          "aliases": [
+            "未分類"
+          ],
+          "usage_hints": [
+            "何かを発見する文脈"
           ]
         }
       }
@@ -1219,7 +1384,9 @@
           "meaning_id": "idm_turn_off_001",
           "meaning_key": "消す",
           "meaning_ja": "（明かりや電子機器などを）消す",
-          "aliases": [],
+          "aliases": [
+            "未分類"
+          ],
           "usage_hints": [
             "電子機器の電源を切る文脈",
             "携帯電話などの電源を切る文脈"
@@ -1231,11 +1398,15 @@
           "meaning_ja": "〜に由来する、〜から来る",
           "aliases": [
             "（電子機器などを）消す",
-            "〜を消す、電源を切る"
+            "〜を消す、電源を切る",
+            "未分類",
+            "（電源・明かりなどを）消す",
+            "（電気・電子機器などの）電源や機能を切る"
           ],
           "usage_hints": [
             "携帯電話の電源を切ることを求める文脈",
-            "携帯電話などの電子機器を操作しないようにする文脈"
+            "携帯電話などの電子機器を操作しないようにする文脈",
+            "携帯電話の電源を切る文脈"
           ]
         }
       }
@@ -1300,12 +1471,15 @@
           "meaning_id": "idm_at_no_extra_charge_001",
           "meaning_key": "追加料金なしで",
           "meaning_ja": "追加料金なしで、無料で",
-          "aliases": [],
+          "aliases": [
+            "未分類"
+          ],
           "usage_hints": [
             "サービスや施設利用に追加費用がかからない文脈",
             "サービスなどが無料で提供される文脈",
             "会員特典で施設を無料で利用できる文脈",
-            "施設などを利用する際に料金がかからない文脈"
+            "施設などを利用する際に料金がかからない文脈",
+            "サービスや施設利用料が無料である文脈"
           ]
         }
       }
@@ -1351,7 +1525,9 @@
           "meaning_id": "idm_room_for_001",
           "meaning_key": "〜する余地",
           "meaning_ja": "〜する余地、〜できる可能性",
-          "aliases": [],
+          "aliases": [
+            "未分類"
+          ],
           "usage_hints": [
             "交渉や議論の余地がある文脈"
           ]
@@ -1360,11 +1536,24 @@
           "meaning_id": "idm_room_for_002",
           "meaning_key": "〜の余地",
           "meaning_ja": "〜の余地、可能性",
-          "aliases": [],
+          "aliases": [
+            "未分類"
+          ],
           "usage_hints": [
             "交渉などの余地があるかないかを表す",
             "会議での交渉の余地がほとんどない文脈",
             "交渉や議論の余地がない文脈"
+          ]
+        },
+        "idm_room_for_003": {
+          "meaning_id": "idm_room_for_003",
+          "meaning_key": "〜する余地、〜の機会",
+          "meaning_ja": "〜する余地、〜の可能性、〜の機会",
+          "aliases": [
+            "未分類"
+          ],
+          "usage_hints": [
+            "交渉や議論の余地がある文脈"
           ]
         }
       }
@@ -1388,7 +1577,9 @@
           "meaning_id": "idm_for_the_time_being_001",
           "meaning_key": "当分の間",
           "meaning_ja": "当分の間は、さしあたり",
-          "aliases": [],
+          "aliases": [
+            "未分類"
+          ],
           "usage_hints": [
             "一時的な状況や措置を表す文脈",
             "一時的な状況を表す",
@@ -1399,9 +1590,22 @@
           "meaning_id": "idm_for_the_time_being_002",
           "meaning_key": "当面の",
           "meaning_ja": "当面の、さしあたっての",
-          "aliases": [],
+          "aliases": [
+            "未分類"
+          ],
           "usage_hints": [
             "自分の車が手に入るまでの間、母親の車を運転している文脈"
+          ]
+        },
+        "idm_for_the_time_being_003": {
+          "meaning_id": "idm_for_the_time_being_003",
+          "meaning_key": "当分の間、今のところ",
+          "meaning_ja": "当分の間、今のところは",
+          "aliases": [
+            "未分類"
+          ],
+          "usage_hints": [
+            "一時的な状況や状態を表す"
           ]
         }
       }
@@ -1413,7 +1617,9 @@
           "meaning_id": "idm_at_will_001",
           "meaning_key": "自由に",
           "meaning_ja": "自由に、思いのままに",
-          "aliases": [],
+          "aliases": [
+            "未分類"
+          ],
           "usage_hints": [
             "自分の意思で好きなようにできる文脈",
             "自分の意思でいつでも変更できる文脈",
@@ -1429,6 +1635,17 @@
           ],
           "usage_hints": [
             "パスワードなどを好きな時に変更できる文脈"
+          ]
+        },
+        "idm_at_will_003": {
+          "meaning_id": "idm_at_will_003",
+          "meaning_key": "欲しいままに、自由に",
+          "meaning_ja": "好きなように、自由に",
+          "aliases": [
+            "未分類"
+          ],
+          "usage_hints": [
+            "自分の意志で自由に何でもできる文脈"
           ]
         }
       }
@@ -1458,7 +1675,9 @@
           "meaning_id": "idm_hold_on_001",
           "meaning_key": "（電話を）保留する",
           "meaning_ja": "（電話を）保留する、待つ",
-          "aliases": [],
+          "aliases": [
+            "未分類"
+          ],
           "usage_hints": [
             "相手に電話を切らずに待つよう伝える文脈",
             "相手にペンを探すために少し待つよう頼む文脈"
@@ -1468,9 +1687,13 @@
           "meaning_id": "idm_hold_on_002",
           "meaning_key": "待つ",
           "meaning_ja": "（電話で）待つ、しばらく待つ",
-          "aliases": [],
+          "aliases": [
+            "未分類",
+            "（電話で）待つ"
+          ],
           "usage_hints": [
-            "相手に少し待ってもらうように頼む文脈"
+            "相手に少し待ってもらうように頼む文脈",
+            "相手に電話で待つように頼む文脈"
           ]
         },
         "idm_hold_on_003": {
@@ -1493,12 +1716,25 @@
           "meaning_id": "idm_make_much_of_001",
           "meaning_key": "〜を重視する",
           "meaning_ja": "〜を重視する、〜を高く評価する",
-          "aliases": [],
+          "aliases": [
+            "未分類"
+          ],
           "usage_hints": [
             "ある事柄を重要視し、大切にする文脈",
             "上司が時間を守ることを重視している文脈",
             "何かを大切にしたり、重要視したりする文脈",
             "時間厳守のようなことを重要視する文脈"
+          ]
+        },
+        "idm_make_much_of_002": {
+          "meaning_id": "idm_make_much_of_002",
+          "meaning_key": "〜を重んじる",
+          "meaning_ja": "〜を重んじる、〜を高く評価する",
+          "aliases": [
+            "未分類"
+          ],
+          "usage_hints": [
+            "時間厳守のような行動や態度を重要視する文脈"
           ]
         }
       }
@@ -1511,13 +1747,16 @@
           "meaning_key": "除外する",
           "meaning_ja": "〜を除外する、〜の可能性を否定する",
           "aliases": [
-            "〜を除外する、可能性などを否定する"
+            "〜を除外する、可能性などを否定する",
+            "未分類",
+            "〜を除外する"
           ],
           "usage_hints": [
             "可能性のある事柄を排除したり、ありえないと判断したりする文脈",
             "可能性などを考慮しない、除外する文脈",
             "首相が5年以内の増税の可能性を否定している文脈",
-            "将来起こりうる可能性を排除する文脈"
+            "将来起こりうる可能性を排除する文脈",
+            "可能性のある事柄を検討から外す文脈"
           ]
         }
       }
@@ -1575,12 +1814,24 @@
           "meaning_ja": "〜に注意する、〜に気をつける",
           "aliases": [
             "〜に注意する",
-            "〜に注意する、気をつける"
+            "〜に注意する、気をつける",
+            "未分類"
           ],
           "usage_hints": [
             "潜在的な問題やリスクに注意を払う文脈",
             "特定の事柄について警戒や配慮が必要な文脈",
             "特定の事柄について用心する文脈"
+          ]
+        },
+        "idm_be_careful_about_002": {
+          "meaning_id": "idm_be_careful_about_002",
+          "meaning_key": "〜に注意する",
+          "meaning_ja": "〜に注意する、用心する",
+          "aliases": [
+            "未分類"
+          ],
+          "usage_hints": [
+            "潜在的な問題やリスクに注意を払う文脈"
           ]
         }
       }
@@ -1621,17 +1872,24 @@
     "the fact of the matter is": {
       "base_form": "the fact of the matter is",
       "meanings": {
-        "実情は": {
+        "idm_the_fact_of_the_matter_is_001": {
+          "meaning_id": "idm_the_fact_of_the_matter_is_001",
+          "meaning_key": "実情は",
           "meaning_ja": "実情は〜である、実際は〜である",
+          "aliases": [],
           "usage_hints": [
             "表面的なことではなく、本当の状況や真実を説明する文脈",
             "議論や状況の核心や本当のことを指摘する際に用いる表現"
           ]
         },
-        "実情は〜だ": {
+        "idm_the_fact_of_the_matter_is_002": {
+          "meaning_id": "idm_the_fact_of_the_matter_is_002",
+          "meaning_key": "実情は〜だ",
           "meaning_ja": "実情は〜である、実際のところは〜だ",
+          "aliases": [],
           "usage_hints": [
-            "表面的なことではなく、本当の状況や本質を説明する文脈"
+            "表面的なことではなく、本当の状況や本質を説明する文脈",
+            "核心的な事実や真実を述べる文脈"
           ]
         }
       }
@@ -1655,18 +1913,23 @@
           "meaning_id": "idm_on_the_condition_that_001",
           "meaning_key": "〜という条件で",
           "meaning_ja": "〜という条件で",
-          "aliases": [],
+          "aliases": [
+            "未分類"
+          ],
           "usage_hints": [
             "ある行為や合意が成立するための特定の条件を示す文脈",
             "ある行為や合意が成立するための前提条件を示す文脈",
-            "特定の条件が満たされることを前提とする文脈"
+            "特定の条件が満たされることを前提とする文脈",
+            "ある行動や合意が成立するための前提条件を示す文脈"
           ]
         },
         "idm_on_the_condition_that_002": {
           "meaning_id": "idm_on_the_condition_that_002",
           "meaning_key": "～という条件で",
           "meaning_ja": "～という条件で、～を条件として",
-          "aliases": [],
+          "aliases": [
+            "未分類"
+          ],
           "usage_hints": [
             "ある行為や合意が成立するための条件を示す表現"
           ]
@@ -1681,13 +1944,25 @@
           "meaning_key": "〜に適している",
           "meaning_ja": "〜に適している、〜に向いている",
           "aliases": [
-            "〜に向いている、〜に適している"
+            "〜に向いている、〜に適している",
+            "未分類"
           ],
           "usage_hints": [
             "ある物事が特定の目的や用途に適していることを表す文脈",
             "ある物事が特定の目的や用途に向いていることを示す表現",
             "ある目的や用途に合っている文脈",
             "ある目的や用途に適している文脈"
+          ]
+        },
+        "idm_lend_itself_to_002": {
+          "meaning_id": "idm_lend_itself_to_002",
+          "meaning_key": "〜に適している、〜しがちである",
+          "meaning_ja": "〜に適している、〜しがちである",
+          "aliases": [
+            "未分類"
+          ],
+          "usage_hints": [
+            "あるものが特定の目的や結果に向いている、あるいはそうなる傾向がある文脈"
           ]
         }
       }
@@ -1972,11 +2247,14 @@
           "meaning_id": "idm_at_least_001",
           "meaning_key": "少なくとも",
           "meaning_ja": "少なくとも、最低でも",
-          "aliases": [],
+          "aliases": [
+            "未分類"
+          ],
           "usage_hints": [
             "最低限の数量や程度を示す文脈",
             "最低限の数量や程度を示す",
-            "最低限の数量や程度を示す。"
+            "最低限の数量や程度を示す。",
+            "設問の語句整序問題で完成する部分。薬の少なくとも一部が植物由来であるという文脈。"
           ]
         }
       }
@@ -2194,10 +2472,16 @@
     "be at home in": {
       "base_form": "be at home in",
       "meanings": {
-        "〜に精通している": {
-          "meaning_ja": "〜に精通している、〜に慣れている",
+        "idm_be_at_home_in_001": {
+          "meaning_id": "idm_be_at_home_in_001",
+          "meaning_key": "〜に精通している",
+          "meaning_ja": "〜に慣れている",
+          "aliases": [
+            "〜に精通している、〜に慣れている、〜に詳しい"
+          ],
           "usage_hints": [
-            "ある分野や環境に詳しく、慣れ親しんでいる様子"
+            "ある分野や環境に詳しく、慣れ親しんでいる様子",
+            "言語や文化など、馴染みのある分野について"
           ]
         }
       }
@@ -2451,7 +2735,9 @@
           "meaning_id": "idm_the_lighter_001",
           "meaning_key": "比較級（二者択一）",
           "meaning_ja": "（二つのうち）より軽い方の",
-          "aliases": [],
+          "aliases": [
+            "未分類"
+          ],
           "usage_hints": [
             "二つの選択肢から一つを選ぶ文脈"
           ]
@@ -2466,6 +2752,17 @@
           "usage_hints": [
             "２つの選択肢の中から比較して選ぶ文脈"
           ]
+        },
+        "idm_the_lighter_003": {
+          "meaning_id": "idm_the_lighter_003",
+          "meaning_key": "（比較級）より軽い",
+          "meaning_ja": "（2つのものの中で）より軽い",
+          "aliases": [
+            "未分類"
+          ],
+          "usage_hints": [
+            "2つの選択肢の中から選ぶ場合"
+          ]
         }
       }
     },
@@ -2476,7 +2773,9 @@
           "meaning_id": "idm_a_good_001",
           "meaning_key": "かなりの（時間・距離）",
           "meaning_ja": "かなりの（時間・距離など）",
-          "aliases": [],
+          "aliases": [
+            "未分類"
+          ],
           "usage_hints": [
             "東京までの車での移動時間を表す文脈"
           ]
@@ -2484,12 +2783,14 @@
         "idm_a_good_002": {
           "meaning_id": "idm_a_good_002",
           "meaning_key": "かなりの、かなりの量の",
-          "meaning_ja": "かなりの、相当な",
+          "meaning_ja": "かなりの、相当な（時間・距離など）",
           "aliases": [
-            "未分類"
+            "未分類",
+            "かなりの、相当な"
           ],
           "usage_hints": [
-            "時間や距離などが相当な量であることを示す文脈"
+            "時間や距離などが相当な量であることを示す文脈",
+            "時間や距離が相当な長さであることを示す"
           ]
         }
       }
@@ -2501,7 +2802,9 @@
           "meaning_id": "idm_taste_in_001",
           "meaning_key": "〜のセンス",
           "meaning_ja": "〜に対するセンス、趣味",
-          "aliases": [],
+          "aliases": [
+            "未分類"
+          ],
           "usage_hints": [
             "ファッションのセンスが良い文脈"
           ]
@@ -2515,6 +2818,17 @@
           ],
           "usage_hints": [
             "ファッションに関するセンスが良い文脈"
+          ]
+        },
+        "idm_taste_in_003": {
+          "meaning_id": "idm_taste_in_003",
+          "meaning_key": "〜のセンス、〜の好み",
+          "meaning_ja": "〜に対するセンス、〜の好み",
+          "aliases": [
+            "未分類"
+          ],
+          "usage_hints": [
+            "ファッションや芸術など、美的感覚に関する好み"
           ]
         }
       }
@@ -2537,7 +2851,9 @@
           "meaning_id": "idm_part_of_001",
           "meaning_key": "〜の一員、〜の一部",
           "meaning_ja": "〜の一員である、〜の一部をなす",
-          "aliases": [],
+          "aliases": [
+            "未分類"
+          ],
           "usage_hints": [
             "集団やシステムに属していることを示す。"
           ]
@@ -2551,6 +2867,17 @@
           ],
           "usage_hints": [
             "所属や構成要素であることを示す。"
+          ]
+        },
+        "idm_part_of_003": {
+          "meaning_id": "idm_part_of_003",
+          "meaning_key": "〜の一部",
+          "meaning_ja": "〜の一部分、〜の一部",
+          "aliases": [
+            "未分類"
+          ],
+          "usage_hints": [
+            "設問の語句整序問題で完成する部分。薬の一部が植物由来であるという文脈。"
           ]
         }
       }
@@ -2667,10 +2994,24 @@
     "lack of clarity": {
       "base_form": "lack of clarity",
       "meanings": {
-        "明確さの欠如": {
+        "idm_lack_of_clarity_001": {
+          "meaning_id": "idm_lack_of_clarity_001",
+          "meaning_key": "明確さの欠如",
           "meaning_ja": "明確さの欠如、あいまいさ",
+          "aliases": [],
           "usage_hints": [
             "情報や意図がはっきりしないこと。"
+          ]
+        },
+        "idm_lack_of_clarity_002": {
+          "meaning_id": "idm_lack_of_clarity_002",
+          "meaning_key": "不明瞭さ",
+          "meaning_ja": "不明瞭さ、あいまいさ",
+          "aliases": [
+            "未分類"
+          ],
+          "usage_hints": [
+            "理解しにくさやあいまいさが原因である文脈"
           ]
         }
       }
@@ -2693,7 +3034,9 @@
           "meaning_id": "idm_mean_anything_001",
           "meaning_key": "意味がある",
           "meaning_ja": "（否定形で）何ら意味がない、無意味である",
-          "aliases": [],
+          "aliases": [
+            "未分類"
+          ],
           "usage_hints": [
             "言葉や概念が実質的な意味を持っていない。"
           ]
@@ -2707,6 +3050,17 @@
           ],
           "usage_hints": [
             "言葉や行為に実質的な意味や価値があることを示す。"
+          ]
+        },
+        "idm_mean_anything_003": {
+          "meaning_id": "idm_mean_anything_003",
+          "meaning_key": "意味がある",
+          "meaning_ja": "意味がある、重要である",
+          "aliases": [
+            "未分類"
+          ],
+          "usage_hints": [
+            "価値や意義があることを否定する文脈（doesn't mean anything）"
           ]
         }
       }
@@ -2779,7 +3133,9 @@
           "meaning_id": "idm_give_me_a_break_001",
           "meaning_key": "勘弁して",
           "meaning_ja": "（皮肉や呆れを込めて）勘弁してくれ、冗談じゃない",
-          "aliases": [],
+          "aliases": [
+            "未分類"
+          ],
           "usage_hints": [
             "相手の言い分や状況に対して、呆れたり、信じられないと思ったりする時に使う表現"
           ]
@@ -2792,7 +3148,8 @@
             "未分類"
           ],
           "usage_hints": [
-            "相手の意見や状況に呆れて反論する文脈"
+            "相手の意見や状況に呆れて反論する文脈",
+            "相手の主張や要求が非現実的、あるいは信じがたいときに使う"
           ]
         }
       }
@@ -2800,10 +3157,24 @@
     "you have a point": {
       "base_form": "you have a point",
       "meanings": {
-        "一理ある": {
+        "idm_you_have_a_point_001": {
+          "meaning_id": "idm_you_have_a_point_001",
+          "meaning_key": "一理ある",
           "meaning_ja": "（相手の意見に対して）一理ある、もっともだ",
+          "aliases": [],
           "usage_hints": [
             "相手の意見や主張の一部に同意や理解を示す際に用いる表現"
+          ]
+        },
+        "idm_you_have_a_point_002": {
+          "meaning_id": "idm_you_have_a_point_002",
+          "meaning_key": "一理ある",
+          "meaning_ja": "君の言うことには一理ある",
+          "aliases": [
+            "未分類"
+          ],
+          "usage_hints": [
+            "相手の意見や主張にある程度の正当性や妥当性を認める文脈"
           ]
         }
       }
@@ -2816,11 +3187,14 @@
           "meaning_key": "〜によって使用される",
           "meaning_ja": "〜を利用する、活用する",
           "aliases": [
-            "〜によって利用される"
+            "〜によって利用される",
+            "未分類",
+            "〜によって使われる"
           ],
           "usage_hints": [
             "人や組織が何かを手段や材料として用いる文脈。",
-            "藻類が他のデザイナーによって利用されている状況を説明する文脈"
+            "藻類が他のデザイナーによって利用されている状況を説明する文脈",
+            "藻類が他のデザイナーによって利用されているという文脈"
           ]
         }
       }
@@ -2832,10 +3206,14 @@
           "meaning_id": "idm_be_applied_to_001",
           "meaning_key": "〜に適用される",
           "meaning_ja": "〜に適用される、〜に塗布される",
-          "aliases": [],
+          "aliases": [
+            "未分類",
+            "〜に塗布される、適用される"
+          ],
           "usage_hints": [
             "技術や物質などを特定の対象に適用する文脈。",
-            "藻類のコーティングが布地に適用されることを説明する文脈"
+            "藻類のコーティングが布地に適用されることを説明する文脈",
+            "藻類のコーティングが布地に適用されるという文脈"
           ]
         }
       }
@@ -2858,10 +3236,14 @@
           "meaning_id": "idm_be_damaged_by_001",
           "meaning_key": "〜によって損傷を受ける",
           "meaning_ja": "〜によって損傷を受ける、悪影響を受ける",
-          "aliases": [],
+          "aliases": [
+            "未分類",
+            "〜によって悪影響を受ける、損傷を受ける"
+          ],
           "usage_hints": [
             "外的要因によって損なわれる文脈。",
-            "藻類ベースの衣類が洗濯機によって損傷を受けることを説明する文脈"
+            "藻類ベースの衣類が洗濯機によって損傷を受けることを説明する文脈",
+            "藻類ベースの衣類が洗濯機によって損傷を受けるという文脈"
           ]
         }
       }
@@ -2880,10 +3262,14 @@
     "find out": {
       "base_form": "find out",
       "meanings": {
-        "見つけ出す": {
-          "meaning_ja": "〜を見つけ出す、知る",
+        "idm_find_out_001": {
+          "meaning_id": "idm_find_out_001",
+          "meaning_key": "見つけ出す",
+          "meaning_ja": "（情報などを）見つけ出す、知る",
+          "aliases": [],
           "usage_hints": [
-            "情報を発見したり、事実を知ったりする文脈"
+            "情報を発見したり、事実を知ったりする文脈",
+            "調査などを通じて事実を発見する文脈"
           ]
         }
       }
@@ -2935,10 +3321,14 @@
     "be about": {
       "base_form": "be about",
       "meanings": {
-        "〜くらいである": {
+        "idm_be_about_001": {
+          "meaning_id": "idm_be_about_001",
+          "meaning_key": "〜くらいである",
           "meaning_ja": "〜くらいである、〜ほどである",
+          "aliases": [],
           "usage_hints": [
-            "量や程度がおおよそ〜であることを示す文脈"
+            "量や程度がおおよそ〜であることを示す文脈",
+            "おおよその数量や程度を表す文脈"
           ]
         }
       }
@@ -2946,10 +3336,14 @@
     "be different from": {
       "base_form": "be different from",
       "meanings": {
-        "〜と異なる": {
+        "idm_be_different_from_001": {
+          "meaning_id": "idm_be_different_from_001",
+          "meaning_key": "〜と異なる",
           "meaning_ja": "〜と異なる、〜とは違う",
+          "aliases": [],
           "usage_hints": [
-            "二つのものを比較して相違点を述べる文脈"
+            "二つのものを比較して相違点を述べる文脈",
+            "比較対象との相違点を表す文脈"
           ]
         }
       }
@@ -3067,10 +3461,13 @@
           "meaning_ja": "徐々に浸透する、普及する",
           "aliases": [
             "未分類",
-            "〜（地域・期間）で広がる、普及する"
+            "〜（地域・期間）で広がる、普及する",
+            "広がる",
+            "〜に広がる、普及する"
           ],
           "usage_hints": [
-            "空間的または時間的に広がることを示す。"
+            "空間的または時間的に広がることを示す。",
+            "地域や分野に徐々に広まる文脈"
           ]
         }
       }
@@ -3728,6 +4125,278 @@
           ],
           "usage_hints": [
             "研究室への資金提供に対する見返りという文脈。"
+          ]
+        }
+      }
+    },
+    "as there are": {
+      "base_form": "as there are",
+      "meanings": {
+        "idm_as_there_are_001": {
+          "meaning_id": "idm_as_there_are_001",
+          "meaning_key": "〜なので",
+          "meaning_ja": "〜なので、〜であるため",
+          "aliases": [
+            "未分類"
+          ],
+          "usage_hints": [
+            "理由を説明する接続詞"
+          ]
+        }
+      }
+    },
+    "eliminate carbon dioxide from": {
+      "base_form": "eliminate carbon dioxide from",
+      "meanings": {
+        "idm_eliminate_carbon_dioxide_from_001": {
+          "meaning_id": "idm_eliminate_carbon_dioxide_from_001",
+          "meaning_key": "〜から二酸化炭素を除去する",
+          "meaning_ja": "〜から二酸化炭素を除去する",
+          "aliases": [
+            "未分類"
+          ],
+          "usage_hints": [
+            "大気などから二酸化炭素を取り除く文脈"
+          ]
+        }
+      }
+    },
+    "be introduced by": {
+      "base_form": "be introduced by",
+      "meanings": {
+        "idm_be_introduced_by_001": {
+          "meaning_id": "idm_be_introduced_by_001",
+          "meaning_key": "〜によって導入される",
+          "meaning_ja": "〜によって導入される、紹介される",
+          "aliases": [
+            "未分類"
+          ],
+          "usage_hints": [
+            "新しい概念やものが誰かによって広められた文脈"
+          ]
+        }
+      }
+    },
+    "be allowed to": {
+      "base_form": "be allowed to",
+      "meanings": {
+        "idm_be_allowed_to_001": {
+          "meaning_id": "idm_be_allowed_to_001",
+          "meaning_key": "〜することが許可されている",
+          "meaning_ja": "〜することを許可されている、〜してもよい",
+          "aliases": [
+            "未分類"
+          ],
+          "usage_hints": [
+            "国際線への機内持ち込み荷物に関する許可"
+          ]
+        }
+      }
+    },
+    "the clock is ticking": {
+      "base_form": "the clock is ticking",
+      "meanings": {
+        "idm_the_clock_is_ticking_001": {
+          "meaning_id": "idm_the_clock_is_ticking_001",
+          "meaning_key": "時間が迫っている",
+          "meaning_ja": "時間が限られている、時間切れが迫っている",
+          "aliases": [
+            "未分類"
+          ],
+          "usage_hints": [
+            "気候変動を回避するための時間が刻々となくなっているという文脈"
+          ]
+        }
+      }
+    },
+    "take time": {
+      "base_form": "take time",
+      "meanings": {
+        "idm_take_time_001": {
+          "meaning_id": "idm_take_time_001",
+          "meaning_key": "時間がかかる",
+          "meaning_ja": "時間がかかる",
+          "aliases": [
+            "未分類"
+          ],
+          "usage_hints": [
+            "あるプロセスや活動に要する時間を示す文脈"
+          ]
+        }
+      }
+    },
+    "used not to": {
+      "base_form": "used not to",
+      "meanings": {
+        "idm_used_not_to_001": {
+          "meaning_id": "idm_used_not_to_001",
+          "meaning_key": "以前は〜しなかった",
+          "meaning_ja": "以前は〜だった、かつて〜していた",
+          "aliases": [
+            "未分類"
+          ],
+          "usage_hints": [
+            "過去の習慣や状態を表す"
+          ]
+        }
+      }
+    },
+    "help to do": {
+      "base_form": "help to do",
+      "meanings": {
+        "idm_help_to_do_001": {
+          "meaning_id": "idm_help_to_do_001",
+          "meaning_key": "〜するのを助ける",
+          "meaning_ja": "〜するのを助ける",
+          "aliases": [
+            "未分類"
+          ],
+          "usage_hints": [
+            "（人）が〜するのを助ける、（人）が〜するのに役立つ"
+          ]
+        }
+      }
+    },
+    "help do": {
+      "base_form": "help do",
+      "meanings": {
+        "idm_help_do_001": {
+          "meaning_id": "idm_help_do_001",
+          "meaning_key": "〜するのを助ける",
+          "meaning_ja": "〜するのを助ける",
+          "aliases": [
+            "未分類"
+          ],
+          "usage_hints": [
+            "（人）が〜するのを助ける、（人）が〜するのに役立つ（to は省略可能）"
+          ]
+        }
+      }
+    },
+    "have trouble doing": {
+      "base_form": "have trouble doing",
+      "meanings": {
+        "idm_have_trouble_doing_001": {
+          "meaning_id": "idm_have_trouble_doing_001",
+          "meaning_key": "〜するのに苦労する",
+          "meaning_ja": "〜するのに苦労する、〜するのが難しい",
+          "aliases": [
+            "未分類"
+          ],
+          "usage_hints": [
+            "困難を伴う状況を表す"
+          ]
+        }
+      }
+    },
+    "chances are (that)": {
+      "base_form": "chances are (that)",
+      "meanings": {
+        "idm_chances_are_that_001": {
+          "meaning_id": "idm_chances_are_that_001",
+          "meaning_key": "たぶん〜だろう",
+          "meaning_ja": "たぶん〜だろう、〜の公算が大きい",
+          "aliases": [
+            "未分類"
+          ],
+          "usage_hints": [
+            "設問の語句整序問題で完成する部分。薬が植物由来である可能性が高いという文脈。"
+          ]
+        }
+      }
+    },
+    "look confident": {
+      "base_form": "look confident",
+      "meanings": {
+        "idm_look_confident_001": {
+          "meaning_id": "idm_look_confident_001",
+          "meaning_key": "自信があるように見える",
+          "meaning_ja": "自信があるように見える",
+          "aliases": [
+            "未分類"
+          ],
+          "usage_hints": [
+            "外見や様子が自信に満ちていることを表す文脈"
+          ]
+        }
+      }
+    },
+    "what ... is": {
+      "base_form": "what ... is",
+      "meanings": {
+        "idm_what_is_001": {
+          "meaning_id": "idm_what_is_001",
+          "meaning_key": "〜なこと",
+          "meaning_ja": "〜なこと（服装など）",
+          "aliases": [
+            "未分類"
+          ],
+          "usage_hints": [
+            "相手が身につけているものや状況を表す文脈"
+          ]
+        }
+      }
+    },
+    "the size of": {
+      "base_form": "the size of",
+      "meanings": {
+        "idm_the_size_of_001": {
+          "meaning_id": "idm_the_size_of_001",
+          "meaning_key": "〜の大きさ",
+          "meaning_ja": "〜の大きさ",
+          "aliases": [
+            "未分類"
+          ],
+          "usage_hints": [
+            "比較対象の大きさを表す文脈"
+          ]
+        }
+      }
+    },
+    "notice that": {
+      "base_form": "notice that",
+      "meanings": {
+        "idm_notice_that_001": {
+          "meaning_id": "idm_notice_that_001",
+          "meaning_key": "〜に気づく",
+          "meaning_ja": "〜ということに気づく",
+          "aliases": [
+            "未分類"
+          ],
+          "usage_hints": [
+            "観察や経験を通して何かを発見する文脈"
+          ]
+        }
+      }
+    },
+    "wait until the last minute": {
+      "base_form": "wait until the last minute",
+      "meanings": {
+        "idm_wait_until_the_last_minute_001": {
+          "meaning_id": "idm_wait_until_the_last_minute_001",
+          "meaning_key": "ぎりぎりまで待つ",
+          "meaning_ja": "土壇場まで待つ、ぎりぎりまで待つ",
+          "aliases": [
+            "未分類"
+          ],
+          "usage_hints": [
+            "行動を締め切りや期限の直前まで遅らせる文脈"
+          ]
+        }
+      }
+    },
+    "book a flight": {
+      "base_form": "book a flight",
+      "meanings": {
+        "idm_book_a_flight_001": {
+          "meaning_id": "idm_book_a_flight_001",
+          "meaning_key": "予約する",
+          "meaning_ja": "飛行機を予約する",
+          "aliases": [
+            "未分類"
+          ],
+          "usage_hints": [
+            "航空券を予約する文脈"
           ]
         }
       }
