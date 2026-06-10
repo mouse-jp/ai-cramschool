@@ -685,60 +685,172 @@ def split_syntax_label_tokens(sentence):
     return re.findall(r"[A-Za-z]+(?:'[A-Za-z]+)?|[.,;:!?()]", text)
 
 def render_inline_syntax_label_practice(sentence, idx):
+    import hashlib
     tokens = split_syntax_label_tokens(sentence)
     if not any(re.match(r"[A-Za-z]", token) for token in tokens):
         st.info("この文ではラベルを振れる英単語が見つかりませんでした。")
         return
 
     pieces = []
-    word_count = 0
-    for token_i, token in enumerate(tokens):
+    words = []
+    w_i = 0
+    for token in tokens:
         if re.match(r"[A-Za-z]", token):
-            word_count += 1
             safe_token = html.escape(token)
             pieces.append(
-                f"""
-                <button type="button" class="syntax-unit" data-role-index="0" aria-label="{safe_token} の役割を切り替える">
-                  <span class="syntax-label"></span>
-                  <span class="syntax-word">{safe_token}</span>
-                </button>
-                """
+                f'<button type="button" class="syntax-unit" data-role-index="0" data-widx="{w_i}" '
+                f'aria-label="{safe_token} の役割を切り替える">'
+                f'<span class="syntax-label"></span>'
+                f'<span class="syntax-word">{safe_token}</span>'
+                f'<span class="syntax-correct"></span></button>'
             )
+            words.append(token)
+            w_i += 1
         else:
             pieces.append(f"<span class='syntax-punct'>{html.escape(token)}</span>")
+    word_count = w_i
+
+    # --- 答え合わせ：AIの模範ラベルを取得 ---
+    ans_key = f"syntax_answer_{idx}"
+    col_a, col_b = st.columns([1, 1])
+    if col_a.button("✅ 答え合わせ（AIの模範解析）", key=f"syntax_check_{idx}", use_container_width=True):
+        with st.spinner("AIが各語の文型を解析中..."):
+            numbered = "\n".join(f"{i}: {w}" for i, w in enumerate(words))
+            sys_label = (
+                "あなたは英文法の専門家です。英文の各語に、文の主要素ラベルを1つだけ割り当てます。"
+                "S=主語の中心語, V=述語動詞, O=目的語の中心語, C=補語, "
+                "M=その他（冠詞・前置詞・修飾語・接続詞・関係詞など）。迷う語はMにしてください。"
+                "語リストの各番号について、番号をキー、ラベル(S/V/O/C/Mのいずれか)を値にしたJSONのみを出力してください。"
+                "余計な説明は禁止。例: {\"0\":\"M\",\"1\":\"S\",\"2\":\"V\"}"
+            )
+            raw = call_ai(
+                f"英文:\n{sentence}\n\n語リスト:\n{numbered}\n\n各番号のラベルをJSONで出力してください。",
+                sys_label,
+                use_pdf=False,
+                model_name="gemini-2.5-flash-lite",
+                max_output_tokens=700,
+                timeout_seconds=30,
+            )
+            m = re.search(r"\{.*\}", raw or "", re.DOTALL)
+            parsed = {}
+            if m:
+                try:
+                    parsed = json.loads(m.group(0))
+                except Exception:
+                    parsed = {}
+            answer = {}
+            for k, v in parsed.items():
+                lab = str(v).strip().upper()
+                lab = lab[0] if lab else "M"
+                if lab not in ("S", "V", "O", "C", "M"):
+                    lab = "M"
+                answer[str(k)] = lab
+            st.session_state[ans_key] = answer
+        st.rerun()
+    if col_b.button("🙈 解析を隠す", key=f"syntax_hide_{idx}", use_container_width=True):
+        st.session_state.pop(ans_key, None)
+        st.rerun()
+
+    answer = st.session_state.get(ans_key, {})
+    answer_js = json.dumps(answer, ensure_ascii=False)
+    sig = hashlib.md5(sentence.encode("utf-8")).hexdigest()[:8]
+    pfx = f"sx_{sig}_"
 
     dom_id = f"syntax-inline-{idx}"
-    height = 170 if word_count <= 14 else 230 if word_count <= 30 else 300
+    height = 230 if word_count <= 14 else 300 if word_count <= 30 else 380
     components.html(
         f"""
         <div id="{dom_id}" class="syntax-inline-panel">
-          <div class="syntax-help">
-            単語をタップするたびに S→V→O→C→M… と切り替わります。もう一度押すと戻せます。全部埋めなくて大丈夫です。
+          <div class="syntax-toprow">
+            <div class="syntax-help">
+              単語を<b>タップ</b>で S→V→O→C→M、<b>長押し</b>で消去。
+            </div>
+            <button type="button" class="syntax-reset" id="reset-{dom_id}">↺ 全部消す</button>
           </div>
           <div class="syntax-legend">
-            S 主語 / V 動詞 / O 目的語 / C 補語 / M 修飾 / 接 接続語 / 句 名詞句など / 節 関係詞節など
+            S 主語 / V 動詞 / O 目的語 / C 補語 / M 修飾語
           </div>
+          <div class="syntax-score" id="score-{dom_id}"></div>
           <div class="syntax-sentence">
             {''.join(pieces)}
           </div>
         </div>
         <script>
-          const roles_{idx} = ["", "S", "V", "O", "C", "M", "接", "句", "節", "?"];
+          const roles_{idx} = ["", "S", "V", "O", "C", "M"];
+          const ANS_{idx} = {answer_js};
+          const PFX_{idx} = "{pfx}";
+          const hasAns_{idx} = Object.keys(ANS_{idx}).length > 0;
           const root_{idx} = document.getElementById("{dom_id}");
-          root_{idx}.querySelectorAll(".syntax-unit").forEach((unit) => {{
+          const scoreEl_{idx} = document.getElementById("score-{dom_id}");
+          const units_{idx} = Array.from(root_{idx}.querySelectorAll(".syntax-unit"));
+
+          const updateScore_{idx} = () => {{
+            if (!hasAns_{idx}) {{ scoreEl_{idx}.textContent = ""; return; }}
+            let correct = 0, total = 0;
+            units_{idx}.forEach((unit) => {{
+              const widx = unit.getAttribute("data-widx");
+              if (!(widx in ANS_{idx})) return;
+              total += 1;
+              const i = Number(unit.getAttribute("data-role-index")) || 0;
+              if (roles_{idx}[i] === ANS_{idx}[widx]) correct += 1;
+            }});
+            scoreEl_{idx}.textContent = "正解 " + correct + " / " + total + "（緑＝正解・赤＝ちがう・各語の下が模範解答）";
+          }};
+
+          units_{idx}.forEach((unit) => {{
             const label = unit.querySelector(".syntax-label");
+            const corr = unit.querySelector(".syntax-correct");
+            const widx = unit.getAttribute("data-widx");
+            const saved = localStorage.getItem(PFX_{idx} + widx);
+            if (saved !== null) unit.setAttribute("data-role-index", saved);
             const sync = () => {{
               const i = Number(unit.getAttribute("data-role-index")) || 0;
               label.textContent = roles_{idx}[i] || "";
               unit.classList.toggle("selected", i > 0);
+              unit.classList.remove("ok", "ng");
+              if (hasAns_{idx} && (widx in ANS_{idx})) {{
+                const correct = ANS_{idx}[widx];
+                corr.textContent = "正:" + correct;
+                if (roles_{idx}[i] === correct) unit.classList.add("ok");
+                else if (i > 0) unit.classList.add("ng");
+              }} else {{
+                corr.textContent = "";
+              }}
             }};
-            unit.addEventListener("click", () => {{
+            const setIndex = (i) => {{
+              unit.setAttribute("data-role-index", String(i));
+              localStorage.setItem(PFX_{idx} + widx, String(i));
+              sync();
+              updateScore_{idx}();
+            }};
+            let pressTimer = null;
+            let longPressed = false;
+            unit.addEventListener("pointerdown", () => {{
+              longPressed = false;
+              pressTimer = setTimeout(() => {{ longPressed = true; setIndex(0); }}, 420);
+            }});
+            const cancelPress = () => {{ if (pressTimer) clearTimeout(pressTimer); }};
+            unit.addEventListener("pointerup", cancelPress);
+            unit.addEventListener("pointerleave", cancelPress);
+            unit.addEventListener("click", (e) => {{
+              if (longPressed) {{ longPressed = false; e.preventDefault(); return; }}
               let i = Number(unit.getAttribute("data-role-index")) || 0;
               i = (i + 1) % roles_{idx}.length;
-              unit.setAttribute("data-role-index", String(i));
-              sync();
+              setIndex(i);
             }});
             sync();
+          }});
+          updateScore_{idx}();
+
+          document.getElementById("reset-{dom_id}").addEventListener("click", () => {{
+            units_{idx}.forEach((unit) => {{
+              const widx = unit.getAttribute("data-widx");
+              unit.setAttribute("data-role-index", "0");
+              localStorage.removeItem(PFX_{idx} + widx);
+              unit.querySelector(".syntax-label").textContent = "";
+              unit.classList.remove("selected", "ok", "ng");
+            }});
+            updateScore_{idx}();
           }});
         </script>
         <style>
@@ -753,21 +865,48 @@ def render_inline_syntax_label_practice(sentence, idx):
             color: #f5f7fb;
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
           }}
+          .syntax-toprow {{
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 4px;
+          }}
           .syntax-help {{
             font-size: 12px;
             color: #d7dde8;
-            margin-bottom: 4px;
+          }}
+          .syntax-reset {{
+            flex: none;
+            border: 1px solid #3b4454;
+            border-radius: 6px;
+            background: #1d2330;
+            color: #cbd5e1;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 8px;
+            cursor: pointer;
+          }}
+          .syntax-reset:active {{
+            background: #2a3343;
           }}
           .syntax-legend {{
             font-size: 11px;
             color: #9aa5b6;
-            margin-bottom: 10px;
+            margin-bottom: 6px;
+          }}
+          .syntax-score {{
+            font-size: 12px;
+            font-weight: 700;
+            color: #ffd166;
+            min-height: 16px;
+            margin-bottom: 8px;
           }}
           .syntax-sentence {{
             display: flex;
             flex-wrap: wrap;
             align-items: flex-end;
-            gap: 10px 10px;
+            gap: 12px 10px;
             line-height: 1.2;
           }}
           .syntax-unit {{
@@ -808,11 +947,28 @@ def render_inline_syntax_label_practice(sentence, idx):
           .syntax-unit.selected .syntax-word {{
             border-bottom-color: #43d17a;
           }}
+          .syntax-unit.ok .syntax-word {{
+            border-bottom-color: #43d17a;
+          }}
+          .syntax-unit.ng .syntax-word {{
+            border-bottom-color: #ff6b6b;
+          }}
+          .syntax-correct {{
+            height: 14px;
+            margin-top: 2px;
+            font-size: 11px;
+            font-weight: 800;
+            color: #7fb2ff;
+            line-height: 1;
+          }}
+          .syntax-unit.ng .syntax-correct {{
+            color: #ff9d9d;
+          }}
           .syntax-punct {{
             align-self: flex-end;
             color: #aeb7c5;
             font-size: 15px;
-            padding-bottom: 3px;
+            padding-bottom: 18px;
             margin-left: -6px;
           }}
         </style>
@@ -1007,29 +1163,31 @@ def render_reading_structure_buttons(current_sentence, idx):
 
 
 def render_reading_chat_panel(current_sentence, idx):
-    col_chat_title, col_chat_reset = st.columns([3, 1])
-    with col_chat_title:
-        st.markdown("##### 🤖 和訳チャレンジ＆伴走チャット")
-    if col_chat_reset.button("🧹 リセット", use_container_width=True, key=f"reset_reading_chat_{idx}"):
-        st.session_state.reading_chat_logs = [
-            {"role": "assistant", "content": "まずはこの文を一緒に短くほどきます。和訳でも質問でも大丈夫です。"}
-        ]
-        st.rerun()
-    chat_height = 175 if len(st.session_state.reading_chat_logs) <= 1 else 290
-    with st.container(border=True, height=chat_height):
-        for msg in st.session_state.reading_chat_logs:
-            with st.chat_message(msg["role"]):
-                st.markdown(msg["content"])
-
+    # 入力欄を先頭に置く（上の英文を見ながら和訳を書けるように）
     with st.form(f"reading_chat_form_{idx}", clear_on_submit=True):
         user_req = st.text_area(
             "和訳・質問",
-            height=70,
+            height=80,
             key=f"reading_chat_input_{idx}",
             label_visibility="collapsed",
-            placeholder="和訳を入力、または質問する...",
+            placeholder="ここに和訳を書く、または質問する…",
         )
-        sent = st.form_submit_button("送信 ▶", use_container_width=True, type="primary")
+        sent = st.form_submit_button("📨 送信してAIに見てもらう", use_container_width=True, type="primary")
+
+    logs = st.session_state.reading_chat_logs
+    if len(logs) <= 1:
+        st.caption("💬 まず上の英文の和訳に挑戦してみて。AIが受け止めて、必要なら構造・文法までほどきます。")
+    else:
+        with st.container(border=True, height=300):
+            for msg in logs:
+                with st.chat_message(msg["role"]):
+                    st.markdown(msg["content"])
+        if st.button("🧹 チャットをリセット", key=f"reset_reading_chat_{idx}"):
+            st.session_state.reading_chat_logs = [
+                {"role": "assistant", "content": "まずはこの文を一緒に短くほどきます。和訳でも質問でも大丈夫です。"}
+            ]
+            st.rerun()
+
     if sent and user_req.strip():
         st.session_state.reading_chat_logs.append({"role": "user", "content": user_req})
         with st.spinner("解説を作成中..."):
@@ -1283,16 +1441,6 @@ def render_close_reading_tab():
     target_card_text = "音声書き起こし中：英文を隠しています" if hide_current_sentence else html.escape(current_sentence)
     st.markdown(f"<div class='reading-target-card'>{target_card_text}</div>", unsafe_allow_html=True)
 
-    nav_left, nav_right = st.columns([1, 1])
-    if nav_left.button("⏭️ 完璧！次の文へ", use_container_width=True, type="primary", key=f"next_sentence_{idx}"):
-        current_chat = "\n".join([f"{m['role']}: {m['content']}" for m in st.session_state.reading_chat_logs if m['role'] in ["user", "assistant"]])
-        st.session_state.reading_global_memory += f"\n【文 {idx + 1}: {current_sentence} の対話】\n{current_chat}\n"
-        st.session_state.reading_current_idx += 1
-        st.rerun()
-    if nav_right.button("🗑️ 長文をクリア", use_container_width=True, key="close_read_clear"):
-        clear_reading_state()
-        st.rerun()
-
     # === 機能はタブ（横ラジオ）で切り替え。文は常に上に残る ===
     tool = st.radio(
         "ツール",
@@ -1303,15 +1451,16 @@ def render_close_reading_tab():
     )
 
     if tool == "🤖 解説・チャット":
+        # 和訳の入力欄を先頭に置き、上の英文を見ながら書けるようにする
+        render_reading_chat_panel(current_sentence, idx)
         structures = st.session_state.get("reading_structures", {})
         hint_open = (idx in st.session_state.get("reading_translations", {})) or any(
             k in structures for k in (f"{idx}_intuitive", f"{idx}_theory", idx)
         )
-        with st.expander("🔍 ヒント：訳・構造を見る（困ったら）", expanded=hint_open):
+        with st.expander("🔍 困った時のヒント（訳・構造・構文ラベル）", expanded=hint_open):
             render_reading_structure_buttons(current_sentence, idx)
-        with st.expander("✍️ 構文ラベルを振る（任意）", expanded=False):
+            st.markdown("---")
             render_inline_syntax_label_practice(current_sentence, idx)
-        render_reading_chat_panel(current_sentence, idx)
     elif tool == "🎧 聞き取り":
         render_reading_dictation_panel(current_sentence, idx)
     elif tool == "🔎 単語・熟語":
@@ -1320,6 +1469,18 @@ def render_close_reading_tab():
         render_reading_overall_map(sentences, idx, hide_current_sentence)
     elif tool == "💾 保存":
         render_reading_save_panel(idx)
+
+    # === ナビ（次へ / クリア）は下部に置く ===
+    st.markdown("---")
+    nav_left, nav_right = st.columns([3, 1])
+    if nav_left.button("⏭️ 完璧！次の文へ", use_container_width=True, type="primary", key=f"next_sentence_{idx}"):
+        current_chat = "\n".join([f"{m['role']}: {m['content']}" for m in st.session_state.reading_chat_logs if m['role'] in ["user", "assistant"]])
+        st.session_state.reading_global_memory += f"\n【文 {idx + 1}: {current_sentence} の対話】\n{current_chat}\n"
+        st.session_state.reading_current_idx += 1
+        st.rerun()
+    if nav_right.button("🗑️ クリア", use_container_width=True, key="close_read_clear"):
+        clear_reading_state()
+        st.rerun()
 
 
 def render_close_reading_tab_legacy_pc():
