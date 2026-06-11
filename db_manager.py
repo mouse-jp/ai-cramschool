@@ -1595,6 +1595,20 @@ def word_sense_menu(lex_entry):
     return menu
 
 
+def dedup_sense_menu(menu):
+    """実行時メニュー統合: 辞書に重複した意味が残っていても、分類前に統合する。
+    重複ペアは最初のIDに集約されるため、回数が複数の同義ラベルに割れない。"""
+    if len(menu) < 2:
+        return menu
+    labels = [ja for _, ja in menu]
+    groups = group_senses(labels)
+    out = []
+    for g in groups:
+        rep = max((labels[j] for j in g), key=len)
+        out.append((menu[g[0]][0], rep))
+    return out
+
+
 def sense_components(sense):
     """意味ラベルを「成分」に分解する。
     例: 「会社、企業」→ {会社, 企業} / 「〜から来る」→ {来る} / 「〜に由来する」→ {由来する}"""
@@ -1662,7 +1676,7 @@ def review_sense_groups_batch(batch, model_name):
 
 【ルール】
 - 番号で答えるだけ。新しい意味を書いてはいけない
-- 「会社」「企業」のような言い換えは統合する
+- 「会社」「企業」、「未来」「将来」、「設立する」「確立する」のような同義の訳語は統合する
 - 「作る」と「間に合う」のような明確に別の意味は統合しない
 - 統合すべき組がない単語は merge を空配列 [] にする
 
@@ -1873,6 +1887,7 @@ def classify_sense_batch(items, model_name):
     prompt = f"""各IDについて、文中でのその単語の意味として最も近い選択肢の番号を1つだけ選んでください。
 - 新しい意味を作ってはいけません。必ず提示された番号から選ぶこと
 - 迷った場合は 1 を選ぶこと
+- 文脈が設問の選択肢の羅列（①②③④など）で意味を特定できない場合も 1 を選ぶこと
 - すべてのIDについて答えること
 
 【出力JSON】
@@ -1906,7 +1921,7 @@ def pick_audit_model(model_name):
     return "gemini-2.5-flash" if "lite" in primary else "gemini-2.5-flash-lite"
 
 
-def analyze_word_meanings_v2(text, model_name="gemini-2.5-flash", max_workers=3, verify_sample=40):
+def analyze_word_meanings_v2(text, model_name="gemini-2.5-flash", max_workers=3, verify_sample=40, consensus=False):
     """意味別頻度の全解析（軽量版）。
     戻り値は旧 extract_word_meanings_with_gemini と互換:
     {"words": [...], "chunks": APIコール数, "errors": [...], "stats": {...}}"""
@@ -1948,7 +1963,11 @@ def analyze_word_meanings_v2(text, model_name="gemini-2.5-flash", max_workers=3,
     save_word_meaning_lexicon(lexicon)
 
     word_dict = lexicon.get("words", {})
-    menus = {lemma: word_sense_menu(word_dict.get(lemma, {})) for lemma in lemma_occurrences}
+    # 実行時メニュー統合: 古い辞書に重複した意味が残っていても、回数が割れないようにする
+    menus = {
+        lemma: dedup_sense_menu(word_sense_menu(word_dict.get(lemma, {})))
+        for lemma in lemma_occurrences
+    }
 
     # --- ステップ2: 分類タスクの作成（多義語のみ。同じ文×同じ単語は1問に圧縮） ---
     assignments = {}      # lemma -> {meaning_id: count}
@@ -2014,6 +2033,58 @@ def analyze_word_meanings_v2(text, model_name="gemini-2.5-flash", max_workers=3,
             if err:
                 errors.append(f"意味分類失敗（第1義に自動割当）: {err}")
 
+    # --- ステップ3b: リリース品質モード（2モデル合議＋Pro裁定） ---
+    consensus_agree_rate = None
+    consensus_compared = 0
+    consensus_overrides = 0
+    consensus_pro_calls = 0
+    second_calls = 0
+    second_model = pick_audit_model(model_name)
+    if consensus and classify_items:
+        second_answers = {}
+        for bi in range(0, len(classify_items), WSD_CLASSIFY_BATCH_SIZE):
+            second_calls += 1
+            progress.progress(0.92, text=f"合議モード: 別モデル（{second_model}）で全件を再分類中...")
+            try:
+                second_answers.update(
+                    classify_sense_batch(classify_items[bi:bi + WSD_CLASSIFY_BATCH_SIZE], second_model)
+                )
+            except Exception as e:
+                errors.append(f"合議用の再分類に失敗（主モデルの結果を使用）: {e}")
+
+        disagreed = []
+        same = 0
+        for item in classify_items:
+            n_opts = len(item["options"])
+            c1 = all_answers.get(item["id"])
+            c2 = second_answers.get(item["id"])
+            v1 = isinstance(c1, int) and 1 <= c1 <= n_opts
+            v2 = isinstance(c2, int) and 1 <= c2 <= n_opts
+            if v1 and v2:
+                consensus_compared += 1
+                if c1 == c2:
+                    same += 1
+                else:
+                    disagreed.append(item)
+            elif v2 and not v1:
+                all_answers[item["id"]] = c2  # 主モデルの欠落を副モデルで補完
+        if consensus_compared:
+            consensus_agree_rate = same / consensus_compared
+
+        for bi in range(0, len(disagreed), WSD_CLASSIFY_BATCH_SIZE):
+            consensus_pro_calls += 1
+            progress.progress(0.96, text=f"合議モード: 不一致{len(disagreed)}件をProが裁定中...")
+            try:
+                tie_answers = classify_sense_batch(disagreed[bi:bi + WSD_CLASSIFY_BATCH_SIZE], "gemini-2.5-pro")
+            except Exception as e:
+                errors.append(f"Pro裁定に失敗（主モデルの結果を使用）: {e}")
+                continue
+            for item in disagreed[bi:bi + WSD_CLASSIFY_BATCH_SIZE]:
+                ct = tie_answers.get(item["id"])
+                if isinstance(ct, int) and 1 <= ct <= len(item["options"]) and ct != all_answers.get(item["id"]):
+                    all_answers[item["id"]] = ct
+                    consensus_overrides += 1
+
     # --- ステップ4: 割当の確定（無効・欠落は第1義へ → 合計は絶対に崩れない） ---
     fallback_details = []
     valid_items = []
@@ -2054,8 +2125,12 @@ def analyze_word_meanings_v2(text, model_name="gemini-2.5-flash", max_workers=3,
     # --- ステップ4c: 二重判定（別モデルで同じサンプルを再分類し、一致率を測る） ---
     agreement_rate = None
     agreement_n = 0
-    audit_model = pick_audit_model(model_name)
-    if verify_sample and audit_pool:
+    audit_model = second_model
+    if consensus:
+        # 合議モードでは全件ベースの一致率が既にあるため、サンプル二重判定は省略
+        agreement_rate = consensus_agree_rate
+        agreement_n = consensus_compared
+    elif verify_sample and audit_pool:
         progress.progress(1.0, text="二重判定で一致率を検証中...")
         sample_items = audit_pool[:int(verify_sample)]
         try:
@@ -2119,15 +2194,18 @@ def analyze_word_meanings_v2(text, model_name="gemini-2.5-flash", max_workers=3,
         "fallback_tokens": fallback_tokens,
         "fallback_details": fallback_details,
         "api_calls_inventory": inventory_calls,
-        "api_calls_classify": len(classify_batches),
+        "api_calls_classify": len(classify_batches) + second_calls + consensus_pro_calls,
         "agreement_rate": agreement_rate,
         "agreement_n": agreement_n,
         "agreement_model": audit_model,
+        "consensus": bool(consensus),
+        "consensus_overrides": consensus_overrides,
+        "consensus_pro_calls": consensus_pro_calls,
     }
 
     return {
         "words": word_items,
-        "chunks": inventory_calls + len(classify_batches),
+        "chunks": inventory_calls + len(classify_batches) + second_calls + consensus_pro_calls,
         "errors": errors,
         "stats": stats,
         "audit_sample": audit_sample,
@@ -2503,6 +2581,7 @@ with tab1:
         word_meaning_model_name = "gemini-2.5-flash"
         word_meaning_workers = 3
         word_meaning_verify = True
+        word_meaning_consensus = True
         if ext_word_meanings:
             with st.expander("🧠 単語の意味別解析設定（v2: 軽量版）", expanded=False):
                 st.caption(
@@ -2533,6 +2612,12 @@ with tab1:
                     value=True,
                     key="word_meaning_verify_v2",
                     help="分類サンプルを別のモデルでもう一度分類し、答えの一致率を％で表示します。一致率が高ければ「でたらめな分類ではない」ことを定量的に確認できます。",
+                )
+                word_meaning_consensus = st.checkbox(
+                    "🏅 リリース品質モード（2モデル合議・不一致のみProが裁定）",
+                    value=True,
+                    key="word_meaning_consensus_v2",
+                    help="全分類を2つのモデルで二重実行し、答えが割れた箇所だけProが最終判定します。分類コストは約2倍+裁定分。一致率はサンプルではなく全件ベースで表示されます。単語帳のリリース用データにはONを推奨。",
                 )
 
         idiom_model_name = "gemini-2.5-pro"
@@ -2623,6 +2708,7 @@ with tab1:
                             model_name=word_meaning_model_name,
                             max_workers=int(word_meaning_workers),
                             verify_sample=40 if word_meaning_verify else 0,
+                            consensus=word_meaning_consensus,
                         )
                         target_db["word_meanings"] = merge_word_meaning_items(
                             target_db.get("word_meanings", {}),
@@ -2659,6 +2745,12 @@ with tab1:
                                 st.warning(agreement_msg + " — おおむね安定。下の監査サンプルで不一致の傾向を確認してください。")
                             else:
                                 st.error(agreement_msg + " — 不安定です。モデルをproに上げて再解析を検討してください。")
+                        if wm_stats.get("consensus"):
+                            st.info(
+                                f"🏅 合議モード: 全{wm_stats.get('agreement_n', 0)}件を二重分類し、"
+                                f"不一致をProが裁定（最終判定の変更 {wm_stats.get('consensus_overrides', 0)}件 / "
+                                f"Pro {wm_stats.get('consensus_pro_calls', 0)}コール）"
+                            )
                         if wm_stats.get("fallback_tokens"):
                             st.warning(
                                 f"AI分類に失敗した {wm_stats['fallback_tokens']}トークンは第1義に自動割当しました（合計は維持）。"
