@@ -1,0 +1,8 @@
+# 全ユーザー共通の見た目（テーマ）。クラウドにも反映されます。
+[theme]
+base = "dark"
+primaryColor = "#5b8cff"            # ボタン・スライダー等のアクセント（落ち着いた青）
+backgroundColor = "#0e1117"          # 背景
+secondaryBackgroundColor = "#1a1f2b" # サイドバー・カードの背景
+textColor = "#e6e9ef"                # 文字
+font = "sans serif"

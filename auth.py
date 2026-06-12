@@ -329,6 +329,7 @@ def _cloud_require_login():
             su_pw2 = st.text_input("パスワード（確認）", type="password", key="cloud_su_pw2")
             if st.form_submit_button("登録する", use_container_width=True):
                 _cloud_sign_up(su_email, su_pw, su_pw2)
+    _guest_button()
     st.stop()
 
 
@@ -362,6 +363,8 @@ def cloud_save_data(data):
 # データの読み書き（モードに応じて自動切替）— app.py から呼ぶ
 # ============================================================
 def load_user_data():
+    if st.session_state.get("is_guest"):
+        return st.session_state.get("guest_data") or dict(DEFAULT_DATA)
     if is_cloud():
         return cloud_load_data()
     user = st.session_state.get("auth_user")
@@ -376,6 +379,9 @@ def load_user_data():
 
 
 def save_user_data(data):
+    if st.session_state.get("is_guest"):
+        st.session_state["guest_data"] = data  # ゲストはセッション内のみ（永続化しない）
+        return
     if is_cloud():
         cloud_save_data(data)
         return
@@ -389,9 +395,25 @@ def save_user_data(data):
 # ============================================================
 # Streamlit 用ゲート / ログアウト
 # ============================================================
+def _start_guest():
+    st.session_state["auth_user"] = "ゲスト"
+    st.session_state["is_guest"] = True
+    st.rerun()
+
+
+def _guest_button():
+    """ログイン画面に「登録せずに試す」導線を出す。"""
+    st.markdown("---")
+    st.caption("まず試したい方へ（登録不要・このモードではデータは保存されません）")
+    if st.button("👤 登録せずにゲストで試す", use_container_width=True, key="guest_btn"):
+        _start_guest()
+
+
 def require_login():
     """モードに応じてログイン画面を表示。ログイン済みなら識別子を返す。
     ※ 呼び出し前に st.set_page_config を済ませておくこと。"""
+    if st.session_state.get("is_guest"):
+        return st.session_state.get("auth_user", "ゲスト")
     if is_cloud():
         return _cloud_require_login()
     return _local_require_login()
@@ -430,6 +452,7 @@ def _local_require_login():
                 else:
                     st.error(msg)
 
+    _guest_button()
     st.stop()
 
 
@@ -437,6 +460,13 @@ def logout_button():
     """サイドバーにログイン中ユーザー名とログアウトボタンを表示。"""
     user = st.session_state.get("auth_user")
     if not user:
+        return
+    if st.session_state.get("is_guest"):
+        st.sidebar.info("👤 ゲストモード（保存されません）")
+        if st.sidebar.button("📝 登録・ログインして保存する", use_container_width=True):
+            for k in ("auth_user", "is_guest", "guest_data"):
+                st.session_state.pop(k, None)
+            st.rerun()
         return
     st.sidebar.markdown(f"👤 **{user}** さんでログイン中")
     if st.sidebar.button("🚪 ログアウト", use_container_width=True):

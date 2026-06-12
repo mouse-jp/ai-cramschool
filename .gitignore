@@ -1,3 +1,6 @@
-.streamlit/
+# 秘密情報だけ除外（テーマ config.toml は公開してクラウドにも反映させる）
+.streamlit/secrets.toml
 __pycache__/
 base_lexicon_generation_log.json
+user_data/
+users.json

@@ -511,63 +511,80 @@ base_lexicon = load_base_lexicon()
 frequency_strong_words = get_frequency_strong_words(base_lexicon)
 frequency_excluded_words = get_frequency_excluded_words(base_lexicon)
 
-# --- 2. 設定とUI ---
-st.sidebar.title("設定")
+# --- 2. サイドバー（学習メニューを最優先・技術項目は「詳細設定」に格納）---
+st.sidebar.markdown("### 🧭 自律型AI塾")
 auth.logout_button()
 
+st.sidebar.markdown("#### 学習メニュー")
+mode = st.sidebar.radio(
+    "モード",
+    [
+        "📖 志望校別単語帳",
+        "🔗 志望校別熟語帳",
+        "📝 志望校別文法・語法ノート",
+        "📚 長文読解",
+        "🏆 過去問演習・合格分析",
+    ],
+    label_visibility="collapsed",
+)
+
+# APIキー（secretsにあれば自動。無ければ「詳細設定」で入力）
 api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or ""
 if not api_key:
     try:
         api_key = st.secrets.get("GEMINI_API_KEY", "") or st.secrets.get("GOOGLE_API_KEY", "")
     except Exception:
         api_key = ""
-if not api_key:
-    api_key = st.sidebar.text_input("Gemini API Key", type="password")
+
+with st.sidebar.expander("⚙️ 設定・詳細", expanded=False):
+    if not api_key:
+        api_key = st.text_input("Gemini API Key", type="password")
+        if not api_key:
+            st.warning("Gemini API Keyを入力するとAI生成が使えます。")
+
+    uploaded_pdf = st.file_uploader("問題PDF（任意）", type=["pdf"])
+
+    st.markdown("---")
+    st.caption("バックアップ（任意）。学習データは自動でクラウド保存されます。")
+    json_str = json.dumps(my_data, ensure_ascii=False, indent=2)
+    st.download_button(
+        label="⬇️ データを書き出す",
+        data=json_str,
+        file_name="my_learning_data.json",
+        mime="application/json",
+        use_container_width=True,
+    )
+    uploaded_data = st.file_uploader("⬆️ データを読み込む", type=["json"])
+    if uploaded_data is not None:
+        if st.button("🔄 読み込んで復元する", type="primary", use_container_width=True):
+            try:
+                loaded_json = json.load(uploaded_data)
+                save_data(loaded_json)
+                st.success("復元しました。更新します…")
+                st.rerun()
+            except Exception:
+                st.error("正しいファイルを選んでください")
+
+    st.markdown("---")
+    if st.button("⏹️ 表示をリセット", use_container_width=True):
+        _keep_keys = ("auth_user", "auth_user_id", "sb_access_token", "sb_refresh_token",
+                      "is_guest", "guest_data", "_cookie_mgr")
+        _keep = {k: st.session_state[k] for k in _keep_keys if k in st.session_state}
+        st.session_state.clear()
+        st.session_state.update(_keep)
+        st.rerun()
+
 if api_key:
     genai.configure(api_key=api_key)
-else:
-    st.sidebar.warning("Gemini API Keyを入力するとAI生成が使えます。")
-uploaded_pdf = st.sidebar.file_uploader("問題PDF", type=["pdf"])
 
-if st.sidebar.button("⏹️ リセット"):
-    st.session_state.clear()
-    st.rerun()
-
-# --- 💾 データ管理 (セーブ＆ロード) ---
-st.sidebar.markdown("---")
-st.sidebar.markdown("### 💾 セーブ＆ロード")
-st.sidebar.caption("※ブラウザを閉じる前に「セーブ」を押してデータを保存してください。次回そのファイルを読み込むと続きから再開できます。")
-
-# 1. ダウンロード（セーブ）ボタン（現在ログイン中ユーザーのデータをそのまま書き出す）
-json_str = json.dumps(my_data, ensure_ascii=False, indent=2)
-st.sidebar.download_button(
-    label="⬇️ 今のデータを保存 (セーブ)",
-    data=json_str,
-    file_name="my_learning_data.json",
-    mime="application/json",
-    use_container_width=True
+# --- 商品ヘッダー（メイン上部・全モード共通）---
+st.markdown(
+    "<div style='padding:0.1rem 0 0.5rem 0; border-bottom:1px solid #2a3040; margin-bottom:0.8rem;'>"
+    "<span style='font-size:1.7rem; font-weight:800; letter-spacing:0.02em;'>🧭 自律型AI塾</span>"
+    "<span style='color:#8a93a6; margin-left:0.7rem; font-size:0.95rem;'>AIと作る、志望校特化の英語対策</span>"
+    "</div>",
+    unsafe_allow_html=True,
 )
-
-# 2. アップロード（ロード）ボタン
-uploaded_data = st.sidebar.file_uploader("⬆️ 続きから始める (ロード)", type=["json"])
-if uploaded_data is not None:
-    if st.sidebar.button("🔄 データを復元する", type="primary", use_container_width=True):
-        try:
-            loaded_json = json.load(uploaded_data)
-            save_data(loaded_json)
-            st.sidebar.success("復元成功！画面を更新します...")
-            st.rerun()
-        except Exception as e:
-            st.sidebar.error("エラー：正しいファイルを選んでください")
-st.sidebar.markdown("---")    
-
-mode = st.sidebar.radio("モード", [
-    "📖 志望校別単語帳", 
-    "🔗 志望校別熟語帳", 
-    "📝 志望校別文法・語法ノート", 
-    "📚 長文読解",
-    "🏆 過去問演習・合格分析"
-])
 
 
 # --- 3. AI呼び出し関数 ---
@@ -3419,7 +3436,6 @@ if mode == "📖 志望校別単語帳":
 # モードE: 志望校別熟語帳（★シミュレーター搭載版）
 # ==========================================
 elif mode == "🔗 志望校別熟語帳":
-    st.markdown("### 🔗 志望校別熟語帳")
     st.caption("長文の文脈で覚える！志望校別熟語ドリルとリスト管理")
     
     if "idiom_books" not in my_data:
@@ -4219,7 +4235,6 @@ elif mode == "🔗 志望校別熟語帳":
 # モードF: 志望校別文法・語法ノート
 # ==========================================
 elif mode == "📝 志望校別文法・語法ノート":
-    st.markdown("### 📝 志望校別文法・語法ノート")
     st.caption("過去問の文法・語法問題そのものを練習し、整序・空所補充・語法知識を固めます。")
 
     tab_drill = st.tabs(["📚 過去問オリジナルドリル"])[0]
@@ -4518,7 +4533,6 @@ elif mode == "📝 志望校別文法・語法ノート":
 # モードG: 長文読解
 # ==========================================
 elif mode == "📚 長文読解":
-    st.markdown("### 📚 長文読解")
     st.caption("長文を読むための文法、1文精読、設問根拠、読解メモをここに集約します。")
 
     tab_close, tab_evidence, tab_notes = st.tabs([
@@ -4542,7 +4556,6 @@ elif mode == "📚 長文読解":
 elif mode == "🏆 過去問演習・合格分析":
     import time
     
-    st.markdown("### 🏆 過去問演習・合格分析")
     st.caption("表面的なスピードではなく、「知識の解像度」と「時間の使い方」を多角的に分析し、合格最低点を超えるための最終ダッシュボードです。")
 
     if "exam_records" not in my_data:
