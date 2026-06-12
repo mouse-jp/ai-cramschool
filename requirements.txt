@@ -4,3 +4,5 @@ pandas
 nltk
 tenacity
 PyMuPDF
+supabase
+extra-streamlit-components

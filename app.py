@@ -12,6 +12,7 @@ import streamlit.components.v1 as components
 from datetime import datetime
 from collections import Counter
 from difflib import SequenceMatcher
+import auth  # ログイン認証＋ユーザーごとデータ分離
 
 LOCAL_NLTK_DATA = os.path.join(os.path.dirname(__file__), ".nltk_data")
 os.makedirs(LOCAL_NLTK_DATA, exist_ok=True)
@@ -71,14 +72,12 @@ EXCLUDED_BASE_VOCAB_STATUSES = {"strict_excluded", "proper_noun_or_noise"}
 CIRCLED_NUMBERS = ["①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", "⑩"]
 
 def load_data():
-    if os.path.exists(DATA_FILE):
-        with open(DATA_FILE, "r", encoding="utf-8-sig") as f:
-            return json.load(f)
-    return {"vocabulary": [], "grammar": [], "strategy": [], "meta": []}
+    # ログイン中ユーザーのデータを取得（ローカル=ユーザー別JSON / クラウド=Supabase）
+    return auth.load_user_data()
 
 def save_data(data):
-    with open(DATA_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    # ログイン中ユーザーのデータを保存（ローカル=ユーザー別JSON / クラウド=Supabase）
+    auth.save_user_data(data)
 
 def load_exam_db():
     if os.path.exists(EXAM_DB_FILE):
@@ -308,6 +307,7 @@ def build_frequency_strong_enrich_prompt():
     "meanings" は文字列ではなく、意味グループごとの配列にしてください。似た意味はまとめてよいですが、別義は分けてください。各項目には [形] [副] [動] [名] など品詞ラベルを必要に応じて付けてください。
     画面側で ①②③ を付けるので、"meanings" の各項目には番号を書かないでください。
     "chunks" には、主要な意味の訳し分けが分かる短い句を2〜5個入れてください。各句の先頭には、必ず対応する意味番号を書いてください。例: "① more people（もっと多くの人々）"、"② more importantly（さらに重要なことに）"。
+    各単語には「確定済みの意味リスト（過去問解析で実際に出現した意味）」を与える場合があります。意味リストがある単語は、"meanings" の先頭をその意味・その順番に必ず合わせ、"chunks" の番号もその意味リストの番号に一致させてください（リストにない意味の例文を、リストの番号で作らないでください）。意味リストが「（意味リストなし）」の単語は、従来どおりあなたが網羅的に列挙してください。
     文法説明をここに入れすぎないでください。文法ノートに回すべき説明ではなく、単語の意味判別に必要な最小限の注意だけ "alert" に書いてください。
     "alert" には、訳し分け・多義語・不可算/可算・自動詞/他動詞など、入試で誤読しやすい注意点がある場合だけ短く書いてください。
     {
@@ -324,6 +324,34 @@ def build_frequency_strong_enrich_prompt():
       "skipped": []
     }
     """
+
+def build_normal_enrich_prompt():
+    return """
+あなたは受験英語に精通したプロの予備校講師です。提供された英単語リストを精査し、以下のJSON形式を作成してください。
+
+【最重要・意味番号の規則】
+- 各単語には「確定済みの意味リスト（過去問解析で実際に出現した意味）」を与えます。
+- 意味リストがある単語は、その意味と番号①②③だけを使ってください。新しい意味を足したり、番号を入れ替えたりしないでください。"meanings" は与えられた意味リストをそのまま使ってください。
+- "chunks"（例文）の各行の先頭番号は、必ず与えた意味リストの番号に一致させてください。意味リストにない番号の例文は絶対に作らないでください。
+- 1つの意味につき例文を1〜2個作り、例文中の単語は **太字(Markdown)** にしてください。
+- 意味リストが「（意味リストなし）」の単語だけ、あなたが適切な意味と番号①②③…を付与してよいです。
+
+【振り分け】
+1. 「大学受験レベル(B1以上)で重要な単語」は "enriched" へ、「中学レベル(A1〜A2)やゴミ」は "skipped" へ。
+{
+  "enriched": [
+    {
+      "word": "company",
+      "forms": "複数形: companies",
+      "meanings": "① 会社、企業",
+      "chunks": ["① run a **company** (会社を経営する)", "① the **company** went bankrupt (その会社は倒産した)"],
+      "context": "ビジネス系で必須。",
+      "alert": ""
+    }
+  ],
+  "skipped": ["people", "don"]
+}
+"""
 
 def apply_frequency_strong_ai_response(lexicon, target_words, parsed_data):
     target_norms = {normalize_vocab_word(word) for word in target_words}
@@ -356,6 +384,127 @@ def apply_frequency_strong_ai_response(lexicon, target_words, parsed_data):
         "extra": extra_returned,
     }
 
+def aggregate_meaning_frequencies(exam_db, source_key, normalize=None):
+    """過去問DB(exam_db)全体の word_meanings / idioms を、語ごとに意味別で合算する。
+    db_manager が生成した意味別解析データ(JSON)を読むだけ。db_manager は無改変。
+
+    source_key : "word_meanings"（単語）または "idioms"（熟語）
+    normalize  : 語の正規化関数（省略時は単純に小文字化）
+    戻り値 : { キー: {"display": 元の語, "total": 総出現回数,
+                      "senses": [{"meaning_ja", "meaning_key", "count", "usage_hints"[]}] } }
+             senses は count 降順。意味は meaning_id（無ければ meaning_ja）で同定して合算。
+    """
+    if normalize is None:
+        normalize = lambda x: str(x or "").strip().lower()
+    agg = {}
+    if not isinstance(exam_db, dict):
+        return agg
+    for unis in exam_db.values():
+        if not isinstance(unis, dict):
+            continue
+        for facs in unis.values():
+            if not isinstance(facs, dict):
+                continue
+            for years in facs.values():
+                if not isinstance(years, dict):
+                    continue
+                for methods in years.values():
+                    if not isinstance(methods, dict):
+                        continue
+                    for data in methods.values():
+                        if not isinstance(data, dict):
+                            continue
+                        src = data.get(source_key)
+                        if not isinstance(src, dict):
+                            continue
+                        for word, w_entry in src.items():
+                            if not isinstance(w_entry, dict):
+                                continue
+                            key = normalize(word)
+                            if not key:
+                                continue
+                            bucket = agg.setdefault(key, {"display": str(word or "").strip(), "total": 0, "senses": {}})
+                            for mid, mc in (w_entry.get("meaning_counts") or {}).items():
+                                if not isinstance(mc, dict):
+                                    continue
+                                try:
+                                    cnt = int(mc.get("count", 0) or 0)
+                                except (TypeError, ValueError):
+                                    cnt = 0
+                                if cnt <= 0:
+                                    continue
+                                sid = mc.get("meaning_id") or mid or str(mc.get("meaning_ja", ""))
+                                ja = str(mc.get("meaning_ja") or mc.get("meaning_key") or sid)
+                                sense = bucket["senses"].setdefault(sid, {
+                                    "meaning_ja": ja,
+                                    "meaning_key": str(mc.get("meaning_key") or ja),
+                                    "count": 0,
+                                    "usage_hints": [],
+                                })
+                                sense["count"] += cnt
+                                for hint in (mc.get("usage_hints") or []):
+                                    if hint and hint not in sense["usage_hints"]:
+                                        sense["usage_hints"].append(hint)
+                                bucket["total"] += cnt
+    for bucket in agg.values():
+        bucket["senses"] = sorted(bucket["senses"].values(), key=lambda s: s["count"], reverse=True)
+    return agg
+
+
+_CIRCLED_NUMS = "①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳"
+
+def format_senses_with_counts(word, agg, normalize=None, sep="　"):
+    """頻度解析(aggregate_meaning_frequencies)の意味別データから、
+    番号つきの「意味（N回）」HTML文字列を作る。出現回数が多い順。
+    対応データが無ければ None を返す（呼び出し側で従来のAI意味にフォールバック）。"""
+    if not agg:
+        return None
+    key = normalize(word) if normalize else str(word or "").strip().lower()
+    entry = agg.get(key)
+    if not entry or not entry.get("senses"):
+        return None
+    parts = []
+    for idx, s in enumerate(entry["senses"]):
+        num = _CIRCLED_NUMS[idx] if idx < len(_CIRCLED_NUMS) else f"({idx + 1})"
+        ja = html.escape(str(s.get("meaning_ja", "")))
+        cnt = s.get("count", 0)
+        parts.append(
+            f"{num} {ja}"
+            f"<span style='color:#e0853d; font-size:0.8em; font-weight:bold; margin-left:3px;'>（{cnt}回）</span>"
+        )
+    return sep.join(parts)
+
+
+def sense_list_text(word, agg, normalize=None):
+    """頻度解析データから、番号つきの意味リスト（プレーン文字列・回数なし）を作る。
+    例: '① 会社、企業 ② 仲間、同席'。対応データが無ければ None。生成プロンプトへの入力用。"""
+    if not agg:
+        return None
+    key = normalize(word) if normalize else str(word or "").strip().lower()
+    entry = agg.get(key)
+    if not entry or not entry.get("senses"):
+        return None
+    parts = []
+    for idx, s in enumerate(entry["senses"]):
+        num = _CIRCLED_NUMS[idx] if idx < len(_CIRCLED_NUMS) else f"({idx + 1})"
+        parts.append(f"{num} {s.get('meaning_ja', '')}")
+    return " ".join(parts)
+
+
+def build_sense_context(words, agg, normalize=None):
+    """生成プロンプトに渡す、各語の『確定意味リスト』テキストを作る。
+    意味リストがある語はその番号付き意味を、無い語は「（意味リストなし）」を示す。"""
+    lines = []
+    for w in words:
+        sl = sense_list_text(w, agg, normalize)
+        lines.append(f"- {w}: {sl if sl else '（意味リストなし）'}")
+    return "\n".join(lines)
+
+
+# --- ログイン認証（ユーザーごとにデータを分離）---
+st.set_page_config(page_title="自律型AI塾", page_icon="🧭", layout="wide")
+current_user = auth.require_login()              # 未ログインならログイン画面を表示してここで停止（ユーザー識別は auth が session に保持）
+
 my_data = load_data()
 exam_db = load_exam_db()
 base_lexicon = load_base_lexicon()
@@ -363,8 +512,8 @@ frequency_strong_words = get_frequency_strong_words(base_lexicon)
 frequency_excluded_words = get_frequency_excluded_words(base_lexicon)
 
 # --- 2. 設定とUI ---
-st.set_page_config(page_title="自律型AI塾", page_icon="🧭", layout="wide")
 st.sidebar.title("設定")
+auth.logout_button()
 
 api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or ""
 if not api_key:
@@ -389,17 +538,15 @@ st.sidebar.markdown("---")
 st.sidebar.markdown("### 💾 セーブ＆ロード")
 st.sidebar.caption("※ブラウザを閉じる前に「セーブ」を押してデータを保存してください。次回そのファイルを読み込むと続きから再開できます。")
 
-# 1. ダウンロード（セーブ）ボタン
-if os.path.exists(DATA_FILE):
-    with open(DATA_FILE, "r", encoding="utf-8") as f:
-        json_str = f.read()
-    st.sidebar.download_button(
-        label="⬇️ 今のデータを保存 (セーブ)",
-        data=json_str,
-        file_name="my_learning_data.json",
-        mime="application/json",
-        use_container_width=True
-    )
+# 1. ダウンロード（セーブ）ボタン（現在ログイン中ユーザーのデータをそのまま書き出す）
+json_str = json.dumps(my_data, ensure_ascii=False, indent=2)
+st.sidebar.download_button(
+    label="⬇️ 今のデータを保存 (セーブ)",
+    data=json_str,
+    file_name="my_learning_data.json",
+    mime="application/json",
+    use_container_width=True
+)
 
 # 2. アップロード（ロード）ボタン
 uploaded_data = st.sidebar.file_uploader("⬆️ 続きから始める (ロード)", type=["json"])
@@ -2213,6 +2360,8 @@ if mode == "📖 志望校別単語帳":
                 if selected_title != "-- 選択してください --":
                     book_idx = book_titles.index(selected_title)
                     current_book = books[book_idx]
+                    # 過去問DBの意味別頻度（db_manager解析）を集約（カード／詳細／意味別ビューで共用）
+                    book_meaning_agg = aggregate_meaning_frequencies(exam_db, "word_meanings", normalize=normalize_vocab_word)
                     is_fixed_book = current_book.get("fixed_source") == BASE_LEXICON_FILE
                     saved_book_idx = book_idx - 1 if fixed_book else book_idx
                     
@@ -2284,7 +2433,7 @@ if mode == "📖 志望校別単語帳":
                         
                         # ▼ AIフィルターのチェックボックスを追加
                         use_ai_filter_merge = st.checkbox("🤖 マージする新規単語から「人名」等をAIで除外する", value=False, key=f"ai_merge_v_{book_idx}")
-                        exclude_frequency_strong_merge = st.checkbox("💪 頻度つよつよ単語3000をマージ対象から外す", value=True, key=f"strong_merge_v_{book_idx}")
+                        exclude_frequency_strong_merge = st.checkbox("💪 頻度つよつよ単語3000をマージ対象から外す", value=False, key=f"strong_merge_v_{book_idx}")
                         
                         if st.button("✨ 選択したデータを追加 (マージ)", type="primary", key=f"btn_merge_vocab_{book_idx}") and add_labels and not is_fixed_book:
                             with st.spinner("単語データを結合し、AIフィルターで審査しています..."):
@@ -2438,24 +2587,7 @@ if mode == "📖 志望校別単語帳":
                                 if is_fixed_book:
                                     sys_enrich = build_frequency_strong_enrich_prompt()
                                 else:
-                                    sys_enrich = """
-                                あなたは受験英語に精通したプロの予備校講師です。提供された英単語リストを精査し、以下のJSON形式を作成してください。
-                                【絶対ルール】
-                                1. 「大学受験レベル(B1以上)で重要な単語」は "enriched" へ、「中学レベル(A1〜A2)やゴミ」は "skipped" へ。
-                                {
-                                  "enriched": [
-                                    {
-                                      "word": "company",
-                                      "forms": "複数形: companies",
-                                      "meanings": "① 会社、企業 ② 仲間、同席",
-                                      "chunks": ["① run a **company** (会社を経営する)", "② in the **company** of friends (友達と一緒に)"],
-                                      "context": "ビジネス系で必須。",
-                                      "alert": "「仲間」の意味では不可算名詞。"
-                                    }
-                                  ],
-                                  "skipped": ["people", "don"]
-                                }
-                                """
+                                    sys_enrich = build_normal_enrich_prompt()
                                 try:
                                     if is_fixed_book:
                                         total_saved = 0
@@ -2470,7 +2602,8 @@ if mode == "📖 志望校別単語帳":
                                             if not batch_words:
                                                 break
                                             try:
-                                                response_json = call_ai(f"処理対象:\n{batch_words}", sys_enrich, is_json=True)
+                                                batch_ctx = build_sense_context(batch_words, book_meaning_agg, normalize_vocab_word)
+                                                response_json = call_ai(f"処理対象（各単語と、確定済みの意味リスト）:\n{batch_ctx}", sys_enrich, is_json=True)
                                                 parsed_data = json.loads(response_json)
                                                 batch_result = apply_frequency_strong_ai_response(base_lexicon, batch_words, parsed_data)
                                             except Exception as batch_error:
@@ -2510,7 +2643,8 @@ if mode == "📖 志望校別単語帳":
                                         else:
                                             st.success(f"🎉 頻度つよつよ単語に {total_saved}語分の意味を保存しました！")
                                     else:
-                                        response_json = call_ai(f"処理対象:\n{target_words}", sys_enrich, is_json=True)
+                                        words_ctx = build_sense_context(target_words, book_meaning_agg, normalize_vocab_word)
+                                        response_json = call_ai(f"処理対象（各単語と、確定済みの意味リスト）:\n{words_ctx}", sys_enrich, is_json=True)
                                         parsed_data = json.loads(response_json)
                                         current_book["enriched_vocab"].extend(parsed_data.get("enriched", []))
                                         current_book["skipped_vocab"].extend(parsed_data.get("skipped", []))
@@ -2522,7 +2656,59 @@ if mode == "📖 志望校別単語帳":
                                     st.error(f"生成エラー: {e}")
                     elif is_fixed_book:
                         st.success(f"{generation_mode} はありません。")
-                    
+
+                    # === 🔄 意味確定済みの語の例文を意味別に再生成（番号ずれ修正） ===
+                    if not is_fixed_book:
+                        enriched_words_set = {e.get("word") for e in current_book.get("enriched_vocab", [])}
+                        regen_candidates = [
+                            w for w in current_book.get("main_vocab", [])
+                            if w in enriched_words_set and sense_list_text(w, book_meaning_agg, normalize_vocab_word)
+                        ]
+                        if regen_candidates:
+                            with st.expander(f"🔄 例文を意味別に再生成（意味確定済み {len(regen_candidates)} 語・番号ずれ修正）", expanded=False):
+                                st.caption("既に生成済みで、過去問の意味別データがある単語の例文を、確定した意味番号に合わせて作り直します。既存の意味・例文は上書きされます。")
+                                regen_n = int(st.number_input("再生成する単語数", min_value=1, max_value=len(regen_candidates), value=min(30, len(regen_candidates)), step=10, key=f"regen_v_{book_idx}"))
+                                if st.button(f"🔄 上位 {regen_n} 語の例文を意味別に再生成", key=f"regen_btn_{book_idx}", use_container_width=True):
+                                    with st.spinner("意味番号に合わせて例文を作り直しています..."):
+                                        regen_targets = regen_candidates[:regen_n]
+                                        try:
+                                            regen_ctx = build_sense_context(regen_targets, book_meaning_agg, normalize_vocab_word)
+                                            regen_res = call_ai(f"処理対象（各単語と、確定済みの意味リスト）:\n{regen_ctx}", build_normal_enrich_prompt(), is_json=True)
+                                            regen_new = json.loads(regen_res).get("enriched", [])
+                                            regen_by_word = {it.get("word"): it for it in regen_new if it.get("word")}
+                                            current_book["enriched_vocab"] = [
+                                                e for e in current_book["enriched_vocab"] if e.get("word") not in regen_by_word
+                                            ] + list(regen_by_word.values())
+                                            my_data["vocab_books"][saved_book_idx] = current_book
+                                            save_data(my_data)
+                                            st.success(f"🎉 {len(regen_by_word)} 語の例文を意味別に再生成しました！")
+                                            st.rerun()
+                                        except Exception as regen_err:
+                                            st.error(f"再生成エラー: {regen_err}")
+
+                    # === 🧠 意味別ビュー（過去問DBの頻度つき・db_manager解析結果を集約） ===
+                    with st.expander("🧠 意味別ビュー（過去問の頻度つき）", expanded=False):
+                        st.caption("過去問データベースの「単語の意味別解析」(db_manager) を集約し、単語ごとの意味の種類と出現回数を表示します。例文は今後追加予定です。")
+                        wm_agg = aggregate_meaning_frequencies(exam_db, "word_meanings", normalize=normalize_vocab_word)
+                        meaning_rows = []
+                        for w in current_book.get("main_vocab", []):
+                            entry = wm_agg.get(normalize_vocab_word(w))
+                            if not entry or not entry["senses"]:
+                                continue
+                            senses_str = " / ".join(f"{s['meaning_ja']}：{s['count']}回" for s in entry["senses"])
+                            meaning_rows.append({
+                                "単語": w,
+                                "総出現": entry["total"],
+                                "意味数": len(entry["senses"]),
+                                "意味別頻度": senses_str,
+                            })
+                        if meaning_rows:
+                            meaning_rows.sort(key=lambda r: r["総出現"], reverse=True)
+                            st.dataframe(meaning_rows, use_container_width=True, hide_index=True)
+                            st.caption(f"意味別データのある単語: {len(meaning_rows)} / {len(current_book.get('main_vocab', []))} 語")
+                        else:
+                            st.info("この単語帳の語に対応する意味別データがまだありません。db_manager.py の「🧠 単語の意味別解析」で過去問を解析すると表示されます。")
+
                     # 生成済みデータが1つもない場合は生のリストを表示
                     if not current_book["enriched_vocab"]:
                         main_display = [{"単語": w, "出現回数": current_book.get("counts", {}).get(w, "-")} for w in current_book["main_vocab"]]
@@ -2577,9 +2763,12 @@ if mode == "📖 志望校別単語帳":
                                         st.markdown(f"<div style='margin-bottom: 15px;'><span style='color:#1f77b4; font-size:2.8em; font-weight:900; line-height:1.1;'>{word}</span><span style='font-size:1.2em; color:gray; margin-left:10px;'>({count}回)</span></div>", unsafe_allow_html=True)
                                         if item.get("forms"):
                                             st.markdown(f"<div style='color:#d62728; font-weight:bold; font-size:1.0em; margin-bottom: 10px;'>🔄 {item.get('forms')}</div>", unsafe_allow_html=True)
-                                        if item.get("meanings"):
+                                        sense_html = format_senses_with_counts(word, book_meaning_agg, normalize=normalize_vocab_word)
+                                        if sense_html:
+                                            st.markdown(f"<div style='font-size:1.15em; font-weight:bold; color:#4caf50; margin-bottom: 10px;'>{sense_html}</div>", unsafe_allow_html=True)
+                                        elif item.get("meanings"):
                                             st.markdown(f"<div style='font-size:1.15em; font-weight:bold; color:#4caf50; margin-bottom: 10px;'>{item.get('meanings')}</div>", unsafe_allow_html=True)
-                                        st.divider() 
+                                        st.divider()
                                         for chunk in item.get("chunks", []):
                                             colored_chunk = re.sub(r'\*\*(.*?)\*\*', r"<span style='color:#1f77b4; font-weight:bold; font-size:1.1em;'>\1</span>", chunk)
                                             st.markdown(f"<div style='margin-left: 0.5em; margin-bottom: 8px; font-size:0.95em;'>{colored_chunk}</div>", unsafe_allow_html=True)
@@ -2611,7 +2800,10 @@ if mode == "📖 志望校別単語帳":
                             with st.container(border=True):
                                 if item.get("forms"): st.markdown(f"**🔄 変化形・派生語:** {item.get('forms')}")
                                 st.markdown("### 📚 意味とフレーズ")
-                                if item.get("meanings"): st.markdown(f"**<span style='color:#4caf50; font-size:1.2em;'>{item.get('meanings')}</span>**", unsafe_allow_html=True)
+                                sense_html = format_senses_with_counts(word, book_meaning_agg, normalize=normalize_vocab_word)
+                                if sense_html:
+                                    st.markdown(f"**<span style='color:#4caf50; font-size:1.2em;'>{sense_html}</span>**", unsafe_allow_html=True)
+                                elif item.get("meanings"): st.markdown(f"**<span style='color:#4caf50; font-size:1.2em;'>{item.get('meanings')}</span>**", unsafe_allow_html=True)
                                 for chunk in item.get("chunks", []):
                                     colored_ex = re.sub(r'\*\*(.*?)\*\*', r"<span style='color:#1f77b4; font-weight:bold;'>\1</span>", chunk)
                                     st.markdown(f"> {colored_ex}", unsafe_allow_html=True)
@@ -2868,7 +3060,7 @@ if mode == "📖 志望校別単語帳":
         with tab_create:
             selected_labels = render_exam_selector(db_options, "create_vocab")
             use_ai_filter = st.checkbox("🤖 【テスト機能】AIで明らかな「人名」だけを除外する", value=False)
-            exclude_frequency_strong_create = st.checkbox("💪 頻度つよつよ単語3000を単語帳対象から外す", value=True)
+            exclude_frequency_strong_create = st.checkbox("💪 頻度つよつよ単語3000を単語帳対象から外す", value=False)
             
             if st.button("✨ 選択した過去問から単語帳を生成") and selected_labels:
                 with st.spinner("単語を集計中..."):
@@ -2927,7 +3119,150 @@ if mode == "📖 志望校別単語帳":
         # タブ3: カバー率・難化シミュレーター（復元済）
         # ------------------------------------------
         with tab_sim:
-            st.markdown("### 📊 過去問カバー率（定量分析）シミュレーター")
+            # ------------------------------------------
+            # 🧠 意味別カバー率（意味単位のバックテスト）
+            # ------------------------------------------
+            st.markdown("### 🧠 新版-意味別カバー率（意味単位のバックテスト）")
+            st.info(
+                "「学習済み」とみなす過去問群に出てきた（単語 × 意味）の組を武器に、"
+                "ターゲット過去問を**意味のレベルまで**カバーできているかを計算します。"
+                "単語は知っていても文中の意味が未学習なら「意味抜け」として検出されます。"
+                "※ db_manager の「🧠 単語の意味別解析」を済ませた過去問だけが対象です。"
+            )
+
+            meaning_cov_options = {}
+            for cat, unis in exam_db.items():
+                for uni, facs in unis.items():
+                    for fac, years in facs.items():
+                        for year, methods in years.items():
+                            for method, data in methods.items():
+                                wm = data.get("word_meanings")
+                                if isinstance(wm, dict) and wm:
+                                    label = f"[{cat}] {uni} {fac} ({year}年 {method})"
+                                    meaning_cov_options[label] = wm
+
+            if len(meaning_cov_options) < 2:
+                st.warning("意味別データを持つ過去問が2件以上必要です。db_manager.py の「🧠 単語の意味別解析」で過去問を登録してください。")
+            else:
+                col_mcov_w, col_mcov_t = st.columns(2)
+                with col_mcov_w:
+                    mcov_learned_labels = st.multiselect(
+                        "⚔️ 学習済みとみなす過去問（複数選択）",
+                        list(meaning_cov_options.keys()),
+                        key="meaning_cov_learned",
+                    )
+                with col_mcov_t:
+                    mcov_target_label = st.selectbox(
+                        "🎯 ターゲット過去問（未知の敵）",
+                        ["-- 選択 --"] + list(meaning_cov_options.keys()),
+                        key="meaning_cov_target",
+                    )
+
+                if st.button("🧠 意味別カバー率を計算する", type="primary", use_container_width=True, key="meaning_cov_btn"):
+                    if not mcov_learned_labels or mcov_target_label == "-- 選択 --":
+                        st.error("学習済み過去問とターゲットを両方選択してください。")
+                    elif mcov_target_label in mcov_learned_labels:
+                        st.error("ターゲットの過去問は「学習済み」から外してください（自分自身とは比較できません）。")
+                    else:
+                        learned_pairs = set()
+                        learned_words = set()
+                        for mcov_label in mcov_learned_labels:
+                            for w, w_entry in meaning_cov_options[mcov_label].items():
+                                if not isinstance(w_entry, dict):
+                                    continue
+                                w_norm = normalize_vocab_word(w)
+                                if not w_norm or w_norm in frequency_excluded_words:
+                                    continue
+                                learned_words.add(w_norm)
+                                for mid in (w_entry.get("meaning_counts") or {}).keys():
+                                    learned_pairs.add((w_norm, mid))
+
+                        mcov_total = 0
+                        mcov_word_covered = 0
+                        mcov_meaning_covered = 0
+                        mcov_sense_gap = {}      # 単語は知っているのに意味が未学習
+                        mcov_unknown_words = {}  # 単語ごと未知
+                        for w, w_entry in meaning_cov_options[mcov_target_label].items():
+                            if not isinstance(w_entry, dict):
+                                continue
+                            w_norm = normalize_vocab_word(w)
+                            if not w_norm or w_norm in frequency_excluded_words:
+                                continue
+                            for mid, bucket in (w_entry.get("meaning_counts") or {}).items():
+                                if not isinstance(bucket, dict):
+                                    continue
+                                cnt = bucket.get("count", 0)
+                                try:
+                                    cnt = int(cnt)
+                                except Exception:
+                                    cnt = 0
+                                if cnt <= 0:
+                                    continue
+                                ja = str(bucket.get("meaning_ja") or mid)
+                                mcov_total += cnt
+                                if w_norm in learned_words:
+                                    mcov_word_covered += cnt
+                                    if (w_norm, mid) in learned_pairs:
+                                        mcov_meaning_covered += cnt
+                                    else:
+                                        gap_key = (w_norm, ja)
+                                        mcov_sense_gap[gap_key] = mcov_sense_gap.get(gap_key, 0) + cnt
+                                else:
+                                    mcov_unknown_words[w_norm] = mcov_unknown_words.get(w_norm, 0) + cnt
+
+                        st.session_state.meaning_cov_result = {
+                            "target_name": mcov_target_label,
+                            "learned_names": mcov_learned_labels,
+                            "total_tokens": mcov_total,
+                            "word_covered": mcov_word_covered,
+                            "meaning_covered": mcov_meaning_covered,
+                            "sense_gap": [
+                                {"単語": k[0], "未学習の意味": k[1], "出現回数": v}
+                                for k, v in sorted(mcov_sense_gap.items(), key=lambda x: x[1], reverse=True)
+                            ],
+                            "unknown_words": [
+                                {"未知の単語": k, "出現回数": v}
+                                for k, v in sorted(mcov_unknown_words.items(), key=lambda x: x[1], reverse=True)
+                            ],
+                        }
+                        st.rerun()
+
+                if "meaning_cov_result" in st.session_state:
+                    mres = st.session_state.meaning_cov_result
+                    m_total = mres["total_tokens"]
+                    word_rate = (mres["word_covered"] / m_total * 100) if m_total else 0
+                    meaning_rate = (mres["meaning_covered"] / m_total * 100) if m_total else 0
+                    gap_tokens = mres["word_covered"] - mres["meaning_covered"]
+
+                    st.markdown("---")
+                    st.markdown(
+                        f"## 🧠 意味別カバー率: **{meaning_rate:.1f}%** "
+                        f"<span style='font-size:0.5em; color:gray;'>(単語のみなら {word_rate:.1f}%) — {mres['target_name']}</span>",
+                        unsafe_allow_html=True,
+                    )
+                    col_mm1, col_mm2, col_mm3, col_mm4 = st.columns(4)
+                    col_mm1.metric("ターゲット総トークン", f"{m_total}語")
+                    col_mm2.metric("意味までカバー", f"{mres['meaning_covered']}語")
+                    col_mm3.metric("意味抜け（単語は既知）", f"{gap_tokens}語")
+                    col_mm4.metric("単語ごと未知", f"{m_total - mres['word_covered']}語")
+
+                    if word_rate - meaning_rate >= 0.05:
+                        st.warning(
+                            f"⚠️ 単語カバー率と意味別カバー率の差は **{word_rate - meaning_rate:.1f}ポイント** です。"
+                            "この差が「単語は知っているのに文中の意味が取れない」リスクの大きさです。"
+                        )
+                    else:
+                        st.success("単語カバー率と意味別カバー率がほぼ一致しています。多義語の意味抜けはわずかです。")
+
+                    if mres["sense_gap"]:
+                        with st.expander(f"🕳️ 意味抜けリスト（{len(mres['sense_gap'])}件）— 単語は学習済みなのに、この意味が未学習", expanded=True):
+                            st.dataframe(mres["sense_gap"], use_container_width=True)
+                    if mres["unknown_words"]:
+                        with st.expander(f"❓ 単語ごと未知のリスト（{len(mres['unknown_words'])}件）", expanded=False):
+                            st.dataframe(mres["unknown_words"], use_container_width=True)
+
+            st.markdown("---")
+            st.markdown("### 📊 過去問カバー率（定量分析）シミュレーター(旧バージョン)")
             st.info("あなたが作った「単語帳（武器）」が、特定の「過去問（敵）」にどれくらい通用するかを定量的にシミュレーションします。")
             
             fixed_book_for_sim = build_frequency_strong_book(base_lexicon)
@@ -3080,149 +3415,6 @@ if mode == "📖 志望校別単語帳":
                         if "analysis_result" in st.session_state:
                             st.info(st.session_state.analysis_result)
 
-            # ------------------------------------------
-            # 🧠 意味別カバー率（意味単位のバックテスト）
-            # ------------------------------------------
-            st.markdown("---")
-            st.markdown("### 🧠 意味別カバー率（意味単位のバックテスト）")
-            st.info(
-                "「学習済み」とみなす過去問群に出てきた（単語 × 意味）の組を武器に、"
-                "ターゲット過去問を**意味のレベルまで**カバーできているかを計算します。"
-                "単語は知っていても文中の意味が未学習なら「意味抜け」として検出されます。"
-                "※ db_manager の「🧠 単語の意味別解析」を済ませた過去問だけが対象です。"
-            )
-
-            meaning_cov_options = {}
-            for cat, unis in exam_db.items():
-                for uni, facs in unis.items():
-                    for fac, years in facs.items():
-                        for year, methods in years.items():
-                            for method, data in methods.items():
-                                wm = data.get("word_meanings")
-                                if isinstance(wm, dict) and wm:
-                                    label = f"[{cat}] {uni} {fac} ({year}年 {method})"
-                                    meaning_cov_options[label] = wm
-
-            if len(meaning_cov_options) < 2:
-                st.warning("意味別データを持つ過去問が2件以上必要です。db_manager.py の「🧠 単語の意味別解析」で過去問を登録してください。")
-            else:
-                col_mcov_w, col_mcov_t = st.columns(2)
-                with col_mcov_w:
-                    mcov_learned_labels = st.multiselect(
-                        "⚔️ 学習済みとみなす過去問（複数選択）",
-                        list(meaning_cov_options.keys()),
-                        key="meaning_cov_learned",
-                    )
-                with col_mcov_t:
-                    mcov_target_label = st.selectbox(
-                        "🎯 ターゲット過去問（未知の敵）",
-                        ["-- 選択 --"] + list(meaning_cov_options.keys()),
-                        key="meaning_cov_target",
-                    )
-
-                if st.button("🧠 意味別カバー率を計算する", type="primary", use_container_width=True, key="meaning_cov_btn"):
-                    if not mcov_learned_labels or mcov_target_label == "-- 選択 --":
-                        st.error("学習済み過去問とターゲットを両方選択してください。")
-                    elif mcov_target_label in mcov_learned_labels:
-                        st.error("ターゲットの過去問は「学習済み」から外してください（自分自身とは比較できません）。")
-                    else:
-                        learned_pairs = set()
-                        learned_words = set()
-                        for mcov_label in mcov_learned_labels:
-                            for w, w_entry in meaning_cov_options[mcov_label].items():
-                                if not isinstance(w_entry, dict):
-                                    continue
-                                w_norm = normalize_vocab_word(w)
-                                if not w_norm or w_norm in frequency_excluded_words:
-                                    continue
-                                learned_words.add(w_norm)
-                                for mid in (w_entry.get("meaning_counts") or {}).keys():
-                                    learned_pairs.add((w_norm, mid))
-
-                        mcov_total = 0
-                        mcov_word_covered = 0
-                        mcov_meaning_covered = 0
-                        mcov_sense_gap = {}      # 単語は知っているのに意味が未学習
-                        mcov_unknown_words = {}  # 単語ごと未知
-                        for w, w_entry in meaning_cov_options[mcov_target_label].items():
-                            if not isinstance(w_entry, dict):
-                                continue
-                            w_norm = normalize_vocab_word(w)
-                            if not w_norm or w_norm in frequency_excluded_words:
-                                continue
-                            for mid, bucket in (w_entry.get("meaning_counts") or {}).items():
-                                if not isinstance(bucket, dict):
-                                    continue
-                                cnt = bucket.get("count", 0)
-                                try:
-                                    cnt = int(cnt)
-                                except Exception:
-                                    cnt = 0
-                                if cnt <= 0:
-                                    continue
-                                ja = str(bucket.get("meaning_ja") or mid)
-                                mcov_total += cnt
-                                if w_norm in learned_words:
-                                    mcov_word_covered += cnt
-                                    if (w_norm, mid) in learned_pairs:
-                                        mcov_meaning_covered += cnt
-                                    else:
-                                        gap_key = (w_norm, ja)
-                                        mcov_sense_gap[gap_key] = mcov_sense_gap.get(gap_key, 0) + cnt
-                                else:
-                                    mcov_unknown_words[w_norm] = mcov_unknown_words.get(w_norm, 0) + cnt
-
-                        st.session_state.meaning_cov_result = {
-                            "target_name": mcov_target_label,
-                            "learned_names": mcov_learned_labels,
-                            "total_tokens": mcov_total,
-                            "word_covered": mcov_word_covered,
-                            "meaning_covered": mcov_meaning_covered,
-                            "sense_gap": [
-                                {"単語": k[0], "未学習の意味": k[1], "出現回数": v}
-                                for k, v in sorted(mcov_sense_gap.items(), key=lambda x: x[1], reverse=True)
-                            ],
-                            "unknown_words": [
-                                {"未知の単語": k, "出現回数": v}
-                                for k, v in sorted(mcov_unknown_words.items(), key=lambda x: x[1], reverse=True)
-                            ],
-                        }
-                        st.rerun()
-
-                if "meaning_cov_result" in st.session_state:
-                    mres = st.session_state.meaning_cov_result
-                    m_total = mres["total_tokens"]
-                    word_rate = (mres["word_covered"] / m_total * 100) if m_total else 0
-                    meaning_rate = (mres["meaning_covered"] / m_total * 100) if m_total else 0
-                    gap_tokens = mres["word_covered"] - mres["meaning_covered"]
-
-                    st.markdown("---")
-                    st.markdown(
-                        f"## 🧠 意味別カバー率: **{meaning_rate:.1f}%** "
-                        f"<span style='font-size:0.5em; color:gray;'>(単語のみなら {word_rate:.1f}%) — {mres['target_name']}</span>",
-                        unsafe_allow_html=True,
-                    )
-                    col_mm1, col_mm2, col_mm3, col_mm4 = st.columns(4)
-                    col_mm1.metric("ターゲット総トークン", f"{m_total}語")
-                    col_mm2.metric("意味までカバー", f"{mres['meaning_covered']}語")
-                    col_mm3.metric("意味抜け（単語は既知）", f"{gap_tokens}語")
-                    col_mm4.metric("単語ごと未知", f"{m_total - mres['word_covered']}語")
-
-                    if word_rate - meaning_rate >= 0.05:
-                        st.warning(
-                            f"⚠️ 単語カバー率と意味別カバー率の差は **{word_rate - meaning_rate:.1f}ポイント** です。"
-                            "この差が「単語は知っているのに文中の意味が取れない」リスクの大きさです。"
-                        )
-                    else:
-                        st.success("単語カバー率と意味別カバー率がほぼ一致しています。多義語の意味抜けはわずかです。")
-
-                    if mres["sense_gap"]:
-                        with st.expander(f"🕳️ 意味抜けリスト（{len(mres['sense_gap'])}件）— 単語は学習済みなのに、この意味が未学習", expanded=True):
-                            st.dataframe(mres["sense_gap"], use_container_width=True)
-                    if mres["unknown_words"]:
-                        with st.expander(f"❓ 単語ごと未知のリスト（{len(mres['unknown_words'])}件）", expanded=False):
-                            st.dataframe(mres["unknown_words"], use_container_width=True)
-
 # ==========================================
 # モードE: 志望校別熟語帳（★シミュレーター搭載版）
 # ==========================================
@@ -3297,10 +3489,39 @@ elif mode == "🔗 志望校別熟語帳":
             if selected_title_shelf != "-- 選択してください --":
                 book_idx = book_titles.index(selected_title_shelf)
                 current_idiom_book = my_data["idiom_books"][book_idx]
-                
+                # 過去問DBの熟語の意味別頻度（db_manager解析）を集約（カード／詳細／意味別ビューで共用）
+                book_idiom_agg = aggregate_meaning_frequencies(exam_db, "idioms")
+
                 st.markdown(f"### 📘 {current_idiom_book['title']}")
                 st.write(f"収録熟語数: **{len(current_idiom_book['idioms'])} 個**")
-                
+
+                # === 🧠 意味別ビュー（過去問DBの頻度つき・db_manager解析結果を集約） ===
+                with st.expander("🧠 意味別ビュー（過去問の頻度つき）", expanded=False):
+                    st.caption("過去問データベースの熟語の意味別解析 (db_manager) を集約し、熟語ごとの意味の種類と出現回数を表示します。例文は今後追加予定です。")
+                    idiom_agg = aggregate_meaning_frequencies(exam_db, "idioms")
+                    idiom_meaning_rows = []
+                    book_idioms = current_idiom_book.get("idioms", [])
+                    for it in book_idioms:
+                        base = it.get("base_form") if isinstance(it, dict) else str(it)
+                        if not base:
+                            continue
+                        entry = idiom_agg.get(str(base).strip().lower())
+                        if not entry or not entry["senses"]:
+                            continue
+                        senses_str = " / ".join(f"{s['meaning_ja']}：{s['count']}回" for s in entry["senses"])
+                        idiom_meaning_rows.append({
+                            "熟語": base,
+                            "総出現": entry["total"],
+                            "意味数": len(entry["senses"]),
+                            "意味別頻度": senses_str,
+                        })
+                    if idiom_meaning_rows:
+                        idiom_meaning_rows.sort(key=lambda r: r["総出現"], reverse=True)
+                        st.dataframe(idiom_meaning_rows, use_container_width=True, hide_index=True)
+                        st.caption(f"意味別データのある熟語: {len(idiom_meaning_rows)} / {len(book_idioms)} 個")
+                    else:
+                        st.info("この熟語帳の語に対応する意味別データがまだありません。db_manager.py の熟語の意味別解析で過去問を解析すると表示されます。")
+
                 with st.expander("⚙️ 熟語帳の管理・編集（名前変更・追加・マージ）", expanded=False):
                     st.markdown("#### 🏷️ 名前の変更")
                     col_rn1, col_rn2 = st.columns([3, 1])
@@ -3404,9 +3625,13 @@ elif mode == "🔗 志望校別熟語帳":
                             target_idioms = missing_idioms[:gen_idiom_count]
                             sys_enrich_idiom = """
                             あなたは受験英語に精通したプロ講師です。提供された英熟語リストから、以下のJSON形式で意味と例文を作成してください。
-                            1. 複数の意味がある熟語は「①... ②...」のように1行にまとめる。
-                            2. 例文は、1つの意味につき【必ず2つずつ】作成。行頭に番号を付与。
-                            3. 例文中の熟語は **太字(Markdown)** にする。
+
+                            【最重要・意味番号の規則】
+                            - 各熟語には「確定済みの意味リスト（過去問解析で実際に出現した意味）」を与えます。
+                            - 意味リストがある熟語は、その意味と番号①②③だけを使ってください。新しい意味を足したり番号を入れ替えたりせず、"meanings" は与えられた意味リストをそのまま使ってください。
+                            - "chunks"（例文）の各行の先頭番号は、必ず与えた意味リストの番号に一致させてください。意味リストにない番号の例文は絶対に作らないでください。
+                            - 1つの意味につき例文を【2つずつ】作成し、例文中の熟語は **太字(Markdown)** にしてください。
+                            - 意味リストが「（意味リストなし）」の熟語だけ、あなたが意味を「①... ②...」とまとめ、番号を付与してよいです。
                             {
                               "enriched": [
                                 {
@@ -3423,7 +3648,8 @@ elif mode == "🔗 志望校別熟語帳":
                             }
                             """
                             try:
-                                res_json = call_ai(f"リスト:\n{target_idioms}", sys_enrich_idiom, is_json=True)
+                                idiom_ctx = build_sense_context(target_idioms, book_idiom_agg)
+                                res_json = call_ai(f"リスト（各熟語と、確定済みの意味リスト）:\n{idiom_ctx}", sys_enrich_idiom, is_json=True)
                                 parsed_data = json.loads(res_json)
                                 current_idiom_book["enriched_idioms"].extend(parsed_data.get("enriched", []))
                                 my_data["idiom_books"][book_idx] = current_idiom_book
@@ -3488,7 +3714,10 @@ elif mode == "🔗 志望校別熟語帳":
                             with col:
                                 with st.container(border=True):
                                     st.markdown(f"<div style='margin-bottom: 15px;'><span style='color:#1f77b4; font-size:2.4em; font-weight:900; line-height:1.2;'>{word}</span><span style='font-size:1.1em; color:gray; margin-left:15px;'>({count}回)</span></div>", unsafe_allow_html=True)
-                                    if item.get("meanings"): st.markdown(f"<div style='font-size:1.15em; font-weight:bold; color:#4caf50; margin-bottom: 10px;'>{item.get('meanings')}</div>", unsafe_allow_html=True)
+                                    idiom_sense_html = format_senses_with_counts(word, book_idiom_agg)
+                                    if idiom_sense_html:
+                                        st.markdown(f"<div style='font-size:1.15em; font-weight:bold; color:#4caf50; margin-bottom: 10px;'>{idiom_sense_html}</div>", unsafe_allow_html=True)
+                                    elif item.get("meanings"): st.markdown(f"<div style='font-size:1.15em; font-weight:bold; color:#4caf50; margin-bottom: 10px;'>{item.get('meanings')}</div>", unsafe_allow_html=True)
                                     st.divider()
                                     for chunk in item.get("chunks", []):
                                         colored_chunk = re.sub(r'\*\*(.*?)\*\*', r"<span style='color:#1f77b4; font-weight:bold; font-size:1.1em;'>\1</span>", chunk)
@@ -3516,7 +3745,10 @@ elif mode == "🔗 志望校別熟語帳":
                         st.markdown(f"## 🔍 「{word}」の専用ルーム")
                         with st.container(border=True):
                             st.markdown("### 📚 意味とフレーズ")
-                            if item.get("meanings"): st.markdown(f"**<span style='color:#4caf50; font-size:1.2em;'>{item.get('meanings')}</span>**", unsafe_allow_html=True)
+                            idiom_sense_html = format_senses_with_counts(word, book_idiom_agg)
+                            if idiom_sense_html:
+                                st.markdown(f"**<span style='color:#4caf50; font-size:1.2em;'>{idiom_sense_html}</span>**", unsafe_allow_html=True)
+                            elif item.get("meanings"): st.markdown(f"**<span style='color:#4caf50; font-size:1.2em;'>{item.get('meanings')}</span>**", unsafe_allow_html=True)
                             for chunk in item.get("chunks", []):
                                 colored_ex = re.sub(r'\*\*(.*?)\*\*', r"<span style='color:#1f77b4; font-weight:bold;'>\1</span>", chunk)
                                 st.markdown(f"> {colored_ex}", unsafe_allow_html=True)
