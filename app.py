@@ -503,6 +503,33 @@ def build_sense_context(words, agg, normalize=None):
 
 # --- ログイン認証（ユーザーごとにデータを分離）---
 st.set_page_config(page_title="自律型AI塾", page_icon="🧭", layout="wide")
+
+# --- 全画面共通の見た目の調整（余白・角丸・見出し・横幅）---
+st.markdown("""
+<style>
+/* 中央寄せ＋余白で、横に広がりすぎる雑然さを抑える */
+.block-container { max-width: 1180px; padding-top: 1.6rem; padding-bottom: 4rem; }
+/* 見出しの大きさ・太さ・余白を整える */
+h1 { font-size: 1.85rem !important; font-weight: 800 !important; }
+h2 { font-size: 1.35rem !important; font-weight: 700 !important; }
+h3 { font-size: 1.12rem !important; font-weight: 700 !important; }
+/* ボタン・ダウンロードボタンを丸く・押しやすく */
+.stButton > button, .stDownloadButton > button {
+    border-radius: 10px; font-weight: 600; padding: 0.45rem 1rem;
+}
+/* 入力欄・選択欄・テキストエリアの角を丸く */
+[data-baseweb="input"] input, [data-baseweb="select"] > div, textarea, .stNumberInput input {
+    border-radius: 10px !important;
+}
+/* タブの文字を見やすく */
+.stTabs [data-baseweb="tab"] { font-weight: 600; }
+/* 補足テキストを落ち着いた色に */
+[data-testid="stCaptionContainer"] { color: #9aa3b2 !important; }
+/* 入力欄のラベルを少し見やすく */
+[data-testid="stWidgetLabel"] p { font-weight: 600; }
+</style>
+""", unsafe_allow_html=True)
+
 current_user = auth.require_login()              # 未ログインならログイン画面を表示してここで停止（ユーザー識別は auth が session に保持）
 
 my_data = load_data()
@@ -577,14 +604,6 @@ with st.sidebar.expander("⚙️ 設定・詳細", expanded=False):
 if api_key:
     genai.configure(api_key=api_key)
 
-# --- 商品ヘッダー（メイン上部・全モード共通）---
-st.markdown(
-    "<div style='padding:0.1rem 0 0.5rem 0; border-bottom:1px solid #2a3040; margin-bottom:0.8rem;'>"
-    "<span style='font-size:1.7rem; font-weight:800; letter-spacing:0.02em;'>🧭 自律型AI塾</span>"
-    "<span style='color:#8a93a6; margin-left:0.7rem; font-size:0.95rem;'>AIと作る、志望校特化の英語対策</span>"
-    "</div>",
-    unsafe_allow_html=True,
-)
 
 
 # --- 3. AI呼び出し関数 ---
@@ -2356,10 +2375,10 @@ if mode == "📖 志望校別単語帳":
                                 db_options[label] = {"c": cat, "u": uni, "f": fac, "y": year, "m": method}
                                 
     if not db_options:
-        st.warning("単語データが登録された過去問がありません。まずは db_manager.py で過去問を登録してください。")
+        st.warning("まだ単語データを持つ過去問がありません。過去問データが追加されると使えます。")
     else:
                             
-        tab_shelf, tab_output, tab_create, tab_sim = st.tabs(["📚 あなたの本棚", "📤 アウトプット学習", "✨ 新しい単語帳を作る", "📊 カバー率・難化シミュレーター"])
+        tab_shelf, tab_output, tab_create, tab_sim = st.tabs(["📚 あなたの本棚", "📤 アウトプット学習", "✨ 新しい単語帳を作る", "📊 弱点チェック（志望校カバー率）"])
         
         # ------------------------------------------
         # タブ1: 本棚 (保存された単語帳の管理)
@@ -2705,7 +2724,7 @@ if mode == "📖 志望校別単語帳":
 
                     # === 🧠 意味別ビュー（過去問DBの頻度つき・db_manager解析結果を集約） ===
                     with st.expander("🧠 意味別ビュー（過去問の頻度つき）", expanded=False):
-                        st.caption("過去問データベースの「単語の意味別解析」(db_manager) を集約し、単語ごとの意味の種類と出現回数を表示します。例文は今後追加予定です。")
+                        st.caption("過去問に実際に出てきた意味と、その出現回数を単語ごとにまとめて表示します。")
                         wm_agg = aggregate_meaning_frequencies(exam_db, "word_meanings", normalize=normalize_vocab_word)
                         meaning_rows = []
                         for w in current_book.get("main_vocab", []):
@@ -2724,7 +2743,7 @@ if mode == "📖 志望校別単語帳":
                             st.dataframe(meaning_rows, use_container_width=True, hide_index=True)
                             st.caption(f"意味別データのある単語: {len(meaning_rows)} / {len(current_book.get('main_vocab', []))} 語")
                         else:
-                            st.info("この単語帳の語に対応する意味別データがまだありません。db_manager.py の「🧠 単語の意味別解析」で過去問を解析すると表示されます。")
+                            st.info("この単語帳に対応する過去問の意味データがまだありません。過去問データが増えると表示されます。")
 
                     # 生成済みデータが1つもない場合は生のリストを表示
                     if not current_book["enriched_vocab"]:
@@ -3139,12 +3158,12 @@ if mode == "📖 志望校別単語帳":
             # ------------------------------------------
             # 🧠 意味別カバー率（意味単位のバックテスト）
             # ------------------------------------------
-            st.markdown("### 🧠 新版-意味別カバー率（意味単位のバックテスト）")
+            st.markdown("### 🧠 意味まで対応できているか（弱点チェック）")
             st.info(
-                "「学習済み」とみなす過去問群に出てきた（単語 × 意味）の組を武器に、"
-                "ターゲット過去問を**意味のレベルまで**カバーできているかを計算します。"
-                "単語は知っていても文中の意味が未学習なら「意味抜け」として検出されます。"
-                "※ db_manager の「🧠 単語の意味別解析」を済ませた過去問だけが対象です。"
+                "あなたが勉強した過去問の単語を、別の志望校過去問にどれくらい当てられるかを調べます。"
+                "「単語は知っているのに、その文での意味は習っていない」取りこぼしも見つけます。"
+                "※ この機能は、意味を「多義語対応（意味別）」に変換済みの過去問だけが対象です。"
+                "まだ未対応の過去問は順次対応していきます。"
             )
 
             meaning_cov_options = {}
@@ -3159,7 +3178,7 @@ if mode == "📖 志望校別単語帳":
                                     meaning_cov_options[label] = wm
 
             if len(meaning_cov_options) < 2:
-                st.warning("意味別データを持つ過去問が2件以上必要です。db_manager.py の「🧠 単語の意味別解析」で過去問を登録してください。")
+                st.warning("この機能には、意味の分析が済んだ過去問が2件以上必要です。")
             else:
                 col_mcov_w, col_mcov_t = st.columns(2)
                 with col_mcov_w:
@@ -3170,7 +3189,7 @@ if mode == "📖 志望校別単語帳":
                     )
                 with col_mcov_t:
                     mcov_target_label = st.selectbox(
-                        "🎯 ターゲット過去問（未知の敵）",
+                        "🎯 チェックしたい志望校の過去問",
                         ["-- 選択 --"] + list(meaning_cov_options.keys()),
                         key="meaning_cov_target",
                     )
@@ -3279,8 +3298,8 @@ if mode == "📖 志望校別単語帳":
                             st.dataframe(mres["unknown_words"], use_container_width=True)
 
             st.markdown("---")
-            st.markdown("### 📊 過去問カバー率（定量分析）シミュレーター(旧バージョン)")
-            st.info("あなたが作った「単語帳（武器）」が、特定の「過去問（敵）」にどれくらい通用するかを定量的にシミュレーションします。")
+            st.markdown("### 📊 単語レベルのカバー率（参考）")
+            st.info("あなたが作った単語帳が、志望校の過去問にどれくらい通用するかを数値で確認できます。")
             
             fixed_book_for_sim = build_frequency_strong_book(base_lexicon)
             books = ([fixed_book_for_sim] if fixed_book_for_sim else []) + my_data.get("vocab_books", [])
@@ -3290,12 +3309,12 @@ if mode == "📖 志望校別単語帳":
                 col_base, col_target = st.columns(2)
                 
                 with col_base:
-                    st.markdown("#### ⚔️ 武器（ベースライン）")
+                    st.markdown("#### 📗 あなたが学習済みのリスト")
                     book_titles = [b["title"] for b in books]
                     selected_baseline = st.selectbox("学習済みの単語帳を選択", ["-- 選択 --"] + book_titles)
                 
                 with col_target:
-                    st.markdown("#### 🎯 敵（ターゲット）")
+                    st.markdown("#### 🎯 チェックしたい志望校の過去問")
                     target_options = {}
                     for cat, unis in exam_db.items():
                         for uni, facs in unis.items():
@@ -3312,7 +3331,7 @@ if mode == "📖 志望校別単語帳":
                 
                 if st.button("🚀 カバー率を検証する（バックテスト）", use_container_width=True, type="primary"):
                     if selected_baseline == "-- 選択 --" or selected_target == "-- 選択 --":
-                        st.error("武器と敵を両方選択してください。")
+                        st.error("あなたのリストと過去問の両方を選んでください。")
                     else:
                         with st.spinner("単語の照合中..."):
                             base_book = next(b for b in books if b["title"] == selected_baseline)
@@ -3513,7 +3532,7 @@ elif mode == "🔗 志望校別熟語帳":
 
                 # === 🧠 意味別ビュー（過去問DBの頻度つき・db_manager解析結果を集約） ===
                 with st.expander("🧠 意味別ビュー（過去問の頻度つき）", expanded=False):
-                    st.caption("過去問データベースの熟語の意味別解析 (db_manager) を集約し、熟語ごとの意味の種類と出現回数を表示します。例文は今後追加予定です。")
+                    st.caption("過去問に実際に出てきた意味と、その出現回数を熟語ごとにまとめて表示します。")
                     idiom_agg = aggregate_meaning_frequencies(exam_db, "idioms")
                     idiom_meaning_rows = []
                     book_idioms = current_idiom_book.get("idioms", [])
@@ -3536,7 +3555,7 @@ elif mode == "🔗 志望校別熟語帳":
                         st.dataframe(idiom_meaning_rows, use_container_width=True, hide_index=True)
                         st.caption(f"意味別データのある熟語: {len(idiom_meaning_rows)} / {len(book_idioms)} 個")
                     else:
-                        st.info("この熟語帳の語に対応する意味別データがまだありません。db_manager.py の熟語の意味別解析で過去問を解析すると表示されます。")
+                        st.info("この熟語帳に対応する過去問の意味データがまだありません。過去問データが増えると表示されます。")
 
                 with st.expander("⚙️ 熟語帳の管理・編集（名前変更・追加・マージ）", expanded=False):
                     st.markdown("#### 🏷️ 名前の変更")
@@ -4085,7 +4104,7 @@ elif mode == "🔗 志望校別熟語帳":
     # ------------------------------------------
     with tab_sim:
         st.markdown("### 📊 過去問カバー率（定量分析）シミュレーター")
-        st.info("あなたが作った「熟語帳（武器）」が、特定の「過去問（敵）」にどれくらい通用するかを定量的にシミュレーションします。")
+        st.info("あなたが作った熟語帳が、志望校の過去問にどれくらい通用するかを数値で確認できます。")
         st.warning("⚠️ 熟語のカバー率は実際よりも大幅に低く出ることがあり、さらにすべての問題中の熟語を反映していないため参考程度にしてください。")
         
         books = my_data.get("idiom_books", [])
@@ -4095,12 +4114,12 @@ elif mode == "🔗 志望校別熟語帳":
             col_base, col_target = st.columns(2)
             
             with col_base:
-                st.markdown("#### ⚔️ 武器（ベースライン）")
+                st.markdown("#### 📗 あなたが学習済みのリスト")
                 book_titles = [b["title"] for b in books]
                 selected_baseline = st.selectbox("学習済みの熟語帳を選択", ["-- 選択 --"] + book_titles)
             
             with col_target:
-                st.markdown("#### 🎯 敵（ターゲット）")
+                st.markdown("#### 🎯 チェックしたい志望校の過去問")
                 target_options = {}
                 for cat, unis in exam_db.items():
                     for uni, facs in unis.items():
@@ -4116,7 +4135,7 @@ elif mode == "🔗 志望校別熟語帳":
             
             if st.button("🚀 カバー率を検証する（バックテスト）", use_container_width=True, type="primary"):
                 if selected_baseline == "-- 選択 --" or selected_target == "-- 選択 --":
-                    st.error("武器と敵を両方選択してください。")
+                    st.error("あなたのリストと過去問の両方を選んでください。")
                 else:
                     with st.spinner("熟語の照合中..."):
                         # 武器データの取得
@@ -4258,7 +4277,7 @@ elif mode == "📝 志望校別文法・語法ノート":
                                     db_options_grammar[label] = {"c": cat, "u": uni, "f": fac, "y": year, "m": method}
 
         if not db_options_grammar:
-            st.info("文法問題のデータがありません。db_manager.py で過去問から文法を抽出してください。")
+            st.info("まだ文法問題のデータがありません。過去問データが追加されると使えます。")
         else:
             st.markdown("##### 🎯 出題範囲の絞り込み")
             
@@ -4556,12 +4575,12 @@ elif mode == "📚 長文読解":
 elif mode == "🏆 過去問演習・合格分析":
     import time
     
-    st.caption("表面的なスピードではなく、「知識の解像度」と「時間の使い方」を多角的に分析し、合格最低点を超えるための最終ダッシュボードです。")
+    st.caption("過去問の点数と時間を記録し、弱点と時間配分を分析して、合格点に届くための対策を立てます。")
 
     if "exam_records" not in my_data:
         my_data["exam_records"] = []
 
-    tab_score, tab_deep, tab_ai_sim, tab_compass = st.tabs(["📊 時間＆戦績データ管理", "🧠 全問ディープ分析＆オウトプシー", "🤖 AI代行受験 (スコア推定)", "🧭 総合戦略コンパス (全データ連携)"])
+    tab_score, tab_deep, tab_ai_sim, tab_compass = st.tabs(["📊 点数・時間を記録", "🧠 まちがい深掘り分析", "🤖 AIで点数を予測", "🧭 学習プランを相談"])
 
     # ------------------------------------------
     # タブ1: 時間＆戦績データ管理
@@ -4910,7 +4929,7 @@ elif mode == "🏆 過去問演習・合格分析":
     # ------------------------------------------
     with tab_ai_sim:
         st.markdown("#### 🤖 AI代行受験 (合格期待値シミュレーター)")
-        st.caption("現在のあなたの「単語・熟語・文法知識（武器）」だけを持たせたAIのクローンに、初見の過去問を解かせ、数学的な期待値スコアを算出します。")
+        st.caption("今のあなたの単語・熟語・文法の知識だけを持ったAIに、初見の過去問を解かせて、取れそうな点数（期待値）を予測します。")
 
         # 武器の選択
         fixed_book_for_ai_sim = build_frequency_strong_book(base_lexicon)

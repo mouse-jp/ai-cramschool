@@ -313,9 +313,8 @@ def _cloud_require_login():
     # Cookie（前回ログイン）から自動ログインを試す
     if _try_cookie_login() and st.session_state.get("auth_user_id"):
         return st.session_state["auth_user"]
-    st.markdown("## 🔐 自律型AI塾")
-    st.caption("メールアドレスとパスワードでログインします。初めての方は「新規登録」から。")
-    tab_login, tab_signup = st.tabs(["ログイン", "新規登録"])
+    _login_hero()
+    tab_login, tab_signup = st.tabs(["🔑 ログイン", "✨ 新規登録（無料）"])
     with tab_login:
         with st.form("cloud_login_form"):
             email = st.text_input("メールアドレス")
@@ -395,6 +394,18 @@ def save_user_data(data):
 # ============================================================
 # Streamlit 用ゲート / ログアウト
 # ============================================================
+def _login_hero():
+    """ログイン画面の上部に出す、サービス説明（信頼感を出すため）。"""
+    st.markdown("# 🧭 自律型AI塾")
+    st.markdown("##### AIと作る、志望校特化の英語対策")
+    st.write(
+        "過去問データから、あなた専用の単語帳・熟語帳・文法ドリルを自動作成。"
+        "「合格に必要な英語」だけを効率よく対策できる学習アプリです。"
+    )
+    st.info("学習データはアカウントごとに安全に保存され、別の端末でも続きから使えます。", icon="🔒")
+    st.markdown("")
+
+
 def _start_guest():
     st.session_state["auth_user"] = "ゲスト"
     st.session_state["is_guest"] = True
@@ -424,10 +435,8 @@ def _local_require_login():
     if st.session_state.get("auth_user"):
         return st.session_state["auth_user"]
 
-    st.markdown("## 🔐 自律型AI塾")
-    st.caption("学習データはアカウントごとに保存されます。初めての方は「新規登録」から。")
-
-    tab_login, tab_signup = st.tabs(["ログイン", "新規登録"])
+    _login_hero()
+    tab_login, tab_signup = st.tabs(["🔑 ログイン", "✨ 新規登録（無料）"])
 
     with tab_login:
         with st.form("login_form"):
